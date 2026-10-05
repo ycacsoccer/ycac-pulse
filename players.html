@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en" data-i18n-title="playersTitle">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="The YC&AC Top Team squad: every player with position, tier and season stats." />
+    <meta name="theme-color" content="#112950" />
+    <link rel="icon" href="https://ycac.jp/wp-content/uploads/2025/10/YCAC-Logo-Icon.png" type="image/png" />
+    <title>YC&AC Pulse | Players</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="masthead">
+      <a class="club-mark" href="./" aria-label="YC&AC Pulse home"><img src="https://ycac.jp/wp-content/uploads/2025/10/YCAC-Logo-Icon.png" alt="YC&AC" /></a>
+      <div class="brand"><span>YC&amp;AC</span> Pulse<small data-i18n="officialWebsite">Official Soccer Top Team · Est. 1868</small></div>
+      <a class="back-link" href="./" data-i18n="loginHome">Back to season</a>
+      <span data-auth-slot></span>
+      <label class="lang-switch"><select id="lang-select" data-lang-select aria-label="Language"></select></label>
+    </header>
+
+    <main class="players-main">
+      <section class="coach-hero players-hero">
+        <p class="eyebrow" data-i18n="playersEyebrow">First team squad</p>
+        <h1 data-i18n="playersHeading">Players</h1>
+        <p class="coach-intro" data-i18n="playersIntro">Every member of the squad — filter by position or tier, tap a player for the full profile.</p>
+      </section>
+
+      <section class="panel players-toolbar">
+        <label class="player-search"><span class="visually-hidden" data-i18n="searchPlayer">Search player</span><input id="players-search" type="search" data-i18n-placeholder="searchPlayer" placeholder="Search player" /></label>
+        <div class="filter-row" role="group" aria-label="Position filter">
+          <span class="filter-label" data-i18n="position">Position</span>
+          <div id="position-filters" class="filter-chips"></div>
+        </div>
+        <div class="filter-row" role="group" aria-label="Tier filter">
+          <span class="filter-label" data-i18n="filterTier">Tier</span>
+          <div id="tier-filters" class="filter-chips"></div>
+        </div>
+        <p id="players-count" class="players-count" aria-live="polite"></p>
+      </section>
+
+      <section class="panel">
+        <div id="players-grid" class="players-grid"><p class="loading" data-i18n="coachLoading">Loading team data…</p></div>
+      </section>
+    </main>
+
+    <footer><span data-i18n="footer">YC&amp;AC Pulse · Official Top Team of Yokohama Country &amp; Athletic Club</span> <a href="https://ycac.jp" target="_blank" rel="noreferrer">ycac.jp</a></footer>
+    <script src="config.js"></script>
+    <script src="i18n.js"></script>
+    <script src="stats.js"></script>
+    <script src="data.js"></script>
+    <script src="auth.js"></script>
+    <script src="players.js"></script>
+  </body>
+</html>

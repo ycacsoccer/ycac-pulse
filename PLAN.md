@@ -166,7 +166,7 @@ Thresholds live in `stats.js`; coach can override per player in `coach_notes`.
 | **3** | `i18n.js` + language selector, retrofit `index` + `squad-picker` | ❌ — **done** (161 keys × 3 languages, `verify-i18n.cjs` ✅) |
 | **4** | `data.js` + `auth.js` (team password, coach login, RLS roles) | ✅ **done** — `login.html`, masthead auth slots; `verify-auth.cjs` 22/22 |
 | **5** | Coach dashboard `coach.html` | ✅ **done** — tier board + lens, fixture signups, coverage, flags; `verify-coach.cjs` 21/21 |
-| **6** | Profiles `players.html` / `player.html` + photo upload | ✅ |
+| **6** | Profiles `players.html` / `player.html` + photo upload | ✅ **done** — grid + detail + coach photo upload; `verify-profiles.cjs` 21/21 |
 | **7** | Admin `admin.html` (players, matchday, signups, notes, content, backup) | ✅ |
 | **8** | Match review `match.html` + coach feedback | ✅ |
 | **9** | Team page `team.html` | ✅ |

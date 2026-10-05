@@ -112,7 +112,7 @@
         const stats = entry.competitions[lens];
         const cs = stats.clean_sheets > 0 ? ` <small class="cs">· ${stats.clean_sheets} CS</small>` : "";
         return `<tr>
-          <td class="b-player">${photoCell(entry)}<span class="b-name">${esc(entry.display_name)}</span></td>
+          <td class="b-player">${photoCell(entry)}<a class="b-name" href="player.html?id=${encodeURIComponent(entry.id)}">${esc(entry.display_name)}</a></td>
           <td>${esc(entry.primary_position || "–")}</td>
           <td>${entry.shirt_number ?? "–"}</td>
           <td>${stats.played}</td>

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en" data-i18n-title="playerTitle">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="YC&AC Pulse player profile: stats, match history and goals." />
+    <meta name="theme-color" content="#112950" />
+    <link rel="icon" href="https://ycac.jp/wp-content/uploads/2025/10/YCAC-Logo-Icon.png" type="image/png" />
+    <title>YC&AC Pulse | Player profile</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="masthead">
+      <a class="club-mark" href="./" aria-label="YC&AC Pulse home"><img src="https://ycac.jp/wp-content/uploads/2025/10/YCAC-Logo-Icon.png" alt="YC&AC" /></a>
+      <div class="brand"><span>YC&amp;AC</span> Pulse<small data-i18n="officialWebsite">Official Soccer Top Team · Est. 1868</small></div>
+      <a class="back-link" href="players.html" data-i18n="backToPlayers">All players</a>
+      <span data-auth-slot></span>
+      <label class="lang-switch"><select id="lang-select" data-lang-select aria-label="Language"></select></label>
+    </header>
+
+    <main class="player-main">
+      <section class="profile-hero">
+        <div id="profile-hero"><p class="loading" data-i18n="coachLoading">Loading team data…</p></div>
+        <input id="photo-input" type="file" accept="image/*" hidden />
+      </section>
+
+      <section id="profile-bio" class="panel" hidden>
+        <div class="section-heading"><div><p class="eyebrow" data-i18n="playersEyebrow">First team squad</p><h2 data-i18n="infoBio">About</h2></div></div>
+        <p id="profile-bio-text" class="profile-bio-text"></p>
+      </section>
+
+      <section class="panel">
+        <div class="section-heading"><div><p class="eyebrow" data-i18n="playerTitle">Player profile</p><h2 data-i18n="profileStats">Statistics</h2></div></div>
+        <div class="table-wrap"><table id="profile-stats" class="stats-table"></table></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-heading"><div><p class="eyebrow" data-i18n="playersEyebrow">First team squad</p><h2 data-i18n="historyTitle">Match history</h2></div></div>
+        <div id="profile-history" class="history-list"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-heading"><div><p class="eyebrow" data-i18n="profileStats">Statistics</p><h2 data-i18n="statGoals">Goals</h2></div></div>
+        <div id="profile-goals" class="history-list"></div>
+      </section>
+    </main>
+
+    <footer><span data-i18n="footer">YC&amp;AC Pulse · Official Top Team of Yokohama Country &amp; Athletic Club</span> <a href="https://ycac.jp" target="_blank" rel="noreferrer">ycac.jp</a></footer>
+    <script src="config.js"></script>
+    <script src="i18n.js"></script>
+    <script src="stats.js"></script>
+    <script src="data.js"></script>
+    <script src="auth.js"></script>
+    <script src="player.js"></script>
+  </body>
+</html>

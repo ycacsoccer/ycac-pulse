@@ -80,7 +80,8 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem 4rem; }.hero { disp
 .board-table { min-width: 760px; }
 .board-table td { vertical-align: middle; }
 .b-player { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .88rem; font-weight: 700; white-space: nowrap; }
-.b-name { margin-left: .55rem; }
+.b-name { margin-left: .55rem; color: inherit; text-decoration: none; }
+.b-name:hover { color: var(--gold); }
 .monogram { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; vertical-align: middle; color: var(--navy); background: var(--gold-pale); border-radius: 50%; font-family: 'DM Sans', Arial, sans-serif; font-size: .62rem; font-weight: 700; }
 .avatar { position: relative; display: inline-block; width: 30px; height: 30px; vertical-align: middle; }
 .avatar .monogram { position: absolute; inset: 0; }
@@ -111,3 +112,57 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem 4rem; }.hero { disp
 .flag-row strong { display: block; margin-bottom: .4rem; color: var(--navy); font-size: .78rem; }
 .coach-main .empty, .coach-main .loading { color: var(--muted); font-size: .8rem; }
 @media (max-width: 760px) { .fixture-card { grid-template-columns: 1fr; }.fixture-time { text-align: left; }.lens-switch { width: 100%; justify-content: space-between; } }
+
+/* ---- player profiles (Phase 6) ---- */
+.players-toolbar { display: grid; gap: .9rem; }
+.filter-row { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.filter-label { min-width: 4.6rem; color: var(--muted); font-size: .66rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.filter-chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+.filter-chip { padding: .38rem .7rem; background: white; border: 1px solid var(--line); font-family: 'DM Sans', Arial, sans-serif; font-size: .68rem; font-weight: 700; cursor: pointer; }
+.filter-chip:hover { border-color: var(--navy); }
+.filter-chip.active { color: white !important; background: var(--navy); border-color: var(--navy); }
+.players-count { margin: 0; color: var(--muted); font-size: .72rem; font-weight: 700; }
+.players-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 1rem; }
+.player-card { display: grid; justify-items: center; gap: .45rem; padding: 1.15rem .8rem 1rem; background: white; border: 1px solid var(--line); text-align: center; text-decoration: none; transition: border-color .15s, transform .15s; }
+.player-card:hover { border-color: var(--gold); transform: translateY(-2px); }
+.pc-photo { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 72px; height: 72px; }
+.pc-photo .monogram { width: 100%; height: 100%; font-size: 1.05rem; }
+.pc-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.pc-name { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .9rem; font-weight: 700; line-height: 1.25; }
+.pc-meta { color: var(--muted); font-size: .7rem; font-weight: 700; }
+.pc-stats { color: var(--muted); font-size: .66rem; }
+.player-card .tier-badge { font-size: .62rem; padding: .25rem .5rem; }
+.players-main .empty, .players-main .loading, .player-main .empty, .player-main .loading, .profile-hero .loading { color: var(--muted); font-size: .8rem; }
+.profile-hero { margin: 0 -1.25rem; padding: clamp(2rem, 5vw, 3.2rem) clamp(1.5rem, 5vw, 4rem); color: white; background: radial-gradient(circle at 12% 20%, #285993 0, transparent 32%), linear-gradient(135deg, var(--navy-deep), var(--navy)); }
+.profile-hero .loading { color: #cad7e9; }
+#profile-hero { display: flex; align-items: center; gap: clamp(1.2rem, 4vw, 2.4rem); flex-wrap: wrap; }
+.profile-photo { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 140px; height: 140px; flex: 0 0 auto; background: rgba(255,255,255,.08); border: 2px solid var(--gold); border-radius: 50%; }
+.profile-photo .monogram { width: 100%; height: 100%; color: var(--navy); background: var(--gold-pale); border-radius: 50%; font-size: 2.1rem; }
+.profile-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.profile-id { flex: 1; min-width: 250px; }
+.profile-id h1 { margin: 0; font-family: 'Libre Baskerville', Georgia, serif; font-size: clamp(1.8rem, 5vw, 3rem); font-weight: 400; letter-spacing: -.05em; line-height: 1.05; }
+.profile-sub { margin: .45rem 0 0; color: #cad7e9; font-size: .8rem; }
+.profile-facts { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: 1.15rem; }
+.profile-facts > span { display: grid; gap: .15rem; padding: .5rem .8rem; background: rgba(255,255,255,.07); border-left: 2px solid var(--gold); font-size: .8rem; font-weight: 700; }
+.profile-facts small { color: #9db4d4; font-size: .55rem; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; }
+.profile-upload { display: flex; align-items: center; gap: .75rem; min-height: 44px; margin-top: 1.1rem; }
+.upload-status { color: var(--gold); font-size: .72rem; font-weight: 700; }
+.profile-bio-text { max-width: 720px; margin: 0; color: var(--ink); font-size: .9rem; line-height: 1.7; white-space: pre-line; }
+.stats-table th, .stats-table td { text-align: center; }
+.stats-table thead th:first-child, .stats-table tbody th { text-align: left; }
+.stats-table tbody th { min-width: 8.5rem; }
+.history-list { display: grid; }
+.history-row { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .85rem; padding: .68rem .25rem; border-bottom: 1px solid var(--line); font-size: .78rem; }
+.history-row:last-child { border-bottom: 0; }
+.h-date { min-width: 4.6rem; color: var(--muted); font-weight: 700; }
+.h-comp { padding: .1rem .4rem; font-size: .58rem; font-weight: 700; letter-spacing: .07em; border: 1px solid; }
+.h-comp.tml { color: var(--navy); border-color: var(--navy); }
+.h-comp.friendly { color: #8a6d1f; background: var(--gold-pale); border-color: var(--gold); }
+.h-opp { flex: 1; min-width: 7.5rem; color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-weight: 700; }
+.h-score { font-weight: 700; }
+.h-score.win { color: #1f7a3d; }.h-score.draw { color: var(--muted); }.h-score.loss { color: #9d1c1c; }
+.h-role { color: var(--muted); font-size: .72rem; font-weight: 700; }
+.h-pos { color: var(--muted); font-size: .7rem; font-weight: 700; }
+.h-goals, .h-min { font-weight: 700; }
+.h-assist { color: var(--blue); font-size: .72rem; font-weight: 700; }
+@media (max-width: 760px) { #profile-hero { flex-direction: column; align-items: flex-start; }.players-grid { grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); }.h-opp { min-width: 6rem; } }
