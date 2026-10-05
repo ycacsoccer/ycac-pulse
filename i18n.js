@@ -183,6 +183,16 @@ const YCACI18n = (() => {
     homeAway: "Home or away", adminHome: "Home", adminAway: "Away",
     adminNoResponse: "No response",
     contentGuidelines: "Team guidelines", contentCoachInstructions: "Coach instructions", contentClubInfo: "Club info",
+    // match review (Phase 8)
+    matchTitle: "Match review | YC&AC Pulse",
+    matchLineup: "Lineup", matchReview: "Coach's review",
+    matchStarters: "Starters", matchSubs: "Substitutes",
+    matchAssist: "assist",
+    matchNotFound: "Match not found.",
+    matchNoLineup: "No lineup recorded for this match.",
+    matchNoGoals: "No goals recorded.",
+    matchNoSignups: "No signups recorded for this fixture.",
+    matchNoNotes: "No coach review yet.",
   };
 
   const ja = {
@@ -355,6 +365,16 @@ const YCACI18n = (() => {
     homeAway: "ホーム／アウェイ", adminHome: "ホーム", adminAway: "アウェイ",
     adminNoResponse: "未回答",
     contentGuidelines: "チームガイドライン", contentCoachInstructions: "コーチの指示", contentClubInfo: "クラブ情報",
+    // match review (Phase 8)
+    matchTitle: "試合レビュー | YC&AC Pulse",
+    matchLineup: "メンバー", matchReview: "コーチレビュー",
+    matchStarters: "先発", matchSubs: "交代",
+    matchAssist: "アシスト",
+    matchNotFound: "試合が見つかりません。",
+    matchNoLineup: "この試合のメンバーは登録されていません。",
+    matchNoGoals: "ゴールの記録はありません。",
+    matchNoSignups: "この試合の出場可否はまだありません。",
+    matchNoNotes: "コーチのレビューはまだありません。",
   };
 
   const zh = {
@@ -527,6 +547,16 @@ const YCACI18n = (() => {
     homeAway: "主场／客场", adminHome: "主场", adminAway: "客场",
     adminNoResponse: "未回复",
     contentGuidelines: "球队准则", contentCoachInstructions: "教练指示", contentClubInfo: "俱乐部信息",
+    // match review (Phase 8)
+    matchTitle: "比赛回顾 | YC&AC Pulse",
+    matchLineup: "阵容", matchReview: "教练回顾",
+    matchStarters: "首发", matchSubs: "替补",
+    matchAssist: "助攻",
+    matchNotFound: "未找到比赛。",
+    matchNoLineup: "该比赛尚未登记阵容。",
+    matchNoGoals: "暂无进球记录。",
+    matchNoSignups: "该场比赛暂无报名记录。",
+    matchNoNotes: "尚无教练回顾。",
   };
 
   const dictionaries = { en, ja, zh };

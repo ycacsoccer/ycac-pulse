@@ -110,7 +110,7 @@
       const ycac = Number(match.ycac_goals), against = Number(match.opponent_goals);
       const outcome = ycac > against ? "win" : ycac === against ? "draw" : "loss";
       const roleKey = app.role === "starter" ? "starter" : "substitute";
-      return `<div class="history-row">
+      return `<a class="history-row" href="match.html?id=${encodeURIComponent(app.match_id)}">
         <span class="h-date">${esc(formatDate(match.date))}</span>
         <span class="h-comp ${compClass(match)}">${compClass(match) === "friendly" ? "FND" : "TML"}</span>
         <span class="h-opp">${esc(t("versus"))} ${esc(match.opponent)}</span>
@@ -118,7 +118,7 @@
         <span class="h-role">${app.role === "starter" ? "🟢" : "🔵"} ${esc(t(roleKey))}</span>
         <span class="h-pos">${esc(app.position || state.player.primary_position || "")}</span>
         ${scored ? `<span class="h-goals">${scored}⚽</span>` : ""}
-      </div>`;
+      </a>`;
     }).join("");
   }
 
@@ -130,13 +130,13 @@
     $("profile-goals").innerHTML = scored.map((goal) => {
       const match = goal.matches || {};
       const assist = goal.assist_id ? nameById.get(goal.assist_id) : null;
-      return `<div class="history-row">
+      return `<a class="history-row" href="match.html?id=${encodeURIComponent(goal.match_id)}">
         <span class="h-date">${esc(formatDate(match.date))}</span>
         <span class="h-comp ${compClass(match)}">${compClass(match) === "friendly" ? "FND" : "TML"}</span>
         <span class="h-opp">${esc(t("versus"))} ${esc(match.opponent)}</span>
         <span class="h-min">${goal.minute != null ? `${goal.minute}′` : ""}</span>
         ${assist ? `<span class="h-assist" title="${esc(assist)}">→ ${esc(assist)}</span>` : ""}
-      </div>`;
+      </a>`;
     }).join("");
   }
 

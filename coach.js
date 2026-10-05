@@ -86,7 +86,7 @@
       <div class="fixture-card">
         <div class="fixture-date">${esc(formatDate(fixture.date))}</div>
         <div class="fixture-body">
-          <div class="fixture-opponent">${esc(t("versus"))} ${esc(fixture.opponent)}</div>
+          <div class="fixture-opponent"><a href="match.html?id=${encodeURIComponent(fixture.id)}">${esc(t("versus"))} ${esc(fixture.opponent)}</a></div>
           <div class="fixture-meta">${esc(fixture.competition)}${fixture.venue ? ` · ${esc(fixture.venue)}` : ""}${fixture.home_away ? ` · ${esc(fixture.home_away)}` : ""}</div>
           ${links ? `<div class="fixture-actions">${links}</div>` : ""}
         </div>

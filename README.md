@@ -14,7 +14,8 @@ A static season statistics dashboard. **Data backend: Supabase (Postgres) — re
 | 5 | Coach dashboard `coach.html` (team login) | done — tier board, next fixture + signups, coverage matrix, flags; verified by `node verify-coach.cjs` (21/21) |
 | 6 | Profiles `players.html` / `player.html` + photo upload | done — public grid with position/tier/name filters, detail with stats split + history + goals, coach-only photo upload; verified by `node verify-profiles.cjs` (21/21) |
 | 7 | Admin tool `admin.html` (coach login) | done — players CRUD + photo, fixtures/results + tap-a-squad lineup + goals/assists, signups entry, match notes, team content, JSON backup; verified by `node verify-admin.cjs` (38/38) |
-| 8+ | Match review, team page, public revamp, squad picker, cleanup | see `PLAN.md` |
+| 8 | Match review `match.html?id=` (team login) | done — result hero, lineup with photos, scorers/assists, fixture signups, coach review from `match_notes`; linked from player history/goals and coach fixture; verified by `node verify-match.cjs` (25/25) |
+| 9+ | Team page, public revamp, squad picker, cleanup | see `PLAN.md` |
 
 The plan (10 requirements mapped to screens) and the reasoning behind it live in [`PLAN.md`](PLAN.md).
 
