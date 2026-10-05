@@ -7,7 +7,7 @@ A static season statistics dashboard. **Data backend: Supabase (Postgres) — re
 | Phase | What | Status |
 |---|---|---|
 | 0 | Supabase schema + RLS (`supabase/migrations/0001_init.sql`) | done — applied to the live project, RLS verified |
-| 1 | `migrate-from-sheets.cjs` (one-time import) | done — 37/11/149/42/44/70 rows imported, verified by `node verify-import.cjs` |
+| 1 | `migrate-from-sheets.cjs` (one-time import) | done — imported 37/11/149/42/44/70 rows; live DB now 38/11/165/42/44/70 after the BFC Tokyo entry (06 Oct), verified by `node verify-import.cjs` |
 | 2 | `stats.js` metrics/tier engine | done — verified by `node verify-stats.cjs` |
 | 3 | `i18n.js` + EN/JA/ZH-CN selector, retrofitted on index + squad-picker | done — verified by `node verify-i18n.cjs` |
 | 4 | Auth: team password + coach login (`auth.js`, `data.js`, `login.html`) | done — masthead auth slots on every gated page; verified by `node verify-auth.cjs` (22/22) |

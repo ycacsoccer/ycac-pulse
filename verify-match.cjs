@@ -1,6 +1,7 @@
 // Data-path check for the match review page (match.html + match.js):
 //   node verify-match.cjs
-// Picks a played fixture and the upcoming one, signs in an ephemeral TEAM user,
+// Picks a played fixture plus a pending probe fixture (all real matches may
+// have results), signs in an ephemeral TEAM user,
 // and runs the page's exact queries (same strings match.js uses): lineup with
 // embedded players, goals resolvable to names, that fixture's signups with
 // embeds, match_notes readable by a team session (probe row inserted with the
@@ -62,13 +63,20 @@ async function main() {
   let upcoming = null;
 
   try {
+    // --- 0. pending-fixture probe: all real matches may have results, and a
+    // brand-new real fixture might not have signups yet — so section 5 targets
+    // this row (signup cascades when the match is removed in finally) --------
+    await call(`${BASE}/matches?id=eq.e2e-fixture`, { method: "DELETE", headers: adminHeaders });
+    await call(`${BASE}/matches`, { method: "POST", headers: adminHeaders, body: [{ id: "e2e-fixture", date: "2099-12-01", competition: "Friendly Match", opponent: "E2E Probe FC" }] });
+    await call(`${BASE}/signups`, { method: "POST", headers: adminHeaders, body: [{ match_id: "e2e-fixture", player_id: "rick", status: "confirmed", entered_by: "verify-match.cjs" }] });
+
     // --- 1. choose fixtures: one played, one upcoming ---------------------
     const playedList = await call(`${BASE}/matches?select=*&ycac_goals=not.is.null&order=date.asc&limit=1`, { headers: anonHeaders });
-    const upcomingList = await call(`${BASE}/matches?select=*&ycac_goals=is.null&order=date.asc&limit=1`, { headers: anonHeaders });
+    const upcomingList = await call(`${BASE}/matches?select=*&ycac_goals=is.null&order=date.asc`, { headers: anonHeaders });
     check(playedList.length === 1, "a played fixture exists to review", playedList[0]?.id);
-    check(upcomingList.length === 1, "an upcoming fixture exists", upcomingList[0]?.id);
+    check(upcomingList.some((match) => match.id === "e2e-fixture"), "an upcoming fixture exists", upcomingList.map((match) => match.id).join(", "));
     played = playedList[0];
-    upcoming = upcomingList[0];
+    upcoming = upcomingList.find((match) => match.id === "e2e-fixture") || upcomingList[0];
     if (!played) throw new Error("no played fixture in the database");
 
     // --- 2. anon is gated out of the team-only panels ---------------------
@@ -149,6 +157,7 @@ async function main() {
     check(page.includes("requireTeam") || source.includes("requireTeam"), "match.js gates the page behind requireTeam()");
     check(page.includes('name="robots" content="noindex'), "match.html is noindexed (team-only page)");
   } finally {
+    await call(`${BASE}/matches?id=eq.e2e-fixture`, { method: "DELETE", headers: adminHeaders }).catch(() => {});
     if (state.noteProbe) {
       await call(`${BASE}/match_notes?match_id=eq.${played?.id ?? ""}`, { method: "DELETE", headers: adminHeaders }).catch(() => {});
     }
@@ -160,6 +169,8 @@ async function main() {
   // --- post-cleanup ---------------------------------------------------------
   const notesLeft = await call(`${BASE}/match_notes?select=match_id&updated_by=eq.verify-match.cjs`, { headers: adminHeaders });
   check(notesLeft.length === 0, "probe match note removed", `${notesLeft.length} left`);
+  const fixtureLeft = await call(`${BASE}/matches?select=id&id=eq.e2e-fixture`, { headers: adminHeaders });
+  check(fixtureLeft.length === 0, "probe fixture removed", `${fixtureLeft.length} left`);
   const users = await call(`${AUTH}/admin/users`, { headers: adminHeaders });
   check(!(users.users || []).some((user) => user.email === TEAM_EMAIL), "ephemeral team user deleted");
   const roster = await call(`${BASE}/coach_roster?select=email`, { headers: adminHeaders });

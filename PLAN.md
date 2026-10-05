@@ -44,16 +44,16 @@ endpoint, and no field for photos.
 
 ## 3. What the data says today (verified)
 
-10 played matches — 3 TML · 7 friendlies · 1 TML pending (BFC Tokyo, 04 Oct) · 37 players, 32 used.
+11 played matches — 4 TML (incl. BFC Tokyo 0–4, 04 Oct, entered 06 Oct) · 7 friendlies · none pending · 38 players, 33 used.
 
 Stable squad under the **TML-only core rule** (core = ≥67% of TML matches; friendly attendance
 feeds the reliability score but never changes the tier):
 
 | Tier | Players |
 |---|---|
-| 🟢 Core (16) | Rick, Urabe, Hitoshi, Kosei, Mo, Souta, Umit, Bangjie, Kouhei, Ryu, Sun, Hiramatsu, Masashi, Chevy, Jude, Ryoga |
-| 🔵 Rotation (10) | Ron, Kazuki, Take, Yuto, Takeru, Dai, Hubert, Hisashi Ide, Kaede, Shinya |
-| 🟡 Depth (6) | Taisei, Teru, Toshi, Masa, Muro, Watabe |
+| 🟢 Core (15) | Rick, Urabe, Hitoshi, Mo, Umit, Hiramatsu, Bangjie, Ryu, Masashi, Chevy, Kosei, Jude, Kouhei, Ryoga, Sun |
+| 🔵 Rotation (4) | Souta, Ron, Hubert, Yuto |
+| 🟡 Depth (14) | Kazuki, Take, Takeru, Dai, Toshi, Masa, Taisei, Hisashi Ide, Kaede, Liu, Shinya, Teru, Muro, Watabe |
 | ⚪ Inactive (5) | Daisuke, Micah, Ryota, Ryuji, Yohei |
 
 Data gaps fixed at migration: duplicate shirt #1 (Hiramatsu & Hisashi Ide) · no photos ·

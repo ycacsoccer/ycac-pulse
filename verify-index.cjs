@@ -67,7 +67,11 @@ async function main() {
   const fixtures = matches.filter((m) => !YCACStats.isFinal(m));
   check(tmlPlayed.length >= 1, "TML results section has entries", `${tmlPlayed.length} played`);
   check(friendlyPlayed.length >= 1, "folded friendly section has entries", `${friendlyPlayed.length} played`);
-  check(fixtures.length >= 1, "upcoming fixtures exist", `${fixtures.length} pending`);
+  // isFinal must classify every match as played or pending (a regression that
+  // called everything final/pending would break the split silently otherwise)
+  check(tmlPlayed.length + friendlyPlayed.length + fixtures.length === matches.length,
+    "TML + friendly + fixtures partition every match",
+    `${tmlPlayed.length + friendlyPlayed.length} played, ${fixtures.length} pending`);
 
   // --- 4. join integrity (attendance maps + top scorers) -------------------
   const playerIds = new Set(players.map((p) => p.id));

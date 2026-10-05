@@ -64,6 +64,12 @@ async function main() {
 
   let userId = null;
   try {
+    // --- 0. pending-fixture probe (all real matches may have results) ------
+    // Keeps the fixtures checks meaningful regardless of schedule state;
+    // removed in finally.
+    await call(`${BASE}/matches?id=eq.e2e-fixture`, { method: "DELETE", headers: adminHeaders });
+    await call(`${BASE}/matches`, { method: "POST", headers: adminHeaders, body: [{ id: "e2e-fixture", date: "2099-12-01", competition: "Friendly Match", opponent: "E2E Probe FC" }] });
+
     // slate: remove leftovers, then create the ephemeral team user
     const existing = await call(`${AUTH}/admin/users`, { headers: adminHeaders });
     for (const user of existing.users || []) {
@@ -148,6 +154,7 @@ async function main() {
     console.log(`     next fixture signups: ${nextSignups.length} responded`);
     check(Number.isInteger(duplicates.length + missingPhotos.length + friendlyOnly.length + declinedButPlayed.length), "flag inputs computed without errors");
   } finally {
+    await call(`${BASE}/matches?id=eq.e2e-fixture`, { method: "DELETE", headers: adminHeaders }).catch(() => {});
     if (userId) await call(`${AUTH}/admin/users/${userId}`, { method: "DELETE", headers: adminHeaders }).catch(() => {});
     const users = await call(`${AUTH}/admin/users`, { headers: adminHeaders }).catch(() => null);
     const leftover = users?.users?.some((user) => user.email === E2E_EMAIL);

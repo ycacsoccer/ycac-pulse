@@ -1,9 +1,9 @@
 /* Verifies stats.js against the data in Supabase — the engine's regression
    snapshot (Phase 12 rewired this off gviz; the whole suite now reads one
    source of truth). The EXPECTED block is the import-time snapshot of
-   05 Oct 2026; if the database has moved on (new results entered, roster
-   edits), mismatches are reported rather than silently accepted — bump the
-   snapshot deliberately when that happens.
+   06 Oct 2026 (BFC Tokyo result + lineup entered); if the database has
+   moved on (new results entered, roster edits), mismatches are reported
+   rather than silently accepted — bump the snapshot deliberately when that happens.
    Usage: node verify-stats.cjs */
 
 const fs = require("fs");
@@ -25,17 +25,18 @@ async function grab(table) {
 }
 
 const EXPECTED = {
-  rows: { players: 37, matches: 11, appearances: 149, goals: 42 },
-  counts: { all: 10, tml: 3, friendly: 7, players: 37, used: 32 },
+  rows: { players: 38, matches: 11, appearances: 165, goals: 42 },
+  counts: { all: 11, tml: 4, friendly: 7, players: 38, used: 33 },
   players: {
-    rick: { tml: "3/3", friendly: "7/7", all: "10/10", tier: "core", reliability: 100 },
-    urabe: { tml: "3/3", friendly: "7/7", all: "10/10", tier: "core" },
-    hitoshi: { tml: "3/3", friendly: "6/7", all: "9/10", tier: "core" },
+    rick: { tml: "4/4", friendly: "7/7", all: "11/11", tier: "core", reliability: 100 },
+    urabe: { tml: "4/4", friendly: "7/7", all: "11/11", tier: "core" },
+    hitoshi: { tml: "4/4", friendly: "6/7", all: "10/11", tier: "core" },
     // Core is TML-only (>= 67% of TML matches): friendly attendance never demotes.
-    sun: { tml: "3/3", friendly: "2/7", all: "5/10", tier: "core" },
-    kouhei: { tml: "3/3", friendly: "2/7", all: "5/10", tier: "core" },
-    yuto: { tml: "0/3", friendly: "7/7", all: "7/10", tier: "rotation" },
-    masashi: { tml: "3/3", friendly: "1/7", all: "4/10", tier: "core" },
+    sun: { tml: "3/4", friendly: "2/7", all: "5/11", tier: "core" },
+    kouhei: { tml: "3/4", friendly: "2/7", all: "5/11", tier: "core" },
+    yuto: { tml: "0/4", friendly: "7/7", all: "7/11", tier: "rotation" },
+    masashi: { tml: "4/4", friendly: "1/7", all: "5/11", tier: "core" },
+    liu_hantang: { tml: "1/4", friendly: "0/7", all: "1/11", tier: "depth" }, // added 06 Oct (first TML appearance)
     ryuji: { tier: "inactive" },
     micah: { tier: "inactive" },
   },
@@ -114,7 +115,7 @@ async function main() {
   console.log(`  ${missingPhotos} players with no photo yet (coach uploads from the profile page)`);
   console.log(`  ${appearances.filter((app) => !app.minutes).length}/${appearances.length} appearances missing minutes`);
 
-  console.log(`\n${failed ? `${failed} CHECK(S) FAILED — data may have changed since the 05 Oct 2026 snapshot (bump EXPECTED deliberately)` : "All checks passed."}`);
+  console.log(`\n${failed ? `${failed} CHECK(S) FAILED — data may have changed since the 06 Oct 2026 snapshot (bump EXPECTED deliberately)` : "All checks passed."}`);
   process.exit(failed ? 1 : 0);
 }
 

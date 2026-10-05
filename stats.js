@@ -6,7 +6,7 @@
    league squad and the friendly squad are genuinely different groups. */
 
 const YCACStats = (() => {
-  const POSITION_GROUPS = { GK: "GK", CB: "DF", LB: "DF", RB: "DF", LWB: "DF", RWB: "DF", DM: "MF", CM: "MF", AM: "MF", AMC: "MF", AMF: "MF", LW: "AT", RW: "AT", ST: "AT", CF: "AT", FW: "AT" };
+  const POSITION_GROUPS = { GK: "GK", CB: "DF", LB: "DF", RB: "DF", LWB: "DF", RWB: "DF", DM: "MF", CM: "MF", MC: "MF", AM: "MF", AMC: "MF", AMF: "MF", LW: "AT", RW: "AT", ST: "AT", CF: "AT", FW: "AT" };
   const POSITION_ORDER = { GK: 0, DF: 1, MF: 2, AT: 3, Other: 4 };
 
   // Squad tiers are derived from participation. Tune these here — the UI just renders what it's given.
