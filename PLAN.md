@@ -1,6 +1,6 @@
 # YC&AC Pulse — Coach & Management Revamp Plan
 
-Draft v3 · Oct 2026 · Status: **requirements captured — building**
+Draft v3 · Oct 2026 · Status: **all 12 phases complete — 11 `verify-*.cjs` checks green**
 
 > **v2:** data source moved off Google Sheets to Supabase.
 > **v3:** ten numbered requirements captured from the coach/management side; login model,
@@ -175,7 +175,7 @@ Thresholds live in `stats.js`; coach can override per player in `coach_notes`.
 | **12** | Cleanup: dead code in `squad-picker.js` (~8 duplicate defs), gviz/Apps Script removal, retire `.xlsx` generators, README | ✅ **done** — 27 dead lines gone (one `squadImageSVG` left), `verify-stats.cjs` now reads Supabase, `.xlsx` generators + workbooks deleted, orphan i18n keys pruned; README data-source section rewritten |
 
 Phases ship independently. Phase 3 needs no Supabase and can start immediately; phases 4–11 need
-the project to exist.
+the project to exist. **All phases are now done** (0–12); the `verify-*.cjs` suite guards each area.
 
 ---
 
