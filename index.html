@@ -118,12 +118,16 @@
 
       <section class="content-grid">
         <article class="panel results-panel">
-          <div class="section-heading"><p class="eyebrow" data-i18n="upcoming">Upcoming</p><h2 data-i18n="fixtures">Next Matches</h2></div>
+          <div class="section-heading"><div><p class="eyebrow" data-i18n="upcoming">Upcoming</p><h2 data-i18n="fixtures">Next Matches</h2></div></div>
           <div id="fixtures" class="fixtures"></div>
-          <div class="section-heading"><p class="eyebrow">TML Division 3</p><h2 data-i18n="results">Results</h2></div>
+          <div class="section-heading"><div><p class="eyebrow">TML Division 3</p><h2 data-i18n="results">Results</h2></div></div>
           <div id="tml-results" class="results"></div>
-          <div class="section-heading sub-section"><p class="eyebrow" id="friendly-results-label">Friendly Matches</p><h2 data-i18n="results">Results</h2></div>
-          <div id="friendly-results" class="results"></div>
+          <div class="section-heading sub-section"><div><p class="eyebrow">TML Division 3</p><h2 data-i18n="indexSquadTitle">Stable squad</h2></div><a class="quiet-button small" href="players.html" data-i18n="navPlayers">Players</a></div>
+          <div id="squad-chips" class="squad-chips"></div>
+          <details class="results-fold">
+            <summary><span data-i18n="results">Results</span> — <span id="friendly-results-label">Friendly Matches</span></summary>
+            <div id="friendly-results" class="results"></div>
+          </details>
         </article>
 
       </section>
@@ -156,6 +160,7 @@
     <script src="config.js"></script>
     <script src="i18n.js"></script>
     <script src="data.js"></script>
+    <script src="stats.js"></script>
     <script src="auth.js"></script>
     <script src="app.js"></script>
   </body>

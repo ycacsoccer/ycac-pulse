@@ -170,11 +170,11 @@ Thresholds live in `stats.js`; coach can override per player in `coach_notes`.
 | **7** | Admin `admin.html` (players, matchday, signups, notes, content, backup) | ✅ **done** — CRUD + lineup/goals entry + content + backup; `verify-admin.cjs` 38/38 |
 | **8** | Match review `match.html` + coach feedback | ✅ **done** — result hero, lineup+photos, scorers, signups, coach review; `verify-match.cjs` 25/25 |
 | **9** | Team page `team.html` | ✅ **done** — renders `team_content` as written, 3 slugs; `verify-team.cjs` 16/16 |
-| **10** | Public revamp — TML first, photos in attendance | partial |
+| **10** | Public revamp — TML first, photos in attendance | ✅ **done** — index reads Supabase (gviz gone), stable-squad chips, friendlies folded, photo attendance w/ TML summary first; `verify-index.cjs` 24/24 |
 | **11** | Squad picker rewire (Supabase, photos, core-weighted suggest) | ✅ |
 | **12** | Cleanup: dead code in `squad-picker.js` (~8 duplicate defs), gviz/Apps Script removal, retire `.xlsx` generators, README | all |
 
-Phases ship independently. Phase 3 needs no Supabase and can start immediately; phases 4–9 need
+Phases ship independently. Phase 3 needs no Supabase and can start immediately; phases 4–11 need
 the project to exist.
 
 ---

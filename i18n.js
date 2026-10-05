@@ -198,6 +198,8 @@ const YCACI18n = (() => {
     teamTitle: "Team guidelines | YC&AC Pulse",
     teamHeading: "Guidelines & instructions",
     teamEmpty: "No team content published yet.",
+    // public TML-first index (Phase 10)
+    indexSquadTitle: "Stable squad",
   };
 
   const ja = {
@@ -385,6 +387,8 @@ const YCACI18n = (() => {
     teamTitle: "チームガイドライン | YC&AC Pulse",
     teamHeading: "ガイドラインと指示",
     teamEmpty: "まだ公開されているコンテンツはありません。",
+    // public TML-first index (Phase 10)
+    indexSquadTitle: "主力メンバー",
   };
 
   const zh = {
@@ -572,6 +576,8 @@ const YCACI18n = (() => {
     teamTitle: "球队准则 | YC&AC Pulse",
     teamHeading: "准则与指示",
     teamEmpty: "暂无发布的内容。",
+    // public TML-first index (Phase 10)
+    indexSquadTitle: "稳定阵容",
   };
 
   const dictionaries = { en, ja, zh };

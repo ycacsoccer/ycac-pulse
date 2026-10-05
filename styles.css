@@ -294,3 +294,32 @@ a.history-row:hover { background: var(--gold-pale); }
 .team-body p { margin: 0 0 .85rem; color: var(--ink); font-size: .95rem; line-height: 1.75; }
 .team-body p:last-child { margin-bottom: 0; }
 .team-section .admin-note { margin: 1rem 0 0; }
+
+/* ---- public TML-first index (Phase 10) ---- */
+a.match { color: inherit; text-decoration: none; }
+a.match:hover { background: var(--gold-pale); }
+.squad-chips { display: flex; flex-wrap: wrap; gap: .45rem; margin-bottom: .5rem; }
+.squad-chip { display: inline-flex; align-items: center; gap: .5rem; padding: .3rem .7rem .3rem .35rem; color: var(--navy); background: white; border: 1px solid var(--line); text-decoration: none; }
+.squad-chip:hover { background: var(--gold-pale); border-color: var(--gold); }
+.squad-chip .monogram, .squad-chip .avatar { flex: none; width: 26px; height: 26px; font-size: .55rem; }
+.squad-chip .sc-name { color: var(--navy); font-size: .78rem; font-weight: 700; }
+.squad-chip small { color: var(--muted); font-size: .62rem; font-weight: 700; letter-spacing: .04em; }
+.results-fold summary { cursor: pointer; margin-top: 1.5rem; padding-top: 1.2rem; color: var(--navy); border-top: 1px solid var(--line); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.15rem; font-weight: 700; list-style: none; }
+.results-fold summary::-webkit-details-marker { display: none; }
+.results-fold summary::after { content: " +"; margin-left: .5rem; color: var(--gold); font-family: 'DM Sans', Arial, sans-serif; font-weight: 700; }
+.results-fold[open] summary::after { content: " –"; }
+.results-fold .results { margin-top: .75rem; }
+.attendance-player { display: flex; align-items: center; gap: .5rem; max-width: calc(140px - 1.1rem); min-width: 0; color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .95rem; font-weight: 700; text-decoration: none; }
+.attendance-player .monogram, .attendance-player .avatar { flex: none; width: 24px; height: 24px; font-size: .5rem; }
+.attendance-player .ap-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.attendance-player:hover .ap-name { color: var(--gold); }
+/* attendance columns reordered: player · TML summary · FND summary · position */
+.attendance-panel th:nth-child(2), .attendance-panel td:nth-child(2) { min-width: 78px; }
+.attendance-panel th:nth-child(3), .attendance-panel td:nth-child(3) { left: 218px; min-width: 78px; }
+.attendance-panel th:nth-child(4), .attendance-panel td:nth-child(4) { left: 296px; min-width: 72px; }
+@media (max-width: 480px) {
+  .attendance-player { max-width: calc(94px - .56rem); }
+  .attendance-panel th:nth-child(2), .attendance-panel td:nth-child(2) { left: 94px; min-width: 60px; max-width: 60px; }
+  .attendance-panel th:nth-child(3), .attendance-panel td:nth-child(3) { left: 154px; min-width: 60px; max-width: 60px; }
+  .attendance-panel th:nth-child(4), .attendance-panel td:nth-child(4) { left: 214px; min-width: 44px; max-width: 44px; }
+}
