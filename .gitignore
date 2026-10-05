@@ -1,0 +1,5 @@
+# Secret credentials — never commit, never publish
+.env
+
+# Dependencies / tooling output
+node_modules/

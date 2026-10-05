@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Build a YC&AC Pulse starting lineup and choose a formation." />
+    <meta name="theme-color" content="#112950" />
+    <link rel="icon" href="https://ycac.jp/wp-content/uploads/2025/10/YCAC-Logo-Icon.png" type="image/png" />
+    <title>YC&AC Pulse | Squad Picker</title>
+    <link rel="stylesheet" href="squad-picker.css" />
+  </head>
+  <body>
+    <header class="masthead">
+      <a class="club-mark" href="./" aria-label="YC&AC Pulse home"><img src="https://ycac.jp/wp-content/uploads/2025/10/YCAC-Logo-Icon.png" alt="YC&AC" /></a>
+      <div class="brand"><span>YC&amp;AC</span> Pulse<small id="team-label">Official Soccer Top Team</small></div>
+      <a id="back-home" class="back-link" href="./">Back to season</a>
+      <label class="lang-switch"><select id="lang-select" data-lang-select aria-label="Language"></select></label>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div><p id="hero-eyebrow" class="eyebrow">Matchday tool</p><h1 id="hero-title">Squad<br /><em>Picker</em></h1><p id="hero-copy">Shape the starting XI, test the balance, and share the team sheet.</p></div>
+        <div class="hero-stat"><strong id="selected-count">0</strong><span id="selected-label">of 20 selected</span></div>
+      </section>
+
+      <section class="toolbar" aria-label="Squad picker controls">
+        <label><span id="event-label">Event</span><select id="event"><option>Loading events...</option></select></label>
+        <label><span id="formation-label">Formation</span><select id="formation"><option value="433">4-3-3</option><option value="4231" selected>4-2-3-1</option><option value="442">4-4-2</option><option value="352">3-5-2</option></select></label>
+        <div class="toolbar-actions"><button id="suggest-squad" class="quiet-button" type="button">Suggest squad</button><button id="refresh-bench" class="quiet-button" type="button" data-i18n="pickerRefreshBench">Refresh bench</button><button id="clear-squad" class="quiet-button" type="button">Clear squad</button><button id="copy-squad" class="primary-button" type="button">Copy lineup</button><button id="save-squad" class="primary-button" type="button">Save squad</button><button id="save-image" class="primary-button" type="button">Save squad image</button></div>
+      </section>
+
+      <section id="event-details" class="event-details" aria-live="polite"></section>
+
+      <section class="picker-layout">
+        <article class="pitch-panel">
+          <div class="section-heading"><div><p id="starting-label" class="eyebrow">Starting XI</p><h2 id="formation-name">4-3-3</h2></div><p id="picker-status" class="status" aria-live="polite">Choose a pitch slot, then select a player.</p></div>
+          <div id="pitch" class="pitch" aria-label="Football pitch formation"></div>
+          <div class="bench-heading"><p id="bench-label" class="eyebrow">Matchday bench</p><strong><span id="bench-count">0</span> <span id="subs-label">/ 9 substitutes</span></strong></div>
+          <div id="bench" class="bench" aria-label="Substitute slots"></div>
+        </article>
+        <aside class="roster-panel">
+          <div class="section-heading"><div><p id="available-label" class="eyebrow">Available squad</p><h2 id="players-label">Players</h2></div><input id="player-search" type="search" placeholder="Search player" aria-label="Search player" /></div>
+          <div id="roster" class="roster"><p class="loading">Loading squad...</p></div>
+        </aside>
+      </section>
+
+      <section class="lineup-panel">
+        <p id="team-sheet-label" class="eyebrow">Team sheet</p><div id="lineup-output" class="lineup-output">Your selected XI will appear here.</div>
+      </section>
+    </main>
+    <script src="i18n.js"></script>
+    <script src="squad-picker.js"></script>
+  </body>
+</html>
