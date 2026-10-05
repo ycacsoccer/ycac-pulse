@@ -167,10 +167,10 @@
     const friendlyOnly = entries.filter((entry) => entry.competitions.friendly.played > 0 && entry.competitions.tml.played === 0)
       .map((entry) => entry.display_name);
 
-    const played = new Set(state.season.buckets.all.map((match) => match.match_id));
+    const played = new Set(state.season.buckets.all.map((match) => match.match_id ?? match.id));
     const appearanceKeys = new Set(state.appearances.map((app) => `${app.match_id}:${app.player_id}`));
     // declined-but-started: a declined/unavailable signup for a match the player actually played
-    const matchById = new Map(state.season.buckets.all.map((match) => [match.match_id, match]));
+    const matchById = new Map(state.season.buckets.all.map((match) => [match.match_id ?? match.id, match]));
     const declinedButPlayed = state.signups
       .filter((signup) => DECLINED_STATES.includes(String(signup.status).toLowerCase())
         && played.has(signup.match_id)

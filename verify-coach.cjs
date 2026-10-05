@@ -106,6 +106,14 @@ async function main() {
 
     const tierTotal = YCACStats.TIER_ORDER.reduce((sum, tier) => sum + season.tiers[tier].length, 0);
     check(tierTotal === entries.length, "tier board covers every entry", `${tierTotal} of ${entries.length}`);
+    // participation invariants — catches a players/appearances key mismatch that
+    // would silently put every player in "inactive" with 0 apps
+    check(season.counts.used >= 25, "players with real participation", `${season.counts.used} of ${entries.length} used`);
+    const activeTiers = season.tiers.core.length + season.tiers.rotation.length + season.tiers.depth.length;
+    check(activeTiers === season.counts.used, "every used player is core/rotation/depth, never inactive", `${activeTiers} vs ${season.counts.used} used`);
+    check(season.tiers.inactive.length === entries.length - season.counts.used, "inactive = zero appearances", `${season.tiers.inactive.length}`);
+    check(entries.some((entry) => entry.competitions.all.starts > 0) && entries.some((entry) => entry.competitions.all.goals > 0),
+      "starts and goals recorded per player", `${entries.reduce((sum, entry) => sum + entry.competitions.all.goals, 0)} goals across the board`);
     const coverage = YCACStats.coverage(entries);
     const coverageTotal = Object.values(coverage).reduce((sum, groups) => sum + Object.values(groups).reduce((inner, list) => inner + list.length, 0), 0);
     check(coverageTotal === entries.length, "coverage matrix covers every entry", `${coverageTotal} of ${entries.length}`);
@@ -131,7 +139,7 @@ async function main() {
     const duplicates = [...byNumber.values()].filter((names) => names.length > 1);
     const missingPhotos = entries.filter((entry) => !entry.photo_path);
     const friendlyOnly = entries.filter((entry) => entry.competitions.friendly.played > 0 && entry.competitions.tml.played === 0);
-    const playedIds = new Set(season.buckets.all.map((match) => match.match_id));
+    const playedIds = new Set(season.buckets.all.map((match) => match.match_id ?? match.id));
     const appearanceKeys = new Set(appearances.map((app) => `${app.match_id}:${app.player_id}`));
     const declinedButPlayed = signups.filter((signup) => ["declined", "unavailable"].includes(String(signup.status).toLowerCase())
       && playedIds.has(signup.match_id) && appearanceKeys.has(`${signup.match_id}:${signup.player_id}`));

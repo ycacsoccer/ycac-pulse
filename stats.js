@@ -28,11 +28,14 @@ const YCACStats = (() => {
   const isFinal = (match) => match.ycac_goals !== "" && match.ycac_goals != null && match.opponent_goals !== "" && match.opponent_goals != null;
   const competitionBucket = (competition) => /friendly/i.test(competition || "") ? "friendly" : /tml/i.test(competition || "") ? "tml" : "other";
 
-  /* Participation / output for one player across one list of played matches. */
+  /* Participation / output for one player across one list of played matches.
+     Row keys differ by source: sheet rows carry `player_id`, Supabase rows `id`. */
   function summarize(player, matchList, apps, goalRows, signupRows) {
-    const matchIds = new Set(matchList.map((match) => match.match_id));
-    const matchById = new Map(matchList.map((match) => [match.match_id, match]));
-    const mine = apps.filter((app) => app.player_id === player.player_id && matchIds.has(app.match_id));
+    const playerId = player.player_id ?? player.id;
+    const matchKey = (match) => match.match_id ?? match.id; // sheet rows key on match_id, Supabase rows on id
+    const matchIds = new Set(matchList.map(matchKey));
+    const matchById = new Map(matchList.map((match) => [matchKey(match), match]));
+    const mine = apps.filter((app) => app.player_id === playerId && matchIds.has(app.match_id));
     const playedIds = new Set(mine.map((app) => app.match_id));
     const starts = mine.filter((app) => app.role === "starter").length;
     const isKeeper = positionGroup(player.primary_position) === "GK";
@@ -40,11 +43,11 @@ const YCACStats = (() => {
     const dates = mine.map((app) => matchById.get(app.match_id)?.date).filter(Boolean).sort();
     let currentRun = 0;
     for (let index = matchList.length - 1; index >= 0; index -= 1) {
-      if (playedIds.has(matchList[index].match_id)) currentRun += 1;
+      if (playedIds.has(matchKey(matchList[index]))) currentRun += 1;
       else break;
     }
 
-    const responded = signupRows.filter((signup) => signup.player_id === player.player_id && matchIds.has(signup.match_id));
+    const responded = signupRows.filter((signup) => signup.player_id === playerId && matchIds.has(signup.match_id));
     const declined = responded.filter((signup) => DECLINED_STATES.includes(String(signup.status).toLowerCase())).length;
     const confirmed = responded.filter((signup) => signup.status === "confirmed").length;
 
@@ -53,8 +56,8 @@ const YCACStats = (() => {
       starts,
       subs: mine.length - starts,
       appearance_pct: percent(mine.length, matchList.length),
-      goals: goalRows.filter((goal) => matchIds.has(goal.match_id) && goal.scorer_id === player.player_id).length,
-      assists: goalRows.filter((goal) => matchIds.has(goal.match_id) && goal.assist_id === player.player_id).length,
+      goals: goalRows.filter((goal) => matchIds.has(goal.match_id) && goal.scorer_id === playerId).length,
+      assists: goalRows.filter((goal) => matchIds.has(goal.match_id) && goal.assist_id === playerId).length,
       clean_sheets: isKeeper ? mine.filter((app) => app.role === "starter" && Number(matchById.get(app.match_id)?.opponent_goals) === 0).length : 0,
       last_appearance: dates.length ? dates[dates.length - 1] : null,
       current_run: currentRun,
