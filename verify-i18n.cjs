@@ -49,13 +49,13 @@ const collect = (regex, source, where) => {
   while ((match = regex.exec(source))) usedKeys.set(match[1], where);
 };
 
-for (const file of ["index.html", "squad-picker.html", "login.html", "coach.html", "players.html", "player.html"]) {
+for (const file of ["index.html", "squad-picker.html", "login.html", "coach.html", "players.html", "player.html", "admin.html"]) {
   collect(/data-i18n(?:-title|-html|-placeholder|-aria)?="([^"]+)"/g, read(file), file);
 }
-for (const file of ["app.js", "squad-picker.js", "login.js", "auth.js", "coach.js", "players.js", "player.js"]) {
+for (const file of ["app.js", "squad-picker.js", "login.js", "auth.js", "coach.js", "players.js", "player.js", "admin.js"]) {
   collect(/\bt\("([^"]+)"/g, read(file), file);
   // KEYS tables store key names as values ("tierCore": …) — collect those too
-  collect(/"((?:coach|lens|tier|signup|flag|stat|shirt|foot)[A-Z][A-Za-z0-9]*)"/g, read(file), file);
+  collect(/"((?:coach|lens|tier|signup|flag|stat|shirt|foot|admin|content|note)[A-Z][A-Za-z0-9]*)"/g, read(file), file);
 }
 
 let missingCount = 0;
@@ -80,7 +80,7 @@ note(missingUi.length === 0, `all ${uiNames.size} ui.* picker names resolve`, mi
 
 // --- 4. no hardcoded CJK in pages -------------------------------------------
 const cjk = /[\u3040-\u30ff\u3400-\u9fff]/;
-for (const file of ["app.js", "squad-picker.js", "login.js", "auth.js", "data.js", "coach.js", "players.js", "player.js", "index.html", "squad-picker.html", "login.html", "coach.html", "players.html", "player.html"]) {
+for (const file of ["app.js", "squad-picker.js", "login.js", "auth.js", "data.js", "coach.js", "players.js", "player.js", "admin.js", "index.html", "squad-picker.html", "login.html", "coach.html", "players.html", "player.html", "admin.html"]) {
   const source = read(file);
   const line = source.split("\n").findIndex((text) => cjk.test(text));
   note(line === -1, `no hardcoded Japanese/Chinese in ${file}`, line === -1 ? "" : `first hit line ${line + 1}`);
@@ -107,6 +107,7 @@ checkIds("login.js", "login.html");
 checkIds("coach.js", "coach.html");
 checkIds("players.js", "players.html");
 checkIds("player.js", "player.html");
+checkIds("admin.js", "admin.html");
 
 // --- summary -----------------------------------------------------------------
 console.log("");

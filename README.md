@@ -10,10 +10,11 @@ A static season statistics dashboard. **Data backend: Supabase (Postgres) — re
 | 1 | `migrate-from-sheets.cjs` (one-time import) | done — 37/11/149/42/44/70 rows imported, verified by `node verify-import.cjs` |
 | 2 | `stats.js` metrics/tier engine | done — verified by `node verify-stats.cjs` |
 | 3 | `i18n.js` + EN/JA/ZH-CN selector, retrofitted on index + squad-picker | done — verified by `node verify-i18n.cjs` |
-| 4 | Auth: team password + coach login (`auth.js`, `data.js`, `login.html`) | done — masthead login state on index/squad-picker; verified by `node verify-auth.cjs` (22/22) |
+| 4 | Auth: team password + coach login (`auth.js`, `data.js`, `login.html`) | done — masthead auth slots on every gated page; verified by `node verify-auth.cjs` (22/22) |
 | 5 | Coach dashboard `coach.html` (team login) | done — tier board, next fixture + signups, coverage matrix, flags; verified by `node verify-coach.cjs` (21/21) |
 | 6 | Profiles `players.html` / `player.html` + photo upload | done — public grid with position/tier/name filters, detail with stats split + history + goals, coach-only photo upload; verified by `node verify-profiles.cjs` (21/21) |
-| 7+ | Admin, match review, team page, public revamp, squad picker | see `PLAN.md` |
+| 7 | Admin tool `admin.html` (coach login) | done — players CRUD + photo, fixtures/results + tap-a-squad lineup + goals/assists, signups entry, match notes, team content, JSON backup; verified by `node verify-admin.cjs` (38/38) |
+| 8+ | Match review, team page, public revamp, squad picker, cleanup | see `PLAN.md` |
 
 The plan (10 requirements mapped to screens) and the reasoning behind it live in [`PLAN.md`](PLAN.md).
 

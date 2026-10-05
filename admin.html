@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en" data-i18n-title="adminTitle">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="YC&AC Pulse admin: manage players, fixtures, signups, match notes and team pages." />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#112950" />
+    <link rel="icon" href="https://ycac.jp/wp-content/uploads/2025/10/YCAC-Logo-Icon.png" type="image/png" />
+    <title>YC&AC Pulse | Admin</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="masthead">
+      <a class="club-mark" href="./" aria-label="YC&AC Pulse home"><img src="https://ycac.jp/wp-content/uploads/2025/10/YCAC-Logo-Icon.png" alt="YC&AC" /></a>
+      <div class="brand"><span>YC&amp;AC</span> Pulse<small data-i18n="officialWebsite">Official Soccer Top Team · Est. 1868</small></div>
+      <a class="back-link" href="./" data-i18n="loginHome">Back to season</a>
+      <a class="back-link" href="coach.html" data-i18n="coachHeading">Coach Dashboard</a>
+      <span data-auth-slot></span>
+      <label class="lang-switch"><select id="lang-select" data-lang-select aria-label="Language"></select></label>
+    </header>
+
+    <main class="coach-main admin-main">
+      <section class="coach-hero">
+        <p class="eyebrow" data-i18n="coachEyebrow">Private team tool</p>
+        <h1 data-i18n="adminHeading">Admin</h1>
+        <p class="coach-intro" data-i18n="adminIntro">Manage players, fixtures, signups, match notes and team pages — every save writes straight to the team database.</p>
+        <div id="admin-status" class="admin-status" aria-live="polite"></div>
+      </section>
+
+      <nav class="admin-tabs" aria-label="Admin sections">
+        <button type="button" class="admin-tab active" data-tab="players" data-i18n="coachPlayers">Players</button>
+        <button type="button" class="admin-tab" data-tab="matches" data-i18n="coachMatches">Matches</button>
+        <button type="button" class="admin-tab" data-tab="signups" data-i18n="coachSignups">Signups</button>
+        <button type="button" class="admin-tab" data-tab="notes" data-i18n="adminNotes">Match notes</button>
+        <button type="button" class="admin-tab" data-tab="content" data-i18n="adminContent">Team content</button>
+        <button type="button" class="admin-tab" data-tab="backup" data-i18n="adminBackup">Backup</button>
+      </nav>
+
+      <!-- Players ------------------------------------------------------------->
+      <section class="panel admin-panel" data-panel="players">
+        <div class="section-heading">
+          <div><p class="eyebrow" data-i18n="coachEyebrow">Private team tool</p><h2 data-i18n="coachPlayers">Players</h2></div>
+          <button id="new-player" class="primary-button" type="button" data-i18n="adminNewPlayer">New player</button>
+        </div>
+        <div id="player-form" class="admin-form" hidden></div>
+        <label class="player-search admin-search"><span class="visually-hidden" data-i18n="searchPlayer">Search player</span><input id="admin-player-search" type="search" data-i18n-placeholder="searchPlayer" placeholder="Search player" /></label>
+        <div id="admin-players" class="admin-list"><p class="loading" data-i18n="coachLoading">Loading team data…</p></div>
+      </section>
+
+      <!-- Matches ------------------------------------------------------------->
+      <section class="panel admin-panel" data-panel="matches" hidden>
+        <div class="section-heading">
+          <div><p class="eyebrow" data-i18n="coachEyebrow">Private team tool</p><h2 data-i18n="coachMatches">Matches</h2></div>
+          <button id="new-match" class="primary-button" type="button" data-i18n="adminNewMatch">New fixture</button>
+        </div>
+        <div id="match-form" class="admin-form" hidden></div>
+        <div id="admin-matches" class="admin-list"><p class="loading" data-i18n="coachLoading">Loading team data…</p></div>
+      </section>
+
+      <!-- Signups ------------------------------------------------------------->
+      <section class="panel admin-panel" data-panel="signups" hidden>
+        <div class="section-heading">
+          <div><p class="eyebrow" data-i18n="coachSignups">Signups</p><h2 data-i18n="coachSignups">Signups</h2></div>
+          <label class="lens-switch"><span data-i18n="pickerEvent">Event</span>
+            <select id="signup-match"></select>
+          </label>
+        </div>
+        <p class="admin-note" data-i18n="adminSignupsNote">Signups are recorded exactly as you enter them, attributed to your coach account.</p>
+        <div id="admin-signups" class="admin-list"><p class="loading" data-i18n="coachLoading">Loading team data…</p></div>
+        <div class="form-actions"><button id="signup-save" class="primary-button" type="button" data-i18n="adminSave">Save</button></div>
+      </section>
+
+      <!-- Match notes --------------------------------------------------------->
+      <section class="panel admin-panel" data-panel="notes" hidden>
+        <div class="section-heading">
+          <div><p class="eyebrow" data-i18n="adminNotes">Match notes</p><h2 data-i18n="adminNotes">Match notes</h2></div>
+          <label class="lens-switch"><span data-i18n="pickerEvent">Event</span>
+            <select id="note-match"></select>
+          </label>
+        </div>
+        <div class="admin-form notes-form">
+          <label class="field field-wide"><span data-i18n="noteReflection">Reflection — how the match went</span>
+            <textarea id="note-reflection" rows="4"></textarea>
+          </label>
+          <label class="field field-wide"><span data-i18n="noteCoachingPoints">Coaching points — instruction for next time</span>
+            <textarea id="note-coaching" rows="4"></textarea>
+          </label>
+          <label class="field field-wide"><span data-i18n="noteSquadReview">Squad review — selection and performance notes</span>
+            <textarea id="note-squad" rows="4"></textarea>
+          </label>
+        </div>
+        <p id="note-meta" class="admin-note"></p>
+        <div class="form-actions"><button id="note-save" class="primary-button" type="button" data-i18n="adminSave">Save</button></div>
+      </section>
+
+      <!-- Team content -------------------------------------------------------->
+      <section class="panel admin-panel" data-panel="content" hidden>
+        <div class="section-heading">
+          <div><p class="eyebrow" data-i18n="adminContent">Team content</p><h2 data-i18n="adminContent">Team content</h2></div>
+        </div>
+        <p class="admin-note" data-i18n="adminContentNote">Shown as written on the team page — the interface is translated, coach-authored text is not.</p>
+        <div id="admin-content" class="content-grid"></div>
+      </section>
+
+      <!-- Backup ------------------------------------------------------------->
+      <section class="panel admin-panel" data-panel="backup" hidden>
+        <div class="section-heading">
+          <div><p class="eyebrow" data-i18n="adminBackup">Backup</p><h2 data-i18n="adminBackup">Backup</h2></div>
+        </div>
+        <p class="admin-note" data-i18n="adminBackupNote">Exports every table — players, matches, appearances, goals, signups, squads, notes and team content — as a single JSON file.</p>
+        <div class="form-actions"><button id="backup-button" class="primary-button" type="button" data-i18n="adminBackupButton">Download backup</button></div>
+        <p id="backup-status" class="admin-note" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <footer><span data-i18n="footer">YC&amp;AC Pulse · Official Top Team of Yokohama Country &amp; Athletic Club</span> <a href="https://ycac.jp" target="_blank" rel="noreferrer">ycac.jp</a></footer>
+    <script src="config.js"></script>
+    <script src="i18n.js"></script>
+    <script src="data.js"></script>
+    <script src="auth.js"></script>
+    <script src="admin.js"></script>
+  </body>
+</html>
