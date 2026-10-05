@@ -53,3 +53,61 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem 4rem; }.hero { disp
 .login-actions .club-link { color: var(--navy); border-color: var(--navy); min-height: 44px; }
 .login-actions .club-link:hover { border-color: var(--gold); color: var(--gold); }
 @media (max-width: 760px) { .auth-slot { margin-left: auto; }.back-link { font-size: .7rem; } }
+
+/* ---- coach dashboard (Phase 5) ---- */
+.coach-hero { margin: 0 -1.25rem; padding: clamp(2.5rem, 6vw, 4rem) clamp(1.5rem, 5vw, 4rem) clamp(1.75rem, 4vw, 2.5rem); color: white; background: radial-gradient(circle at 88% 15%, #285993 0, transparent 30%), linear-gradient(135deg, var(--navy-deep), var(--navy)); }
+.coach-hero h1 { margin: 0; font-family: 'Libre Baskerville', Georgia, serif; font-size: clamp(2.2rem, 6vw, 3.6rem); font-weight: 400; letter-spacing: -.06em; line-height: 1; }
+.coach-intro { max-width: 640px; margin: .9rem 0 0; color: #d8e2f2; font-size: .88rem; line-height: 1.6; }
+.coach-summary { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.6rem; }
+.coach-summary > div { display: grid; gap: .2rem; min-width: 108px; padding: .7rem 1rem; background: rgba(255,255,255,.07); border-left: 2px solid var(--gold); }
+.coach-summary strong { font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.55rem; font-weight: 400; }
+.coach-summary span { color: #cad7e9; font-size: .6rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.coach-main > .panel { margin-top: 1.25rem; }
+.lens-switch { display: flex; align-items: center; gap: .55rem; color: var(--muted); font-size: .66rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.lens-switch select { padding: .5rem .65rem; color: var(--navy); background: white; border: 1px solid var(--navy); border-radius: 0; font-family: 'DM Sans', Arial, sans-serif; font-size: .72rem; font-weight: 700; cursor: pointer; }
+.lens-switch select:hover { color: white; background: var(--navy); }
+.tier-chips { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.25rem; }
+.tier-chip { padding: .4rem .75rem; font-size: .7rem; font-weight: 700; border: 1px solid var(--line); }
+.tier-badge { padding: .35rem .7rem; font-size: .7rem; font-weight: 700; border: 1px solid transparent; }
+.chip-core { color: #1f7a3d; background: #e7f5ec; border-color: #bfe3cc; }
+.chip-rotation { color: #1d4f91; background: #e8f0fa; border-color: #c6d9f2; }
+.chip-depth { color: #8a6d1f; background: #f8f1dd; border-color: #eadfc0; }
+.chip-inactive { color: var(--muted); background: #f0f2f5; border-color: var(--line); }
+.tier-group { margin-bottom: 1.5rem; }
+.tier-group:last-child { margin-bottom: 0; }
+.tier-head { display: flex; align-items: center; gap: .6rem; margin-bottom: .55rem; }
+.tier-head small { color: var(--muted); font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; }
+.board-table { min-width: 760px; }
+.board-table td { vertical-align: middle; }
+.b-player { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .88rem; font-weight: 700; white-space: nowrap; }
+.b-name { margin-left: .55rem; }
+.monogram { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; vertical-align: middle; color: var(--navy); background: var(--gold-pale); border-radius: 50%; font-family: 'DM Sans', Arial, sans-serif; font-size: .62rem; font-weight: 700; }
+.avatar { position: relative; display: inline-block; width: 30px; height: 30px; vertical-align: middle; }
+.avatar .monogram { position: absolute; inset: 0; }
+.avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.cs { color: var(--muted); font-size: .62rem; font-weight: 700; }
+.fixture-card { display: grid; grid-template-columns: 7.5rem 1fr auto; gap: 1rem; padding: 1rem 1.1rem; background: var(--mist); border: 1px solid var(--line); }
+.fixture-date { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .95rem; font-weight: 700; }
+.fixture-opponent { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.08rem; font-weight: 700; }
+.fixture-meta { margin-top: .3rem; color: var(--muted); font-size: .74rem; }
+.fixture-actions { display: flex; gap: .9rem; margin-top: .55rem; }
+.fixture-actions a { color: var(--blue); font-size: .72rem; font-weight: 700; }
+.fixture-actions a:hover { color: var(--gold); }
+.fixture-time { text-align: right; color: var(--navy); font-weight: 700; font-size: .9rem; }
+.fixture-time small { color: var(--muted); font-size: .58rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.signup-responded { margin: .95rem 0 .55rem; color: var(--navy); font-size: .76rem; font-weight: 700; }
+.signup-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: .75rem; }
+.signup-group { padding: .7rem .8rem; background: white; border: 1px solid var(--line); border-left-width: 3px; }
+.signup-group h4 { margin: 0 0 .5rem; font-size: .7rem; letter-spacing: .07em; text-transform: uppercase; }
+.s-confirmed { border-left-color: #1f7a3d; }.s-confirmed h4 { color: #1f7a3d; }
+.s-waitlist { border-left-color: var(--gold); }.s-waitlist h4 { color: #8a6d1f; }
+.s-declined { border-left-color: #d33; }.s-declined h4 { color: #9d1c1c; }
+.s-unavailable { border-left-color: var(--muted); }.s-unavailable h4 { color: var(--muted); }
+.name-cloud { display: flex; flex-wrap: wrap; gap: .3rem .45rem; }
+.name-cloud span { padding: .2rem .5rem; color: var(--ink); background: var(--mist); border: 1px solid var(--line); font-size: .7rem; }
+.flags { display: grid; gap: 1rem; }
+.flag-row { display: flex; gap: .7rem; }
+.flag-row i { flex: 0 0 auto; width: 9px; height: 9px; margin-top: .4rem; background: #d33; border-radius: 50%; }
+.flag-row strong { display: block; margin-bottom: .4rem; color: var(--navy); font-size: .78rem; }
+.coach-main .empty, .coach-main .loading { color: var(--muted); font-size: .8rem; }
+@media (max-width: 760px) { .fixture-card { grid-template-columns: 1fr; }.fixture-time { text-align: left; }.lens-switch { width: 100%; justify-content: space-between; } }
