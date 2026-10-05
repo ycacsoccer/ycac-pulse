@@ -17,7 +17,8 @@ A static season statistics dashboard. **Data backend: Supabase (Postgres) — re
 | 8 | Match review `match.html?id=` (team login) | done — result hero, lineup with photos, scorers/assists, fixture signups, coach review from `match_notes`; linked from player history/goals and coach fixture; verified by `node verify-match.cjs` (25/25) |
 | 9 | Team page `team.html` (team login) | done — renders admin-edited `team_content` (guidelines, coach instructions, club info) exactly as written; verified by `node verify-team.cjs` (16/16) |
 | 10 | Public index revamp `index.html` (TML-first) | done — Supabase via `data.js` (gviz gone), stable-squad chips from `stats.js`, friendlies folded, photos + TML summary first in attendance, results/fixtures link to match review; verified by `node verify-index.cjs` (24/24) |
-| 11+ | Squad picker rewire, cleanup | see `PLAN.md` |
+| 11 | Squad picker rewire `squad-picker.html` (team login) | done — Supabase via `data.js` (Apps Script endpoint + gviz gone), photos on roster cards, core-weighted "Suggest squad" from `stats.js`, coach-only save to `saved_squads` (deactivate-then-insert keeps one active group); verified by `node verify-picker.cjs` (41/41) |
+| 12+ | Cleanup (duplicate defs, sheet remnants, `.xlsx` generators) | see `PLAN.md` |
 
 The plan (10 requirements mapped to screens) and the reasoning behind it live in [`PLAN.md`](PLAN.md).
 

@@ -24,7 +24,7 @@ endpoint, and no field for photos.
 |---|---|---|---|
 | 1 | **Language selector** — EN default, 日本語, 简体中文, whole site | `i18n.js` + selector in every masthead; retrofits `index` + `squad-picker` | ✅ done (Phase 3) |
 | 2 | **Admin tool** — player management, matchday management, signups entered by coach | `admin.html` (Phase 7) | ✅ done |
-| 3 | **Squad selector per match** | `squad-picker.html` rewired to Supabase + photos + core-weighted suggest | exists, to rewire |
+| 3 | **Squad selector per match** | `squad-picker.html` rewired to Supabase + photos + core-weighted suggest | ✅ done (Phase 11) |
 | 4 | **Squad & match review for past matches** | `match.html?id=` — lineup, scorers, review | ✅ done (Phase 8) |
 | 5 | **Team player profile** | `players.html` grid | ✅ done (Phase 6) |
 | 6 | **Coach reflection & feedback per match** | `match_notes` table → edited in admin (Phase 7), shown on `match.html` (Phase 8) | ✅ done |
@@ -171,8 +171,8 @@ Thresholds live in `stats.js`; coach can override per player in `coach_notes`.
 | **8** | Match review `match.html` + coach feedback | ✅ **done** — result hero, lineup+photos, scorers, signups, coach review; `verify-match.cjs` 25/25 |
 | **9** | Team page `team.html` | ✅ **done** — renders `team_content` as written, 3 slugs; `verify-team.cjs` 16/16 |
 | **10** | Public revamp — TML first, photos in attendance | ✅ **done** — index reads Supabase (gviz gone), stable-squad chips, friendlies folded, photo attendance w/ TML summary first; `verify-index.cjs` 24/24 |
-| **11** | Squad picker rewire (Supabase, photos, core-weighted suggest) | ✅ |
-| **12** | Cleanup: dead code in `squad-picker.js` (~8 duplicate defs), gviz/Apps Script removal, retire `.xlsx` generators, README | all |
+| **11** | Squad picker rewire (Supabase, photos, core-weighted suggest) | ✅ **done** — team-gated boot, coach-only save to `saved_squads` (deactivate-then-insert), photo cards, stats.js suggest; Apps Script/gviz gone; `verify-picker.cjs` 41/41 |
+| **12** | Cleanup: dead code in `squad-picker.js` (~8 duplicate defs), retire `.xlsx` generators + other sheet remnants, README | remaining |
 
 Phases ship independently. Phase 3 needs no Supabase and can start immediately; phases 4–11 need
 the project to exist.
