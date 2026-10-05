@@ -10,7 +10,7 @@ A static season statistics dashboard. **Data backend: Supabase (Postgres) — re
 | 1 | `migrate-from-sheets.cjs` (one-time import) | done — 37/11/149/42/44/70 rows imported, verified by `node verify-import.cjs` |
 | 2 | `stats.js` metrics/tier engine | done — verified by `node verify-stats.cjs` |
 | 3 | `i18n.js` + EN/JA/ZH-CN selector, retrofitted on index + squad-picker | done — verified by `node verify-i18n.cjs` |
-| 4 | Auth: team password + coach login (`auth.js`, `data.js`) | next — needs a Supabase project |
+| 4 | Auth: team password + coach login (`auth.js`, `data.js`, `login.html`) | done — masthead login state on index/squad-picker; verified by `node verify-auth.cjs` (22/22) |
 | 5+ | Coach dashboard, profiles, admin, match review, team page, public revamp, squad picker | see `PLAN.md` |
 
 The plan (10 requirements mapped to screens) and the reasoning behind it live in [`PLAN.md`](PLAN.md).
@@ -51,9 +51,9 @@ Do not rename table or column names without updating `stats.js` and the pages th
 ## Publish with GitHub Pages
 
 1. Create a new GitHub repository, for example `ycac-pulse-stats`.
-2. Upload the site files: `index.html`, `styles.css`, `app.js`, `stats.js`, `config.js`, plus the
-   other pages as they land (`coach.html`, `players.html`, `squad-picker.*`).
-   The `.cjs` scripts and `supabase/` folder are tooling, not part of the site.
+2. Upload the site files: every `.html`, `.css`, and `.js` file in the folder (pages, styles,
+   `i18n.js`, `config.js`, `data.js`, `auth.js` …). The `.cjs` scripts, `supabase/`, and the
+   `PLAN.md`/`README.md` docs are tooling, not part of the site.
    **Never upload `.env`** — it holds the secret key (only the publishable/anon key belongs in
    `config.js`). If you turn this folder into a git repository, the included `.gitignore`
    already excludes `.env`.

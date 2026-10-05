@@ -49,10 +49,10 @@ const collect = (regex, source, where) => {
   while ((match = regex.exec(source))) usedKeys.set(match[1], where);
 };
 
-for (const file of ["index.html", "squad-picker.html"]) {
+for (const file of ["index.html", "squad-picker.html", "login.html"]) {
   collect(/data-i18n(?:-title|-html|-placeholder|-aria)?="([^"]+)"/g, read(file), file);
 }
-for (const file of ["app.js", "squad-picker.js"]) {
+for (const file of ["app.js", "squad-picker.js", "login.js", "auth.js"]) {
   collect(/\bt\("([^"]+)"/g, read(file), file);
 }
 
@@ -78,7 +78,7 @@ note(missingUi.length === 0, `all ${uiNames.size} ui.* picker names resolve`, mi
 
 // --- 4. no hardcoded CJK in pages -------------------------------------------
 const cjk = /[\u3040-\u30ff\u3400-\u9fff]/;
-for (const file of ["app.js", "squad-picker.js", "index.html", "squad-picker.html"]) {
+for (const file of ["app.js", "squad-picker.js", "login.js", "auth.js", "data.js", "index.html", "squad-picker.html", "login.html"]) {
   const source = read(file);
   const line = source.split("\n").findIndex((text) => cjk.test(text));
   note(line === -1, `no hardcoded Japanese/Chinese in ${file}`, line === -1 ? "" : `first hit line ${line + 1}`);
@@ -90,8 +90,8 @@ const checkIds = (jsFile, htmlFile) => {
   const page = read(htmlFile);
   const refs = new Set();
   let m;
-  const staticRef = /querySelector\("#([a-z0-9-]+)"/g;
-  while ((m = staticRef.exec(source))) refs.add(m[1]);
+  const staticRef = /(?:querySelector\("#([a-z0-9-]+)"|\$\("([a-z0-9-]+)")/g;
+  while ((m = staticRef.exec(source))) refs.add(m[1] || m[2]);
   const templRef = /querySelector\(`#\$\{prefix\}-([a-z0-9-]+)`\)/g;
   while ((m = templRef.exec(source))) ["tml", "friendly"].forEach((prefix) => refs.add(`${prefix}-${m[1]}`));
   // an id may live in the HTML, a JS-rendered template, or an `el.id = "x"` assignment
@@ -101,6 +101,7 @@ const checkIds = (jsFile, htmlFile) => {
 };
 checkIds("app.js", "index.html");
 checkIds("squad-picker.js", "squad-picker.html");
+checkIds("login.js", "login.html");
 
 // --- summary -----------------------------------------------------------------
 console.log("");

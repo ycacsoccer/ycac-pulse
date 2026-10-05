@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en" data-i18n-title="loginTitle">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Sign in to YC&AC Pulse team pages." />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#112950" />
+    <link rel="icon" href="https://ycac.jp/wp-content/uploads/2025/10/YCAC-Logo-Icon.png" type="image/png" />
+    <title>YC&AC Pulse | Sign in</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="masthead">
+      <a class="club-mark" href="./" aria-label="YC&AC Pulse home"><img src="https://ycac.jp/wp-content/uploads/2025/10/YCAC-Logo-Icon.png" alt="YC&AC" /></a>
+      <div class="brand"><span>YC&amp;AC</span> Pulse<small data-i18n="officialWebsite">Official Soccer Top Team · Est. 1868</small></div>
+      <a class="back-link" href="./" data-i18n="loginHome">Back to season</a>
+      <label class="lang-switch"><select id="lang-select" data-lang-select aria-label="Language"></select></label>
+    </header>
+
+    <main class="login-main">
+      <section class="login-panel" aria-labelledby="login-heading">
+        <p class="eyebrow" data-i18n="loginTeamTitle">Players &amp; team</p>
+        <h1 id="login-heading" data-i18n="loginHeading">Sign in</h1>
+        <p id="login-need-coach" class="login-notice" hidden data-i18n="loginNeedCoach">This page needs a coach account. Sign in below with the coach login.</p>
+
+        <!-- signed out -->
+        <div id="login-signed-out">
+          <div class="login-cards">
+            <article class="login-card">
+              <h2 data-i18n="loginTeamTitle">Players &amp; team</h2>
+              <p data-i18n="loginTeamCopy">For players and team staff — enter the shared team password.</p>
+              <form id="team-form">
+                <label class="login-field">
+                  <span data-i18n="loginTeamLabel">Team password</span>
+                  <input id="team-password" type="password" autocomplete="current-password" required data-i18n-placeholder="loginTeamLabel" placeholder="Team password" />
+                </label>
+                <button class="primary-button" type="submit" data-i18n="authLogin">Log in</button>
+              </form>
+            </article>
+            <article class="login-card">
+              <h2 data-i18n="loginCoachTitle">Coach</h2>
+              <p data-i18n="loginCoachCopy">For coaches and managers — sign in with your own account.</p>
+              <form id="coach-form">
+                <label class="login-field">
+                  <span data-i18n="loginEmail">Email</span>
+                  <input id="coach-email" type="email" autocomplete="username" required placeholder="you@example.com" />
+                </label>
+                <label class="login-field">
+                  <span data-i18n="loginPassword">Password</span>
+                  <input id="coach-password" type="password" autocomplete="current-password" required data-i18n-placeholder="loginPassword" placeholder="Password" />
+                </label>
+                <button class="primary-button" type="submit" data-i18n="authLogin">Log in</button>
+              </form>
+            </article>
+          </div>
+          <p id="login-error" class="login-error" role="alert" hidden></p>
+        </div>
+
+        <!-- signed in -->
+        <div id="login-signed-in" hidden>
+          <div class="login-status">
+            <p class="eyebrow" data-i18n="loginSignedIn">Signed in</p>
+            <h2 id="login-account"></h2>
+            <p id="login-role" class="login-role"></p>
+            <div class="login-actions">
+              <a id="login-continue" class="primary-button" href="./" data-i18n="loginContinue">Continue</a>
+              <a class="club-link" href="./" data-i18n="loginHome">Back to season</a>
+              <button id="login-signout" class="quiet-button" type="button" data-i18n="authLogout">Log out</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer><span data-i18n="footer">YC&amp;AC Pulse · Official Top Team of Yokohama Country &amp; Athletic Club</span> <a href="https://ycac.jp" target="_blank" rel="noreferrer">ycac.jp</a></footer>
+    <script src="config.js"></script>
+    <script src="i18n.js"></script>
+    <script src="data.js"></script>
+    <script src="auth.js"></script>
+    <script src="login.js"></script>
+  </body>
+</html>

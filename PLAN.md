@@ -163,8 +163,8 @@ Thresholds live in `stats.js`; coach can override per player in `coach_notes`.
 | **0** | Schema + RLS + storage (`0001_init.sql` incl. v3 tables) | ✅ **done** — applied, RLS verified |
 | **1** | Migration `migrate-from-sheets.cjs` (dry-run ✅) | ✅ **done** — imported & verified (`verify-import.cjs` 21/21) |
 | **2** | `stats.js` + `verify-stats.cjs` | ✅ done |
-| **3** | `i18n.js` + language selector, retrofit `index` + `squad-picker` | ❌ — **done** (143 keys × 3 languages, `verify-i18n.cjs` ✅) |
-| **4** | `data.js` + `auth.js` (team password, coach login, RLS roles) | ✅ |
+| **3** | `i18n.js` + language selector, retrofit `index` + `squad-picker` | ❌ — **done** (161 keys × 3 languages, `verify-i18n.cjs` ✅) |
+| **4** | `data.js` + `auth.js` (team password, coach login, RLS roles) | ✅ **done** — `login.html`, masthead auth slots; `verify-auth.cjs` 22/22 |
 | **5** | Coach dashboard `coach.html` | ✅ |
 | **6** | Profiles `players.html` / `player.html` + photo upload | ✅ |
 | **7** | Admin `admin.html` (players, matchday, signups, notes, content, backup) | ✅ |

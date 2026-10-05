@@ -90,6 +90,19 @@ const YCACI18n = (() => {
     pickerShareFailed: "Native share failed; showing download.",
     pickerCopied: "Lineup copied to your clipboard.",
     pickerCopyUnavailable: "Copy is unavailable in this browser.",
+    // login / auth (Phase 4)
+    loginTitle: "Sign in | YC&AC Pulse", loginHeading: "Sign in",
+    loginTeamTitle: "Players & team",
+    loginTeamCopy: "For players and team staff — enter the shared team password.",
+    loginTeamLabel: "Team password",
+    loginCoachTitle: "Coach",
+    loginCoachCopy: "For coaches and managers — sign in with your own account.",
+    loginEmail: "Email", loginPassword: "Password", authLogin: "Log in",
+    loginFailed: "Login failed — check your details and try again.",
+    loginNeedCoach: "This page needs a coach account. Sign in below with the coach login.",
+    loginSignedIn: "Signed in",
+    loginRoleCoach: "Coach — full access", loginRoleTeam: "Team member — view only",
+    authLogout: "Log out", loginContinue: "Continue", loginHome: "Back to season",
   };
 
   const ja = {
@@ -167,6 +180,19 @@ const YCACI18n = (() => {
     pickerShareFailed: "共有に失敗しました。ダウンロードを表示します。",
     pickerCopied: "メンバーをクリップボードにコピーしました。",
     pickerCopyUnavailable: "このブラウザではコピー機能を使用できません。",
+    // login / auth (Phase 4)
+    loginTitle: "ログイン | YC&AC Pulse", loginHeading: "サインイン",
+    loginTeamTitle: "選手・チーム",
+    loginTeamCopy: "選手・スタッフ向け：共有されているチームパスワードを入力してください。",
+    loginTeamLabel: "チームパスワード",
+    loginCoachTitle: "コーチ",
+    loginCoachCopy: "コーチ・管理者向け：ご自身のアカウントでサインインしてください。",
+    loginEmail: "メールアドレス", loginPassword: "パスワード", authLogin: "ログイン",
+    loginFailed: "ログインに失敗しました。入力内容を確認してください。",
+    loginNeedCoach: "このページにはコーチアカウントが必要です。下のコーチログインからサインインしてください。",
+    loginSignedIn: "サインイン中",
+    loginRoleCoach: "コーチ — 全権限", loginRoleTeam: "チームメンバー — 閲覧のみ",
+    authLogout: "ログアウト", loginContinue: "続行", loginHome: "シーズンページへ",
   };
 
   const zh = {
@@ -244,6 +270,19 @@ const YCACI18n = (() => {
     pickerShareFailed: "分享失败，改为显示下载。",
     pickerCopied: "阵容已复制到剪贴板。",
     pickerCopyUnavailable: "当前浏览器不支持复制功能。",
+    // login / auth (Phase 4)
+    loginTitle: "登录 | YC&AC Pulse", loginHeading: "登录",
+    loginTeamTitle: "球员与球队",
+    loginTeamCopy: "供球员与工作人员使用 — 输入球队共享密码。",
+    loginTeamLabel: "球队密码",
+    loginCoachTitle: "教练",
+    loginCoachCopy: "供教练与管理人员使用 — 使用你自己的账号登录。",
+    loginEmail: "邮箱", loginPassword: "密码", authLogin: "登录",
+    loginFailed: "登录失败 — 请检查输入内容后重试。",
+    loginNeedCoach: "此页面需要教练账号，请使用下方教练登录。",
+    loginSignedIn: "已登录",
+    loginRoleCoach: "教练 — 完全权限", loginRoleTeam: "球队成员 — 仅查看",
+    authLogout: "退出登录", loginContinue: "继续", loginHome: "返回赛季页",
   };
 
   const dictionaries = { en, ja, zh };
