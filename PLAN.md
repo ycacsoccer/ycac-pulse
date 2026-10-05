@@ -28,7 +28,7 @@ endpoint, and no field for photos.
 | 4 | **Squad & match review for past matches** | `match.html?id=` — lineup, scorers, review | ✅ done (Phase 8) |
 | 5 | **Team player profile** | `players.html` grid | ✅ done (Phase 6) |
 | 6 | **Coach reflection & feedback per match** | `match_notes` table → edited in admin (Phase 7), shown on `match.html` (Phase 8) | ✅ done |
-| 7 | **Team guideline & coach instruction** | `team_content` table → edited in admin (Phase 7), shown on `team.html` later | **admin side done** |
+| 7 | **Team guideline & coach instruction** | `team_content` table → edited in admin (Phase 7), shown on `team.html` (Phase 9) | ✅ done |
 | 8 | **Simple password login for team-only pages** | shared **team password** (one Supabase team account) for read-only pages; **coach login** for admin/writes | ✅ done (Phase 4) |
 | 9 | **Player profile** — info, history, stats, profile pic | `player.html?id=` (Phase 6) | ✅ done |
 | 10 | **Coach dashboard** — all player statistics | `coach.html` (Phase 5) | ✅ done |
@@ -169,7 +169,7 @@ Thresholds live in `stats.js`; coach can override per player in `coach_notes`.
 | **6** | Profiles `players.html` / `player.html` + photo upload | ✅ **done** — grid + detail + coach photo upload; `verify-profiles.cjs` 21/21 |
 | **7** | Admin `admin.html` (players, matchday, signups, notes, content, backup) | ✅ **done** — CRUD + lineup/goals entry + content + backup; `verify-admin.cjs` 38/38 |
 | **8** | Match review `match.html` + coach feedback | ✅ **done** — result hero, lineup+photos, scorers, signups, coach review; `verify-match.cjs` 25/25 |
-| **9** | Team page `team.html` | ✅ |
+| **9** | Team page `team.html` | ✅ **done** — renders `team_content` as written, 3 slugs; `verify-team.cjs` 16/16 |
 | **10** | Public revamp — TML first, photos in attendance | partial |
 | **11** | Squad picker rewire (Supabase, photos, core-weighted suggest) | ✅ |
 | **12** | Cleanup: dead code in `squad-picker.js` (~8 duplicate defs), gviz/Apps Script removal, retire `.xlsx` generators, README | all |

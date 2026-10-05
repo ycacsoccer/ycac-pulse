@@ -193,6 +193,11 @@ const YCACI18n = (() => {
     matchNoGoals: "No goals recorded.",
     matchNoSignups: "No signups recorded for this fixture.",
     matchNoNotes: "No coach review yet.",
+    // team page (Phase 9)
+    navTeam: "Team",
+    teamTitle: "Team guidelines | YC&AC Pulse",
+    teamHeading: "Guidelines & instructions",
+    teamEmpty: "No team content published yet.",
   };
 
   const ja = {
@@ -375,6 +380,11 @@ const YCACI18n = (() => {
     matchNoGoals: "ゴールの記録はありません。",
     matchNoSignups: "この試合の出場可否はまだありません。",
     matchNoNotes: "コーチのレビューはまだありません。",
+    // team page (Phase 9)
+    navTeam: "チーム",
+    teamTitle: "チームガイドライン | YC&AC Pulse",
+    teamHeading: "ガイドラインと指示",
+    teamEmpty: "まだ公開されているコンテンツはありません。",
   };
 
   const zh = {
@@ -557,6 +567,11 @@ const YCACI18n = (() => {
     matchNoGoals: "暂无进球记录。",
     matchNoSignups: "该场比赛暂无报名记录。",
     matchNoNotes: "尚无教练回顾。",
+    // team page (Phase 9)
+    navTeam: "球队",
+    teamTitle: "球队准则 | YC&AC Pulse",
+    teamHeading: "准则与指示",
+    teamEmpty: "暂无发布的内容。",
   };
 
   const dictionaries = { en, ja, zh };
