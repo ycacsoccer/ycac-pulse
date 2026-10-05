@@ -172,7 +172,7 @@ Thresholds live in `stats.js`; coach can override per player in `coach_notes`.
 | **9** | Team page `team.html` | ✅ **done** — renders `team_content` as written, 3 slugs; `verify-team.cjs` 16/16 |
 | **10** | Public revamp — TML first, photos in attendance | ✅ **done** — index reads Supabase (gviz gone), stable-squad chips, friendlies folded, photo attendance w/ TML summary first; `verify-index.cjs` 24/24 |
 | **11** | Squad picker rewire (Supabase, photos, core-weighted suggest) | ✅ **done** — team-gated boot, coach-only save to `saved_squads` (deactivate-then-insert), photo cards, stats.js suggest; Apps Script/gviz gone; `verify-picker.cjs` 41/41 |
-| **12** | Cleanup: dead code in `squad-picker.js` (~8 duplicate defs), retire `.xlsx` generators + other sheet remnants, README | remaining |
+| **12** | Cleanup: dead code in `squad-picker.js` (~8 duplicate defs), gviz/Apps Script removal, retire `.xlsx` generators, README | ✅ **done** — 27 dead lines gone (one `squadImageSVG` left), `verify-stats.cjs` now reads Supabase, `.xlsx` generators + workbooks deleted, orphan i18n keys pruned; README data-source section rewritten |
 
 Phases ship independently. Phase 3 needs no Supabase and can start immediately; phases 4–11 need
 the project to exist.

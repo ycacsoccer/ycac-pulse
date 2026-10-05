@@ -1,24 +1,27 @@
-/* Verifies stats.js against the live Google Sheet data — run before the migration
-   (Phase 1) so we know the new engine reproduces the numbers we already trust.
-   Usage: node verify-stats.cjs
-   Note: EXPECTED is a snapshot of 05 Oct 2026. If the sheet has been updated
-   since, mismatches are reported rather than silently accepted. */
+/* Verifies stats.js against the data in Supabase — the engine's regression
+   snapshot (Phase 12 rewired this off gviz; the whole suite now reads one
+   source of truth). The EXPECTED block is the import-time snapshot of
+   05 Oct 2026; if the database has moved on (new results entered, roster
+   edits), mismatches are reported rather than silently accepted — bump the
+   snapshot deliberately when that happens.
+   Usage: node verify-stats.cjs */
 
+const fs = require("fs");
+const path = require("path");
 const YCACStats = require("./stats.js");
 
-const SHEET_ID = "1KpxZeFlFUKIxTxB6_4_MgcdBAqi6He44aSW-0P4SPcM";
+const readConfig = () => {
+  const source = fs.readFileSync(path.join(__dirname, "config.js"), "utf8");
+  const grab = (key) => source.match(new RegExp(`${key}:\\s*"([^"]*)"`))?.[1] || "";
+  return { url: grab("supabaseUrl"), publishable: grab("supabaseAnonKey") };
+};
+const config = readConfig();
+const anonHeaders = { apikey: config.publishable, Authorization: `Bearer ${config.publishable}`, "Content-Type": "application/json" };
 
-async function grab(tab) {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(tab)}&tqx=out:json`;
-  const text = await (await fetch(url)).text();
-  const json = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
-  let headers = json.table.cols.map((column) => column.label);
-  let rows = json.table.rows;
-  if (headers.every((header) => !header) && rows.length) {
-    headers = rows[0].c.map((cell) => cell?.v ?? "");
-    rows = rows.slice(1);
-  }
-  return rows.map((row) => Object.fromEntries(headers.map((header, index) => [header, row.c[index]?.v ?? ""])));
+async function grab(table) {
+  const response = await fetch(`${config.url}/rest/v1/${table}?select=*`, { headers: anonHeaders });
+  if (!response.ok) throw new Error(`${table}: ${response.status} ${await response.text()}`);
+  return response.json();
 }
 
 const EXPECTED = {
@@ -41,11 +44,13 @@ const EXPECTED = {
 const show = (stat, total) => `${stat}/${total}`;
 
 async function main() {
-  const [players, matches, appearances, goals, signups] = await Promise.all(
-    ["Players", "Matches", "Appearances", "Goals", "Signups"].map(grab));
+  const [players, matches, appearances, goals] = await Promise.all(
+    ["players", "matches", "appearances", "goals"].map(grab));
 
-  const season = YCACStats.computeSeason({ players, matches, appearances, goals, signups });
-  const byId = new Map(season.players.map((entry) => [entry.player_id, entry]));
+  // signups is a team-only table; the tier engine doesn't need it (tiers come
+  // from appearances alone), so the public snapshot passes none.
+  const season = YCACStats.computeSeason({ players, matches, appearances, goals });
+  const byId = new Map(season.players.map((entry) => [entry.id, entry]));
 
   const checks = [];
   const check = (label, actual, expected) => checks.push({ label, actual, expected, ok: String(actual) === String(expected) });
@@ -78,7 +83,7 @@ async function main() {
     shirtNumbers.set(player.shirt_number, [...(shirtNumbers.get(player.shirt_number) || []), player.display_name]);
   }
   const duplicates = [...shirtNumbers.entries()].filter(([, names]) => names.length > 1);
-  const missingPhotos = players.length; // no photo column exists yet
+  const missingPhotos = players.filter((player) => !player.photo_path).length;
 
   console.log("\nYC&AC Pulse — stats engine verification\n");
   console.log(`Season: ${season.counts.matches.all} played (${season.counts.matches.tml} TML · ${season.counts.matches.friendly} friendly) · ${season.counts.matches.upcoming} upcoming`);
@@ -106,10 +111,10 @@ async function main() {
 
   console.log("\nData-quality flags:");
   console.log(`  ${duplicates.length ? duplicates.map(([no, names]) => `duplicate shirt #${no}: ${names.join(", ")}`).join("\n  ") : "no duplicate shirt numbers"}`);
-  console.log(`  ${missingPhotos} players with no photo (photo column does not exist yet)`);
+  console.log(`  ${missingPhotos} players with no photo yet (coach uploads from the profile page)`);
   console.log(`  ${appearances.filter((app) => !app.minutes).length}/${appearances.length} appearances missing minutes`);
 
-  console.log(`\n${failed ? `${failed} CHECK(S) FAILED — sheet may have changed since 05 Oct 2026` : "All checks passed."}`);
+  console.log(`\n${failed ? `${failed} CHECK(S) FAILED — data may have changed since the 05 Oct 2026 snapshot (bump EXPECTED deliberately)` : "All checks passed."}`);
   process.exit(failed ? 1 : 0);
 }
 

@@ -18,7 +18,7 @@ A static season statistics dashboard. **Data backend: Supabase (Postgres) — re
 | 9 | Team page `team.html` (team login) | done — renders admin-edited `team_content` (guidelines, coach instructions, club info) exactly as written; verified by `node verify-team.cjs` (16/16) |
 | 10 | Public index revamp `index.html` (TML-first) | done — Supabase via `data.js` (gviz gone), stable-squad chips from `stats.js`, friendlies folded, photos + TML summary first in attendance, results/fixtures link to match review; verified by `node verify-index.cjs` (24/24) |
 | 11 | Squad picker rewire `squad-picker.html` (team login) | done — Supabase via `data.js` (Apps Script endpoint + gviz gone), photos on roster cards, core-weighted "Suggest squad" from `stats.js`, coach-only save to `saved_squads` (deactivate-then-insert keeps one active group); verified by `node verify-picker.cjs` (41/41) |
-| 12+ | Cleanup (duplicate defs, sheet remnants, `.xlsx` generators) | see `PLAN.md` |
+| 12 | Cleanup | done — dead duplicate defs removed from `squad-picker.js`, `verify-stats.cjs` rewired to Supabase (gviz gone from the suite), `.xlsx` generators + workbooks deleted, orphan picker i18n keys pruned, README data-source section rewritten |
 
 The plan (10 requirements mapped to screens) and the reasoning behind it live in [`PLAN.md`](PLAN.md).
 
@@ -69,8 +69,9 @@ Do not rename table or column names without updating `stats.js` and the pages th
 5. Select the `main` branch and the `/ (root)` folder, then save.
 6. GitHub will provide the public site URL within a few minutes.
 
-## Data source (legacy: Google Sheets)
+## Data source
 
-The current published site still reads the `Players`, `Matches`, `Appearances`, and `Goals` tabs from
-the configured Google Sheet via gviz. That path is retired once Phase 1 completes. The Sheet must
-remain **Anyone with the link: Viewer** until then.
+The site reads **Supabase** (Postgres, through `data.js`) — nothing on the published site touches
+Google Sheets any more. The two original workbooks are a read-only archive: keep both Sheets set to
+**Anyone with the link: Viewer**. `migrate-from-sheets.cjs` (the one-time Phase 1 import) is the
+only script that still knows their gviz URL.
