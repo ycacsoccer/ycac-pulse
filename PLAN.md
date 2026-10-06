@@ -1,6 +1,6 @@
 # YC&AC Pulse — Coach & Management Revamp Plan
 
-v5 · Oct 2026 · Status: **all 17 phases complete — all 14 `verify-*.cjs` checks green**
+v6 · Oct 2026 · Status: **all 18 phases complete — all 14 `verify-*.cjs` checks green**
 
 > **v2:** data source moved off Google Sheets to Supabase.
 > **v3:** ten numbered requirements captured from the coach/management side; login model,
@@ -9,6 +9,8 @@ v5 · Oct 2026 · Status: **all 17 phases complete — all 14 `verify-*.cjs` che
 > TML/friendly attendance split, public injury tracking, docs refresh.
 > **v5:** chart & card round 2 (wave 17): diverging goals chart, KPI rate strips,
 > player cards with TML/friendly percentages, profile performance timeline incl. absences.
+> **v6:** player list round 2 (wave 18): grid grouped into position sections;
+> "Tier" renamed **Selection group** site-wide with a tactics/availability explainer.
 
 ---
 
@@ -190,12 +192,13 @@ Thresholds live in `stats.js`; coach can override per player in `coach_notes`.
 | **15** | **Injuries** — `0002_injuries.sql` (public read / coach write), seed Kosei · Ryoga · Yuto · Souta, admin **Injuries** tab, public squad-status panel on index, badges on players grid, profile and coach board | ✅ **done** — migration applied to Supabase (made idempotent + `notify pgrst, 'reload schema'` after the paste ran against the wrong project), `injuries` table live with 4 seeded rows, 7th admin tab (add/remove, included in backups), squad-status cards on index, badge on grid, note on profile, panel on dashboard, 13 keys ×3 (317 total), new `verify-injuries.cjs` (31 checks) — **all 13 verifiers green** |
 | **16** | Docs refresh + full suite green | ✅ **done** — README status table extended (13–16), migration steps cover `0002`, new Verify section documents all 13 verifiers; PLAN/README current; full suite green at commit |
 | **17** | **Chart & card round 2** — diverging goals chart (for above the zero line, against below it), KPI rate strips per competition (goals/game, conceded/game, win %, attendance/game), player cards showing TML + friendly appearance percentages, profile hero stat tiles and a performance timeline of every final match with absences labelled | ✅ **done** — `charts.js` diverging SVG + `kpis()` (baseline-anchored geometry asserted), `#perf-*-kpi` strips, `pc-quick` card cells, `profile-tiles` in the hero, `#profile-timeline` (TML/friendly groups, ⚪ Absent rows, result-coloured rail) + new `verify-profile-render.cjs` (grid + profile executed under a DOM stub vs live data) — **all 14 verifiers green** |
+| **18** | **Player list round 2** — grid grouped into position sections (GK/DF/MF/AT with name + count heads) and the "Tier" concept renamed so it never reads as an ability ranking: **Selection group** (First-choice / Rotation / Reserve / Standby) + an explainer that it is a tactics/formation planning aid from attendance & availability, reassessed every match | ✅ **done** — `POSITION_SECTIONS` grouping in `players.js` (skips empty groups, works with filters/search), site-wide value rename in `i18n.js` (EN/JA/ZH), `filterTierNote` callout on players + coach pages, `.position-sections` styles; 6 new keys ×3 (**329 total**), `verify-i18n` KEYS regex extended for dynamic `t(section.key)` use — **all 14 verifiers green** |
 
 Note: the injuries wave needs one manual step — no SQL-execution path exists for the service key,
 so `0002_injuries.sql` gets pasted into the Supabase SQL Editor once (README workflow).
 
 Phases ship independently. Phase 3 needs no Supabase and can start immediately; phases 4–11 need
-the project to exist. **All phases are now done** (0–17, including the post-launch revamp waves 13–17); the `verify-*.cjs` suite (14 scripts) guards each area.
+the project to exist. **All phases are now done** (0–18, including the post-launch revamp waves 13–18); the `verify-*.cjs` suite (14 scripts) guards each area.
 
 ---
 
