@@ -26,7 +26,7 @@ Live at https://ycacsoccer.github.io/ycac-pulse/
 | 15 | Injury tracking (`supabase/migrations/0002_injuries.sql`) | done — applied to the live project, public squad-status panel + badges on grid/profile/dashboard, admin **Injuries** tab (in backups); verified by `node verify-injuries.cjs` (31/31) |
 | 16 | Docs refresh | done — README/PLAN current; full 13-verifier suite green |
 | 17 | Chart & card round 2 | done — diverging goals chart (for above zero, against below), KPI rate strips (goals/game, conceded/game, win %, attendance/game), player cards with TML + friendly percentages, profile hero stat tiles + performance timeline with every match incl. absences; verified by `node verify-profile-render.cjs` (14 verifiers total) |
-| 18 | Player list round 2 | done — player grid grouped into position sections (GK/DF/MF/AT), "Tier" renamed **Selection group** (First-choice / Rotation / Reserve / Standby) site-wide with a tactics/availability explainer, not an ability ranking; 329 i18n keys ×3 |
+| 18 | Player list round 2 | done — player grid grouped into position sections (GK/DF/MF/AT); "Tier" renamed **Selection group** and the four bands named by appearance frequency only (**Plays often / Plays sometimes / Plays occasionally / Not yet played**) with a tactics/availability explainer — no ability or hierarchy wording; 329 i18n keys ×3 |
 
 The plan (10 requirements mapped to screens) and the reasoning behind it live in [`PLAN.md`](PLAN.md).
 

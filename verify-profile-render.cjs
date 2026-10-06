@@ -113,11 +113,11 @@ const get = async (path) => {
   const sections = (grid.match(/position-section-head/g) || []).length;
   check(sections >= 4 && grid.includes("Goalkeepers") && grid.includes("Attackers"),
     "player grid grouped into position sections", `${sections} sections`);
-  check(grid.includes("First-choice") && !grid.includes("🟢 Core"),
-    "card badges use selection-group wording (no tier/ability language)");
+  check(grid.includes("Plays often") && !grid.includes("🟢 Core") && !grid.includes("First-choice"),
+    "card badges use attendance-frequency wording (no tier/ability language)");
   const tierChips = el("tier-filters").innerHTML;
-  check(tierChips.includes("First-choice") && tierChips.includes("Standby"),
-    "selection-group filter chips renamed", tierChips.replace(/<[^>]+>/g, " ").trim().slice(0, 70));
+  check(tierChips.includes("Plays often") && tierChips.includes("Not yet played") && tierChips.includes("Plays occasionally"),
+    "selection-group filter chips named by appearance frequency", tierChips.replace(/<[^>]+>/g, " ").trim().slice(0, 70));
 
   // --- 4. profile: hero tiles, stats rows, full timeline --------------------
   const hero = el("profile-hero").innerHTML;
