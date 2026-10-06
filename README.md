@@ -1,8 +1,10 @@
 # YC&AC Pulse Stats
 
-A static season statistics dashboard. **Data backend: Supabase (Postgres) — replacing Google Sheets.**
+The **YC&AC Official Soccer Top Team** site — fixtures, results, squad statistics, player profiles
+and coach tools. Static HTML/CSS/JS on GitHub Pages; **data backend: Supabase (Postgres)**.
+Live at https://ycacsoccer.github.io/ycac-pulse/
 
-## Status: migration in progress
+## Status: complete — all phases done
 
 | Phase | What | Status |
 |---|---|---|
@@ -19,13 +21,19 @@ A static season statistics dashboard. **Data backend: Supabase (Postgres) — re
 | 10 | Public index revamp `index.html` (TML-first) | done — Supabase via `data.js` (gviz gone), stable-squad chips from `stats.js`, friendlies folded, photos + TML summary first in attendance, results/fixtures link to match review; verified by `node verify-index.cjs` (24/24) |
 | 11 | Squad picker rewire `squad-picker.html` (team login) | done — Supabase via `data.js` (Apps Script endpoint + gviz gone), photos on roster cards, core-weighted "Suggest squad" from `stats.js`, coach-only save to `saved_squads` (deactivate-then-insert keeps one active group); verified by `node verify-picker.cjs` (41/41) |
 | 12 | Cleanup | done — dead duplicate defs removed from `squad-picker.js`, `verify-stats.cjs` rewired to Supabase (gviz gone from the suite), `.xlsx` generators + workbooks deleted, orphan picker i18n keys pruned, README data-source section rewritten |
+| 13 | Position diagrams (`positionmap.js`) | done — `secondary_positions` seeded for all 33 outfield players (keepers none), SVG pitch (best ★ + capable dots) on every profile; verified by `node verify-profiles.cjs` |
+| 14 | Performance charts + attendance split (`charts.js`) | done — hand-rolled SVG trend charts (goals for/against along the timeline, W/D-L chips) + scorer bars in TML/friendly panels; availability table replaced by a TML attendance table + friendly fold; fixed the pre-existing `match.match_id` attendance bug; verified by `node verify-index.cjs` + `node verify-render.cjs` |
+| 15 | Injury tracking (`supabase/migrations/0002_injuries.sql`) | done — applied to the live project, public squad-status panel + badges on grid/profile/dashboard, admin **Injuries** tab (in backups); verified by `node verify-injuries.cjs` (31/31) |
+| 16 | Docs refresh | done — README/PLAN current; full 13-verifier suite green |
 
 The plan (10 requirements mapped to screens) and the reasoning behind it live in [`PLAN.md`](PLAN.md).
 
 ## Data backend
 
 1. Create a free account at [supabase.com](https://supabase.com) and a new project (any name/region).
-2. In the dashboard open **SQL Editor** → paste the contents of `supabase/migrations/0001_init.sql` → **Run**.
+2. In the dashboard open **SQL Editor** → paste the contents of each file in `supabase/migrations/`
+   in filename order — `0001_init.sql` (fresh projects only), then `0002_injuries.sql` — → **Run**.
+   (`0002` is idempotent — safe to re-run — and ends with a `select` that reports `injuries ready / 4`.)
    (Or install the Supabase CLI and run `supabase db push` from this folder.)
 3. **Authentication → Users → Add user** (tick *Auto confirm*), twice:
    - the **team account** — one shared login for restricted pages (e.g. `team@ycac.jp`) with a
@@ -55,6 +63,28 @@ The plan (10 requirements mapped to screens) and the reasoning behind it live in
    Viewer** so they become a read-only archive.
 
 Do not rename table or column names without updating `stats.js` and the pages that read them.
+
+## Verify
+
+Thirteen verifiers guard the site against the live Supabase project — run them before every
+commit/push; each prints `OK`/`FAIL` lines and exits non-zero on any failure:
+
+```powershell
+node verify-import.cjs     node verify-stats.cjs     node verify-i18n.cjs
+node verify-auth.cjs       node verify-coach.cjs     node verify-profiles.cjs
+node verify-admin.cjs      node verify-match.cjs     node verify-team.cjs
+node verify-index.cjs      node verify-picker.cjs    node verify-render.cjs
+node verify-injuries.cjs
+```
+
+- **import/stats** — row counts, match split, tier engine baselines
+- **i18n** — EN/JA/ZH key parity, no hardcoded CJK, every `#id` wired
+- **auth/coach/profiles/admin/match/team/picker** — each page's query path, RLS and gating,
+  using ephemeral users that are removed again
+- **index** — public data path + static contract (charts, TML-first attendance)
+- **render** — executes `index.html`'s `render()` under a DOM stub against live data
+  (this test caught the attendance `match.match_id` bug)
+- **injuries** — migration contract, public read, anon/team write denial, coach CRUD
 
 ## Publish with GitHub Pages
 

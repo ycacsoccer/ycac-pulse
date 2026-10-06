@@ -1,10 +1,12 @@
 # YC&AC Pulse — Coach & Management Revamp Plan
 
-Draft v3 · Oct 2026 · Status: **all 12 phases complete — 11 `verify-*.cjs` checks green**
+v4 · Oct 2026 · Status: **all 16 phases complete — all 13 `verify-*.cjs` checks green**
 
 > **v2:** data source moved off Google Sheets to Supabase.
 > **v3:** ten numbered requirements captured from the coach/management side; login model,
 > signup ownership and content ownership decided (see §2 notes).
+> **v4:** post-launch revamp (waves 13–16): position diagrams, performance trend charts +
+> TML/friendly attendance split, public injury tracking, docs refresh.
 
 ---
 
@@ -184,13 +186,13 @@ Thresholds live in `stats.js`; coach can override per player in `coach_notes`.
 | **13** | **Position diagrams** — seed `secondary_positions` for the squad, pitch diagram on every profile: best position ★ + capable positions | ✅ **done** — 33 outfield players seeded (GKs none, Rick → ST override), `positionmap.js` SVG pitch, Positions panel on profile, 6 new checks in `verify-profiles.cjs` (27/27) |
 | **14** | **Performance charts + attendance split** — `charts.js` (hand-rolled SVG, no libraries): per-competition goals timeline, W/D-L results and scorer bars on the public index (TML main panel, friendly secondary); the availability table is **replaced** by a TML attendance table (primary, sorted by TML %) plus a friendly attendance fold; index section restructure | ✅ **done** — trend charts + scorer bars in two competition panels, attendance split into `#tml-attendance` + folded `#fnd-attendance`; **fixed a pre-deploy bug** (`match.match_id` → `match.id`: the live attendance table had been showing dashes instead of appearances/percentages) and added `verify-render.cjs` — executes `render()` under a DOM stub against live anon data (17 checks) |
 | **15** | **Injuries** — `0002_injuries.sql` (public read / coach write), seed Kosei · Ryoga · Yuto · Souta, admin **Injuries** tab, public squad-status panel on index, badges on players grid, profile and coach board | ✅ **done** — migration applied to Supabase (made idempotent + `notify pgrst, 'reload schema'` after the paste ran against the wrong project), `injuries` table live with 4 seeded rows, 7th admin tab (add/remove, included in backups), squad-status cards on index, badge on grid, note on profile, panel on dashboard, 13 keys ×3 (317 total), new `verify-injuries.cjs` (31 checks) — **all 13 verifiers green** |
-| **16** | Docs refresh + full suite green | planned |
+| **16** | Docs refresh + full suite green | ✅ **done** — README status table extended (13–16), migration steps cover `0002`, new Verify section documents all 13 verifiers; PLAN/README current; full suite green at commit |
 
 Note: the injuries wave needs one manual step — no SQL-execution path exists for the service key,
 so `0002_injuries.sql` gets pasted into the Supabase SQL Editor once (README workflow).
 
 Phases ship independently. Phase 3 needs no Supabase and can start immediately; phases 4–11 need
-the project to exist. **All phases are now done** (0–12); the `verify-*.cjs` suite guards each area.
+the project to exist. **All phases are now done** (0–16, including the post-launch revamp waves 13–16); the `verify-*.cjs` suite (13 scripts) guards each area.
 
 ---
 
