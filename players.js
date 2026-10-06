@@ -1,6 +1,8 @@
 /* YC&AC Pulse — player grid (Phase 6, requirement 5).
-   Public page: photo cards filtered by position group / tier / name.
-   Tiers come from stats.js (TML-first rules); no session needed. */
+   Public page: player CARDS (wave 17) — photo, shirt/position, tier + injury
+   badge, TML and friendly appearance percentages, season apps + goals —
+   filtered by position group / tier / name. Tiers come from stats.js
+   (TML-first rules); no session needed. */
 (() => {
   const t = (key, vars) => (window.YCACI18n ? YCACI18n.t(key, vars) : key);
   const $ = (id) => document.getElementById(id);
@@ -44,18 +46,25 @@
       $("players-grid").innerHTML = `<p class="empty">${esc(t("playersNoMatch"))}</p>`;
       return;
     }
+    // wave 17 — cards carry the key facts: shirt/position, tier (+ injury),
+    // TML and friendly appearance percentages, season apps + goals.
+    const denom = { tml: state.season.buckets.tml.length, friendly: state.season.buckets.friendly.length, all: state.season.buckets.all.length };
+    const pct = (value) => (value == null ? "–" : `${value}%`);
     $("players-grid").innerHTML = rows.map((entry) => {
-      const all = entry.competitions.all;
-      const stats = [`${all.played} ${esc(t("statApps").toLowerCase())}`]
-        .concat(all.goals > 0 ? [`${all.goals} ${esc(t("statGoals").toLowerCase())}`] : [])
-        .join(" · ");
+      const tml = entry.competitions.tml, fnd = entry.competitions.friendly, all = entry.competitions.all;
       return `<a class="player-card" href="player.html?id=${encodeURIComponent(entry.id)}">
         ${photoMarkup(entry)}
         <strong class="pc-name">${esc(entry.display_name)}</strong>
         <span class="pc-meta">${entry.shirt_number != null ? `#${entry.shirt_number} · ` : ""}${esc(entry.primary_position || "")}</span>
-        <span class="tier-badge chip-${entry.tier}">${TIER_EMOJI[entry.tier]} ${esc(t(TIER_KEYS[entry.tier]))}</span>
-        ${state.injured.has(entry.id) ? `<span class="injured-badge">${esc(t("injuredBadge"))}</span>` : ""}
-        <span class="pc-stats">${stats}</span>
+        <span class="pc-badges">
+          <span class="tier-badge chip-${entry.tier}">${TIER_EMOJI[entry.tier]} ${esc(t(TIER_KEYS[entry.tier]))}</span>
+          ${state.injured.has(entry.id) ? `<span class="injured-badge">${esc(t("injuredBadge"))}</span>` : ""}
+        </span>
+        <span class="pc-quick">
+          <span class="pcq tml"><small>TML</small><strong>${pct(tml.appearance_pct)}</strong><em>${tml.played}/${denom.tml}</em></span>
+          <span class="pcq fnd"><small>FND</small><strong>${pct(fnd.appearance_pct)}</strong><em>${fnd.played}/${denom.friendly}</em></span>
+        </span>
+        <span class="pc-tot">${all.played}/${denom.all} ${esc(t("statApps").toLowerCase())} · ${all.goals} ${esc(t("statGoals").toLowerCase())}</span>
       </a>`;
     }).join("");
   }

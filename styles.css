@@ -390,3 +390,45 @@ svg.trend-svg { display: block; width: 100%; height: auto; }
 .kpi strong { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.12rem; line-height: 1; }
 .kpi small { color: var(--muted); font-size: .55rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
 @media (max-width: 760px) { .perf-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ── Wave 17b: player cards — TML/friendly percentages + season totals ── */
+.pc-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: .35rem; }
+.pc-quick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .35rem; width: 100%; margin-top: .3rem; padding-top: .55rem; border-top: 1px solid var(--line); }
+.pcq { display: grid; justify-items: center; gap: .12rem; padding: .35rem .15rem .4rem; background: var(--mist); border-bottom: 2px solid var(--navy); }
+.pcq.fnd { border-bottom-color: var(--gold); }
+.pcq small { color: var(--muted); font-size: .52rem; font-weight: 700; letter-spacing: .08em; }
+.pcq strong { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .98rem; line-height: 1; }
+.pcq.fnd strong { color: #8a6d1f; }
+.pcq em { color: var(--muted); font-size: .56rem; font-style: normal; font-weight: 700; }
+.pc-tot { color: var(--muted); font-size: .62rem; font-weight: 700; }
+
+/* ── Wave 17b: profile hero quick-stat tiles ── */
+.profile-tiles { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.15rem; }
+.ptile { display: grid; gap: .15rem; min-width: 5.5rem; padding: .55rem .75rem .6rem; background: rgba(255,255,255,.08); border-bottom: 2px solid var(--gold); }
+.ptile strong { color: white; font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.3rem; line-height: 1; }
+.ptile .pt-of { color: #9db4d4; font-size: .72rem; font-weight: 600; }
+.ptile small { color: #9db4d4; font-size: .55rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+
+/* ── Wave 17b: profile performance timeline — every final match, absences included ── */
+.player-main .panel.accent-navy { border-top: 3px solid var(--navy); }
+.player-main .panel.accent-gold { border-top: 3px solid var(--gold); }
+.player-main .panel.accent-blue { border-top: 3px solid var(--blue); }
+.season-timeline { display: grid; gap: 0; }
+.timeline-group { display: grid; }
+.timeline-group + .timeline-group { margin-top: 1.75rem; }
+.timeline-group-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .55rem; padding-bottom: .5rem; border-bottom: 1px solid var(--line); }
+.timeline-group-head strong { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .95rem; }
+.timeline-group-head small { color: var(--muted); font-size: .62rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.season-timeline .timeline-entry { min-height: 0; padding: .6rem .3rem; margin: 0 -.3rem; border-bottom: 1px solid var(--line); align-items: stretch; }
+.season-timeline .timeline-group-head + .timeline-entry .timeline-rail::after { top: 50%; }
+.season-timeline .timeline-match { padding-bottom: 0; align-self: center; }
+.season-timeline .timeline-date { align-self: center; padding-top: 0; text-align: left; min-width: 4.4rem; }
+.season-timeline .timeline-score { align-self: center; }
+.timeline-score.draw { color: var(--muted); background: var(--mist); }
+a.timeline-entry { color: inherit; text-decoration: none; }
+a.timeline-entry:hover { background: var(--gold-pale); }
+.timeline-entry.win .timeline-marker { background: #1f7a3d; box-shadow: 0 0 0 1px #1f7a3d; }
+.timeline-entry.draw .timeline-marker { background: var(--muted); box-shadow: 0 0 0 1px var(--muted); }
+.timeline-entry.loss .timeline-marker { background: #9d1c1c; box-shadow: 0 0 0 1px #9d1c1c; }
+.timeline-entry.absent { opacity: .6; }
+.timeline-entry.absent .timeline-marker { background: #c8d0da; box-shadow: 0 0 0 1px #c8d0da; }

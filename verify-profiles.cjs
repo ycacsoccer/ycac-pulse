@@ -131,6 +131,16 @@ async function main() {
     check((deduped.match(/>RB</g) || []).length === 1 && (deduped.match(/>LB</g) || []).length === 1,
       "best position excluded from capable dots");
 
+    // --- 1c. player cards + performance timeline (wave 17) ---------------------
+    const gridJs = fs.readFileSync(path.join(__dirname, "players.js"), "utf8");
+    check(gridJs.includes("pc-quick") && gridJs.includes("appearance_pct") && gridJs.includes("buckets.tml"),
+      "player cards carry TML + friendly appearance percentages");
+    const profileJs = fs.readFileSync(path.join(__dirname, "player.js"), "utf8");
+    check(page.includes('id="profile-timeline"') && profileJs.includes("statusAbsent") && profileJs.includes("timeline-entry"),
+      "profile timeline wired (every final match, absences labelled)");
+    check(profileJs.includes("profile-tiles") && profileJs.includes("kpiGoalsPerGame"),
+      "profile hero stat tiles (apps, goals, goals/game, attendance)");
+
     // --- 2. photo upload is coach-only ---------------------------------------
     const anonUpload = await postObject(null);
     check(anonUpload.status >= 400, "anon photo upload denied", `status ${anonUpload.status}`);

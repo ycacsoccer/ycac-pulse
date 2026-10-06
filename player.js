@@ -1,7 +1,9 @@
 /* YC&AC Pulse — player profile (Phase 6, requirements 9 + photo).
-   Public page: photo, info, stats split TML/Friendly/All, match-by-match
-   history, goals, reliability & tier. Coaches get an "Update photo" control
-   (storage RLS enforces is_coach() regardless of what the UI shows). */
+   Public page: hero with quick stat tiles (apps, goals, goals/game,
+   attendance), info, positions diagram, stats split TML/Friendly/All
+   (attendance + goals per game rows), a PERFORMANCE TIMELINE of every final
+   match — absences labelled — and goals. Coaches get an "Update photo"
+   control (storage RLS enforces is_coach() regardless of what the UI shows). */
 (() => {
   const t = (key, vars) => (window.YCACI18n ? YCACI18n.t(key, vars) : key);
   const $ = (id) => document.getElementById(id);
@@ -17,6 +19,8 @@
   const formatDate = (value) => (value && window.YCACI18n ? YCACI18n.formatDate(value) : value || "");
   const monogram = (name) => String(name || "?").split(/\s+/).map((word) => word[0]).slice(0, 2).join("").toUpperCase();
   const compClass = (match) => /friendly/i.test(match?.competition || "") ? "friendly" : "tml";
+  const rate = (value) => (value == null ? "–" : String(Number(value.toFixed(2)))); // 1.50 → "1.5"
+  const outcomeOf = (match) => { const gf = Number(match.ycac_goals), ga = Number(match.opponent_goals); return gf > ga ? "win" : gf === ga ? "draw" : "loss"; };
 
   async function load() {
     const [players, matches, appearances, goals] = await Promise.all([
@@ -61,6 +65,17 @@
       entry.reliability != null ? [t("statReliability"), String(entry.reliability)] : "",
     ].filter(Boolean);
 
+    // wave 17 — eye-catch quick stats in the hero: apps, goals, goals per
+    // game and attendance (he is measured against every final match played).
+    const all = entry.competitions.all;
+    const totalFinals = state.matches.filter(YCACStats.isFinal).length;
+    const tiles = [
+      [`${all.played}<span class="pt-of">/${totalFinals}</span>`, t("statApps")],
+      [String(all.goals), t("statGoals")],
+      [rate(all.played ? all.goals / all.played : null), t("kpiGoalsPerGame")],
+      [all.appearance_pct == null ? "–" : `${all.appearance_pct}%`, t("attendance")],
+    ];
+
     $("profile-hero").innerHTML = `
       ${photo}
       <div class="profile-id">
@@ -71,6 +86,7 @@
           ${facts.map(([label, value]) => `<span><small>${esc(label)}</small>${value}</span>`).join("")}
           <span><small>${esc(t("filterTier"))}</small><span class="tier-badge chip-${entry.tier}">${TIER_EMOJI[entry.tier]} ${esc(t(TIER_KEYS[entry.tier]))}</span></span>
         </div>
+        <div class="profile-tiles">${tiles.map(([value, label]) => `<span class="ptile"><strong>${value}</strong><small>${esc(label)}</small></span>`).join("")}</div>
         ${state.injury ? `<p class="profile-injury"><span class="injured-badge">${esc(t("injuredBadge"))}</span> ${esc(state.injury.detail)}<small>${esc(t("injurySince"))} ${esc(formatDate(state.injury.since_date))}${state.injury.expected_return ? ` · ${esc(t("injuryReturn"))} ${esc(state.injury.expected_return)}` : ""}</small></p>` : ""}
         <div class="profile-upload">
           ${state.isCoach ? `<button id="photo-upload" class="quiet-button" type="button">${esc(t("uploadPhoto"))}</button>` : ""}
@@ -95,8 +111,9 @@
       [t("statApps"), lens.map((name) => entry.competitions[name].played)],
       [t("statStarts"), lens.map((name) => entry.competitions[name].starts)],
       [t("statSubs"), lens.map((name) => entry.competitions[name].subs)],
-      ["%", lens.map((name) => entry.competitions[name].appearance_pct)],
+      [t("attendance"), lens.map((name) => entry.competitions[name].appearance_pct)],
       [t("statGoals"), lens.map((name) => entry.competitions[name].goals)],
+      [t("kpiGoalsPerGame"), lens.map((name) => { const comp = entry.competitions[name]; return comp.played ? rate(comp.goals / comp.played) : "–"; })],
       [t("statAssists"), lens.map((name) => entry.competitions[name].assists)],
     ];
     if (entry.position_group === "GK") rows.push([t("statCleanSheets"), lens.map((name) => entry.competitions[name].clean_sheets)]);
@@ -106,24 +123,42 @@
       <tbody>${rows.map(([label, values]) => `<tr><th>${esc(label)}</th>${cells(values)}</tr>`).join("")}</tbody>`;
   }
 
-  function renderHistory() {
-    const rows = [...state.appearances].sort((a, b) => String(b.matches?.date || "").localeCompare(String(a.matches?.date || "")));
-    if (!rows.length) { $("profile-history").innerHTML = `<p class="empty">${esc(t("historyEmpty"))}</p>`; return; }
-    $("profile-history").innerHTML = rows.map((app) => {
-      const match = app.matches || {};
-      const scored = state.goals.filter((goal) => goal.scorer_id === state.player.id && goal.match_id === app.match_id).length;
-      const ycac = Number(match.ycac_goals), against = Number(match.opponent_goals);
-      const outcome = ycac > against ? "win" : ycac === against ? "draw" : "loss";
-      const roleKey = app.role === "starter" ? "starter" : "substitute";
-      return `<a class="history-row" href="match.html?id=${encodeURIComponent(app.match_id)}">
-        <span class="h-date">${esc(formatDate(match.date))}</span>
-        <span class="h-comp ${compClass(match)}">${compClass(match) === "friendly" ? "FND" : "TML"}</span>
-        <span class="h-opp">${esc(t("versus"))} ${esc(match.opponent)}</span>
-        <span class="h-score ${outcome}">${Number.isFinite(ycac) && Number.isFinite(against) ? `${ycac}–${against}` : "–"}</span>
-        <span class="h-role">${app.role === "starter" ? "🟢" : "🔵"} ${esc(t(roleKey))}</span>
-        <span class="h-pos">${esc(app.position || state.player.primary_position || "")}</span>
-        ${scored ? `<span class="h-goals">${scored}⚽</span>` : ""}
-      </a>`;
+  function renderTimeline() { /* wave 17 — every final match for this player,
+     absences labelled too; TML group first, friendlies underneath. */
+    const finals = state.matches.filter(YCACStats.isFinal)
+      .sort((a, b) => String(b.date).localeCompare(String(a.date))); // newest first
+    if (!finals.length) { $("profile-timeline").innerHTML = `<p class="empty">${esc(t("historyEmpty"))}</p>`; return; }
+    const rest = finals.filter((match) => !/tml|friendly/i.test(match.competition || ""));
+    const groups = [
+      { badge: "TML", label: "TML Division 3", cls: "tml", matches: finals.filter((match) => /tml/i.test(match.competition || "")) },
+      { badge: "FND", label: t("friendlyMatches"), cls: "friendly", matches: finals.filter((match) => /friendly/i.test(match.competition || "")) },
+    ].concat(rest.length ? [{ badge: "OTH", label: rest[0].competition || "", cls: "friendly", matches: rest }] : []);
+
+    $("profile-timeline").innerHTML = groups.filter((group) => group.matches.length).map((group) => {
+      const counts = { win: 0, draw: 0, loss: 0 };
+      group.matches.forEach((match) => { counts[outcomeOf(match)] += 1; });
+      const head = `<div class="timeline-group-head"><span class="h-comp ${group.cls}">${group.badge}</span><strong>${esc(group.label)}</strong><small>${counts.win}–${counts.draw}–${counts.loss} ${esc(t("wdl"))} · ${group.matches.length} ${esc(t("matchesRecorded"))}</small></div>`;
+      const rows = group.matches.map((match) => {
+        const app = state.appearances.find((appearance) => appearance.match_id === match.id);
+        const outcome = outcomeOf(match);
+        const resultLetter = outcome === "win" ? t("vizWin") : outcome === "draw" ? t("vizDraw") : t("vizLoss");
+        const scored = state.goals.filter((goal) => goal.scorer_id === state.player.id && goal.match_id === match.id).length;
+        const assisted = state.goals.filter((goal) => goal.assist_id === state.player.id && goal.match_id === match.id).length;
+        const contrib = [scored ? `${scored}⚽` : "", assisted ? `${assisted}🅰️` : ""].filter(Boolean).join(" ");
+        const status = app
+          ? `${app.role === "starter" ? "🟢" : "🔵"} ${esc(t(app.role === "starter" ? "starter" : "substitute"))}${app.position ? ` · ${esc(app.position)}` : ""}`
+          : `⚪ ${esc(t("statusAbsent"))}`;
+        return `<a class="timeline-entry ${group.cls} ${outcome}${app ? "" : " absent"}" href="match.html?id=${encodeURIComponent(match.id)}">
+          <span class="timeline-date">${esc(formatDate(match.date))}</span>
+          <span class="timeline-rail"><i class="timeline-marker"></i></span>
+          <span class="timeline-match">
+            <span class="timeline-opponent">${esc(t("versus"))} ${esc(match.opponent)}</span>
+            <span class="timeline-meta">${status}${contrib ? ` · ${contrib}` : ""}</span>
+          </span>
+          <span class="timeline-score ${outcome}">${Number(match.ycac_goals)}–${Number(match.opponent_goals)}<span>${esc(resultLetter)}</span></span>
+        </a>`;
+      }).join("");
+      return `<div class="timeline-group ${group.cls}">${head}${rows}</div>`;
     }).join("");
   }
 
@@ -167,7 +202,7 @@
     renderHero();
     renderPositions();
     renderStats();
-    renderHistory();
+    renderTimeline();
     renderGoals();
   }
 
