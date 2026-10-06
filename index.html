@@ -105,14 +105,18 @@
         <div><strong id="friendly-clean-sheets">-</strong><span data-i18n="cleanSheets">Clean sheets</span></div>
       </section>
 
-      <section class="insight-grid" aria-label="Season visualizations">
-        <article class="panel distribution-panel">
-          <div class="section-heading"><div><p class="eyebrow" id="distribution-eyebrow">Goals</p><h2 id="distribution-title">Top Scorers</h2></div></div>
-          <div id="goal-distribution" class="goal-distribution"></div>
+      <section class="performance" aria-label="Season performance">
+        <article class="panel performance-panel">
+          <div class="section-heading"><div><p class="eyebrow">TML Division 3</p><h2 data-i18n="perfTrend">Goals per match</h2></div><div class="chart-key" id="perf-tml-key"></div></div>
+          <div id="perf-tml-trend" class="chart-block"></div>
+          <div class="section-heading sub-section"><div><p class="eyebrow" data-i18n="vizEyebrow">Goals</p><h2 data-i18n="vizTopScorers">Top Scorers</h2></div></div>
+          <div id="perf-tml-scorers" class="chart-block"></div>
         </article>
-        <article class="panel timeline-panel">
-          <div class="section-heading"><div><p class="eyebrow" id="timeline-eyebrow">Season 2026</p><h2 id="timeline-title">Results Timeline</h2></div><div class="timeline-key"><span><i class="tml-dot"></i>TML</span><span><i class="friendly-dot"></i><span id="friendly-timeline-label">Friendly</span></span></div></div>
-          <div id="season-timeline" class="season-timeline"></div>
+        <article class="panel performance-panel performance-secondary">
+          <div class="section-heading"><div><p class="eyebrow" data-i18n="friendlyMatches">Friendly Matches</p><h2 data-i18n="perfTrend">Goals per match</h2></div><div class="chart-key" id="perf-friendly-key"></div></div>
+          <div id="perf-friendly-trend" class="chart-block"></div>
+          <div class="section-heading sub-section"><div><p class="eyebrow" data-i18n="vizEyebrow">Goals</p><h2 data-i18n="vizTopScorers">Top Scorers</h2></div></div>
+          <div id="perf-friendly-scorers" class="chart-block"></div>
         </article>
       </section>
 
@@ -133,17 +137,26 @@
       </section>
 
       <section class="panel attendance-panel">
-        <div class="section-heading"><div><p class="eyebrow" data-i18n="availability">Availability</p><h2 data-i18n="attendance">Attendance</h2></div><label class="player-search"><span class="visually-hidden" data-i18n="searchPlayer">Search player</span><input id="attendance-search" type="search" data-i18n-placeholder="searchPlayer" placeholder="Search player" /></label></div>
+        <div class="section-heading"><div><p class="eyebrow" data-i18n="availability">Availability</p><h2 data-i18n="attendanceTml">TML attendance</h2></div><label class="player-search"><span class="visually-hidden" data-i18n="searchPlayer">Search player</span><input id="attendance-search" type="search" data-i18n-placeholder="searchPlayer" placeholder="Search player" /></label></div>
         <div class="attendance-legend" aria-label="Attendance legend">
           <span>🟢 <span data-i18n="starter">Starter</span></span><span>🔵 <span data-i18n="substitute">Substitute</span></span><span>⚽ <span data-i18n="scored">Scored</span></span><span>🧤 <span data-i18n="cleanSheet">Clean sheet (GK)</span></span>
         </div>
         <p class="attendance-swipe-hint" data-i18n="swipeHint">Swipe left and right to view match columns.</p>
         <div class="table-wrap">
           <table>
-            <thead id="attendance-head"></thead>
-            <tbody id="attendance"></tbody>
+            <thead id="tml-attendance-head"></thead>
+            <tbody id="tml-attendance"></tbody>
           </table>
         </div>
+        <details class="attendance-fold" id="friendly-attendance-fold">
+          <summary><span data-i18n="attendanceFriendlyFold">Friendly attendance — supplement</span></summary>
+          <div class="table-wrap">
+            <table>
+              <thead id="fnd-attendance-head"></thead>
+              <tbody id="fnd-attendance"></tbody>
+            </table>
+          </div>
+        </details>
       </section>
 
       <section class="instagram-panel">
@@ -161,6 +174,7 @@
     <script src="i18n.js"></script>
     <script src="data.js"></script>
     <script src="stats.js"></script>
+    <script src="charts.js"></script>
     <script src="auth.js"></script>
     <script src="app.js"></script>
   </body>

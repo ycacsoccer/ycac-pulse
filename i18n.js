@@ -44,6 +44,7 @@ const YCACI18n = (() => {
     recordAria: "{wins} wins, {draws} draws, {losses} losses", seasonEyebrow: "Season 2026",
     vizEyebrow: "Goals", vizTopScorers: "Top Scorers", vizTimeline: "Results Timeline",
     vizFriendly: "Friendly", vizWin: "W", vizDraw: "D", vizLoss: "L",
+    perfTrend: "Goals per match", attendanceTml: "TML attendance", attendanceFriendlyFold: "Friendly attendance — supplement",
     // squad picker page
     pickerPageTitle: "YC&AC Pulse | Squad Picker",
     pickerTeam: "Official Soccer Top Team", pickerBack: "Back to season", pickerTool: "Matchday tool",
@@ -234,6 +235,7 @@ const YCACI18n = (() => {
     recordAria: "{wins}勝 {draws}分 {losses}敗", seasonEyebrow: "2026 シーズン",
     vizEyebrow: "ゴール", vizTopScorers: "得点ランキング", vizTimeline: "シーズン結果",
     vizFriendly: "親善試合", vizWin: "勝", vizDraw: "分", vizLoss: "敗",
+    perfTrend: "試合ごとの得点", attendanceTml: "TMLの出場状況", attendanceFriendlyFold: "フレンドリー戦の出場状況（補足）",
     pickerPageTitle: "YC&AC Pulse | メンバー選出",
     pickerTeam: "公式サッカートップチーム", pickerBack: "シーズンページへ", pickerTool: "試合ツール",
     pickerTitle: "メンバー<br /><em>選出</em>",
@@ -424,6 +426,7 @@ const YCACI18n = (() => {
     recordAria: "{wins}胜 {draws}平 {losses}负", seasonEyebrow: "2026 赛季",
     vizEyebrow: "进球", vizTopScorers: "射手榜", vizTimeline: "赛果时间线",
     vizFriendly: "友谊赛", vizWin: "胜", vizDraw: "平", vizLoss: "负",
+    perfTrend: "每场比赛进球", attendanceTml: "联赛出勤", attendanceFriendlyFold: "友谊赛出勤（补充）",
     pickerPageTitle: "YC&AC Pulse | 阵容选择",
     pickerTeam: "官方足球一线队", pickerBack: "返回赛季页", pickerTool: "比赛日工具",
     pickerTitle: "阵容<br /><em>选择</em>",

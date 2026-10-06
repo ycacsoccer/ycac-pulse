@@ -104,6 +104,26 @@ async function main() {
   check(app.includes("player.html?id=") && app.includes("attendance-player") && app.includes("photoCell"), "attendance rows carry photos + profile links");
   check(app.includes("squad-chips") && page.includes('id="squad-chips"'), "stable-squad container wired app.js → index.html");
   check(page.includes('<script src="stats.js">'), "index.html loads stats.js");
+  check(page.includes('<script src="charts.js">') && app.includes("YCACCharts.trendSVG"), "performance trend charts wired (charts.js → app.js)");
+  check(["perf-tml-trend", "perf-friendly-trend", "perf-tml-scorers", "perf-friendly-scorers"].every((id) => app.includes(`#${id}`) && page.includes(`id="${id}"`)),
+    "performance containers wired app.js → index.html");
+  check(app.includes("#tml-attendance") && app.includes("#fnd-attendance") && page.includes('id="tml-attendance"') && page.includes('id="fnd-attendance"'),
+    "attendance split: TML table + friendly table wired");
+  check(page.includes('<details class="attendance-fold"') && page.includes('id="friendly-attendance-fold"'), "friendly attendance folds behind <details>");
+  check(!page.includes('id="attendance-head"') && !app.includes("#season-timeline"), "old combined attendance table + viz timeline removed");
+
+  // charts.js renders the real TML timeline: one chip per match, correct W/D/L mix
+  const charts = require("./charts.js");
+  const trendMarkup = charts.trendSVG(tmlPlayed, { labels: { result: { W: "W", D: "D", L: "L" } } });
+  const count = (letter) => (trendMarkup.match(new RegExp(`tv-chip-${letter}`, "g")) || []).length;
+  const wins = tmlPlayed.filter((match) => Number(match.ycac_goals) > Number(match.opponent_goals)).length;
+  const draws = tmlPlayed.filter((match) => Number(match.ycac_goals) === Number(match.opponent_goals)).length;
+  const losses = tmlPlayed.length - wins - draws;
+  check(count("w") === wins && count("d") === draws && count("l") === losses,
+    "trend chart: one result chip per TML match", `${wins}W/${draws}D/${losses}L of ${tmlPlayed.length}`);
+  const escapeHtml = (value) => String(value).replace(/[&<>"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[char]));
+  check(tmlPlayed.every((match) => trendMarkup.includes(escapeHtml(String(match.opponent).slice(0, 8)))), "trend chart: every TML opponent labelled");
+  check(charts.stepFor(12) === 4 && charts.stepFor(3) === 1 && charts.stepFor(120) === 20, "trend chart gridline steps stay readable");
   check(page.includes('<details class="results-fold"') && page.includes('id="friendly-results"'), "friendly results fold behind <details>");
   check((i18n.match(/indexSquadTitle:/g) || []).length === 3, "indexSquadTitle translated in all 3 languages",
     `${(i18n.match(/indexSquadTitle:/g) || []).length}/3`);
