@@ -364,3 +364,21 @@ svg.trend-svg { display: block; width: 100%; height: auto; }
 .attendance-fold summary::after { content: " +"; margin-left: .5rem; color: var(--gold); font-family: 'DM Sans', Arial, sans-serif; font-weight: 700; }
 .attendance-fold[open] summary::after { content: " ¡V"; }
 .attendance-fold .table-wrap { margin-top: .9rem; }
+
+/* ---- injury tracking: squad status, badges, admin rows (revamp wave 15) ---- */
+.status-panel { border-top: 3px solid #b0413e; }
+.injury-list { display: grid; gap: .75rem; }
+.injury-card { display: flex; align-items: center; gap: .9rem; padding: .8rem 1rem; background: var(--mist); border-left: 3px solid #b0413e; color: var(--ink); text-decoration: none; transition: background .15s ease, transform .15s ease; }
+.injury-card:hover { background: #fdf1f0; transform: translateX(2px); }
+.injury-card .monogram, .injury-card .avatar { flex: none; width: 36px; height: 36px; font-size: .62rem; }
+.ic-body { display: grid; gap: .12rem; min-width: 0; }
+.ic-name { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .98rem; }
+.ic-detail { color: var(--ink); font-size: .84rem; font-weight: 600; }
+.ic-meta { color: var(--muted); font-size: .72rem; }
+.injured-badge { display: inline-block; padding: .18rem .5rem; color: #8f2f2c; background: #fbe6e5; border: 1px solid #eec9c7; border-radius: 999px; font-size: .6rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+.profile-injury { display: flex; align-items: center; flex-wrap: wrap; gap: .45rem; margin: .9rem 0 0; padding: .65rem .85rem; background: #fbe6e5; border-left: 3px solid #b0413e; color: var(--ink); font-size: .82rem; font-weight: 600; }
+.profile-injury small { color: var(--muted); font-size: .7rem; font-weight: 600; }
+.injury-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .9rem; align-items: end; margin-bottom: 1.4rem; padding: 1rem; background: var(--mist); border: 1px solid var(--line); }
+.injury-form .form-actions { grid-column: 1 / -1; margin-top: 0; }
+.injury-row .ar-meta { color: var(--muted); font-size: .74rem; font-weight: 700; white-space: nowrap; }
+.injury-row .ar-actions { margin-left: auto; }

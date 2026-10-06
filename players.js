@@ -8,7 +8,7 @@
   const TIER_KEYS = { core: "tierCore", rotation: "tierRotation", depth: "tierDepth", inactive: "tierInactive" };
   const POSITION_FILTERS = ["ALL", "GK", "DF", "MF", "AT"];
 
-  const state = { season: null, entries: [], position: "ALL", tier: "ALL", query: "" };
+  const state = { season: null, entries: [], position: "ALL", tier: "ALL", query: "", injured: new Set() };
 
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
   const monogram = (name) => String(name || "?").split(/\s+/).map((word) => word[0]).slice(0, 2).join("").toUpperCase();
@@ -54,6 +54,7 @@
         <strong class="pc-name">${esc(entry.display_name)}</strong>
         <span class="pc-meta">${entry.shirt_number != null ? `#${entry.shirt_number} · ` : ""}${esc(entry.primary_position || "")}</span>
         <span class="tier-badge chip-${entry.tier}">${TIER_EMOJI[entry.tier]} ${esc(t(TIER_KEYS[entry.tier]))}</span>
+        ${state.injured.has(entry.id) ? `<span class="injured-badge">${esc(t("injuredBadge"))}</span>` : ""}
         <span class="pc-stats">${stats}</span>
       </a>`;
     }).join("");
@@ -72,12 +73,14 @@
     });
     if (window.YCACI18n) YCACI18n.onChange(() => renderAll());
     try {
-      const [players, matches, appearances, goals] = await Promise.all([
+      const [players, matches, appearances, goals, injuries] = await Promise.all([
         YCACData.select("players", "select=*&order=display_name"),
         YCACData.select("matches", "select=*&order=date"),
         YCACData.select("appearances", "select=*"),
         YCACData.select("goals", "select=*"),
+        YCACData.select("injuries", "select=player_id").catch(() => []), // badge only: never block the grid
       ]);
+      state.injured = new Set(injuries.map((row) => row.player_id));
       state.season = YCACStats.computeSeason({ players, matches, appearances, goals });
       state.entries = YCACStats.ranked(state.season.players);
       renderAll();

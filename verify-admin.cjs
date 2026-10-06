@@ -3,7 +3,7 @@
 // Signs in an ephemeral COACH user (rostered) and runs every flow the page
 // offers: player create/patch, fixture create/score, lineup & goals replace,
 // signups entry with entered_by, match_notes upsert, team_content upsert
-// (captured + restored), the 9-table backup query set, cascade deletes — plus
+// (captured + restored), the 10-table backup query set, cascade deletes — plus
 // an ephemeral TEAM user to prove writes are denied for non-coaches.
 // Everything it creates is removed afterwards.
 const fs = require("fs");
@@ -49,9 +49,10 @@ const QUERIES = {
   signups: "select=*",
   match_notes: "select=*",
   team_content: "select=*",
+  injuries: "select=*&order=since_date",
 };
 // …and the exact table set the backup button exports.
-const BACKUP_TABLES = ["players", "matches", "appearances", "goals", "signups", "saved_squads", "match_notes", "team_content", "coach_notes"];
+const BACKUP_TABLES = ["players", "matches", "appearances", "goals", "signups", "saved_squads", "match_notes", "team_content", "coach_notes", "injuries"];
 
 const failures = [];
 const check = (ok, label, detail = "") => {
@@ -131,6 +132,7 @@ async function main() {
     check(data.appearances.length >= 100 && data.goals.length >= 30, "appearances + goals queries", `${data.appearances.length} apps, ${data.goals.length} goals`);
     check(Array.isArray(data.signups) && data.signups.length > 0, "signups query", `${data.signups.length} rows`);
     check(Array.isArray(data.match_notes) && Array.isArray(data.team_content), "match_notes + team_content queries", `${data.match_notes.length} notes, ${data.team_content.length} pages`);
+    check(Array.isArray(data.injuries), "injuries query", `${data.injuries.length} rows`); // exact seed baseline lives in verify-injuries
 
     // --- 4. players: create → patch, and team writes denied ------------------
     const probe = { id: P1, display_name: "E2E Admin Probe", shirt_number: 99, primary_position: "ST", secondary_positions: ["AT"], preferred_foot: "right", active: true };
@@ -207,7 +209,7 @@ async function main() {
       check(ins.length === 1 && ins[0].slug === "club-info", "coach creates team_content", ins[0]?.slug);
     }
 
-    // --- 9. backup: the exact 9-table export set ----------------------------
+    // --- 9. backup: the exact 10-table export set ----------------------------
     const backup = {};
     await Promise.all(BACKUP_TABLES.map(async (table) => {
       backup[table] = await call(`${BASE}/${table}?select=*`, { headers: bearerHeaders(coachToken) });

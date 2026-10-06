@@ -30,6 +30,16 @@ function render(data) {
   document.querySelector("#friendly-title").textContent = friendlyLabel; document.querySelector("#friendly-results-label").textContent = friendlyLabel;
   document.querySelector("#updated").textContent = `${t("liveData")} · ${tmlMatches.length} ${t("matchesRecorded")}`;
   document.querySelector("#friendly-updated").textContent = `${friendlyMatches.length} ${t("matchesRecorded")}`;
+  // Squad status — current injuries (revamp 15): public cards linking to profiles.
+  const injuries = data.injuries || [];
+  document.querySelector("#squad-status").hidden = !injuries.length;
+  document.querySelector("#injury-list").innerHTML = injuries.map((row) => {
+    const player = players.get(row.player_id) || { display_name: row.player_id };
+    const meta = [`${t("injurySince")} ${esc(formatDate(row.since_date))}`, row.expected_return ? `${t("injuryReturn")} ${esc(row.expected_return)}` : ""]
+      .filter(Boolean).join(" · ");
+    return `<a class="injury-card" href="player.html?id=${encodeURIComponent(row.player_id)}">${photoCell(player)}<span class="ic-body"><strong class="ic-name">${esc(player.display_name)}</strong><span class="ic-detail">${esc(row.detail)}</span><span class="ic-meta">${meta}</span></span></a>`;
+  }).join("");
+
   // Performance charts — SVG trend per competition (revamp 14): goals for/against
   // bars along the timeline with W-D-L chips, then the scorer bars underneath.
   const perfLegend = `<span><i class="key-for"></i>${t("goalsFor")}</span><span><i class="key-against"></i>${t("goalsAgainst")}</span>`;
@@ -87,13 +97,14 @@ YCACI18n.onChange(() => { YCACI18n.apply(document); if (dashboardData) render(da
 document.querySelector("#attendance-search").addEventListener("input", (event) => { attendanceSearch = event.target.value.trim().toLocaleLowerCase(); if (dashboardData) render(dashboardData); });
 (async () => {
   try {
-    const [players, matches, appearances, goals] = await Promise.all([
+    const [players, matches, appearances, goals, injuries] = await Promise.all([
       YCACData.select("players", "select=*&order=display_name"),
       YCACData.select("matches", "select=*&order=date"),
       YCACData.select("appearances", "select=*"),
       YCACData.select("goals", "select=*"),
+      YCACData.select("injuries", "select=*&order=since_date").catch(() => []), // supplementary: never block the dashboard
     ]);
-    dashboardData = { players, matches, appearances, goals };
+    dashboardData = { players, matches, appearances, goals, injuries };
     render(dashboardData);
   } catch (error) {
     console.error(error);

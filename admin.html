@@ -34,6 +34,7 @@
         <button type="button" class="admin-tab" data-tab="signups" data-i18n="coachSignups">Signups</button>
         <button type="button" class="admin-tab" data-tab="notes" data-i18n="adminNotes">Match notes</button>
         <button type="button" class="admin-tab" data-tab="content" data-i18n="adminContent">Team content</button>
+        <button type="button" class="admin-tab" data-tab="injuries" data-i18n="adminInjuries">Injuries</button>
         <button type="button" class="admin-tab" data-tab="backup" data-i18n="adminBackup">Backup</button>
       </nav>
 
@@ -101,6 +102,22 @@
         </div>
         <p class="admin-note" data-i18n="adminContentNote">Shown as written on the team page — the interface is translated, coach-authored text is not.</p>
         <div id="admin-content" class="content-grid"></div>
+      </section>
+
+      <!-- Injuries ----------------------------------------------------------->
+      <section class="panel admin-panel" data-panel="injuries" hidden>
+        <div class="section-heading">
+          <div><p class="eyebrow" data-i18n="adminInjuries">Injuries</p><h2 data-i18n="injuriesTitle">Current injuries</h2></div>
+        </div>
+        <p class="admin-note" data-i18n="adminInjuriesNote">Shown on the public index and player profiles. Removing a row clears the injury — history is not kept.</p>
+        <form id="injury-form" class="injury-form">
+          <label class="field"><span data-i18n="player">Player</span><select id="injury-player" required></select></label>
+          <label class="field"><span data-i18n="injuryDetail">Injury</span><input id="injury-detail" type="text" required data-i18n-placeholder="injuryDetailPh" placeholder="e.g. Minor knee injury" /></label>
+          <label class="field"><span data-i18n="injurySince">Since</span><input id="injury-since" type="date" required /></label>
+          <label class="field"><span data-i18n="injuryReturn">Expected return</span><input id="injury-return" type="text" data-i18n-placeholder="injuryReturnPh" placeholder="e.g. ~early Nov" /></label>
+          <div class="form-actions"><button class="primary-button" type="submit" data-i18n="injuryAdd">Record injury</button></div>
+        </form>
+        <div id="admin-injuries" class="injury-list"></div>
       </section>
 
       <!-- Backup ------------------------------------------------------------->

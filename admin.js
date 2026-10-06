@@ -21,11 +21,11 @@
     { slug: "coach-instructions", key: "contentCoachInstructions" },
     { slug: "club-info", key: "contentClubInfo" },
   ];
-  const BACKUP_TABLES = ["players", "matches", "appearances", "goals", "signups", "saved_squads", "match_notes", "team_content", "coach_notes"];
+  const BACKUP_TABLES = ["players", "matches", "appearances", "goals", "signups", "saved_squads", "match_notes", "team_content", "coach_notes", "injuries"];
 
   const state = {
     tab: "players",
-    players: [], matches: [], appearances: [], goals: [], signups: [], notes: [], content: [],
+    players: [], matches: [], appearances: [], goals: [], signups: [], notes: [], content: [], injuries: [],
     query: "",
     editingPlayer: null, // { mode: "create"|"edit", row }
     editingMatch: null,  // { mode, row, lineup, goalsRows, originalLineup, originalGoals, search }
@@ -55,7 +55,7 @@
   }
 
   async function load() {
-    const [players, matches, appearances, goals, signups, notes, content] = await Promise.all([
+    const [players, matches, appearances, goals, signups, notes, content, injuries] = await Promise.all([
       YCACData.select("players", "select=*&order=display_name"),
       YCACData.select("matches", "select=*&order=date.desc"),
       YCACData.select("appearances", "select=*"),
@@ -63,6 +63,7 @@
       YCACData.select("signups", "select=*"),
       YCACData.select("match_notes", "select=*"),
       YCACData.select("team_content", "select=*"),
+      YCACData.select("injuries", "select=*&order=since_date"),
     ]);
     state.players = players;
     state.matches = matches;
@@ -71,6 +72,7 @@
     state.signups = signups;
     state.notes = notes;
     state.content = content;
+    state.injuries = injuries;
     state.signupMatchId = defaultMatchId("signups");
     state.noteMatchId = defaultMatchId("notes");
     initSignupDraft();
@@ -102,7 +104,7 @@
     document.querySelectorAll(".admin-panel").forEach((panel) => { panel.hidden = panel.dataset.panel !== state.tab; });
     const renderers = {
       players: renderPlayers, matches: renderMatches, signups: renderSignups,
-      notes: renderNotes, content: renderContent, backup: () => {},
+      notes: renderNotes, content: renderContent, injuries: renderInjuries, backup: () => {},
     };
     renderers[state.tab]();
   }
@@ -741,6 +743,64 @@
     }
   }
 
+  // ---- injuries tab (revamp wave 15) ----------------------------------------
+
+  function renderInjuries() {
+    const injuredIds = new Set(state.injuries.map((row) => row.player_id));
+    const choices = state.players.filter((player) => player.active !== false && !injuredIds.has(player.id));
+    $("injury-player").innerHTML = choices.map((player) => `<option value="${esc(player.id)}">${esc(player.display_name)}</option>`).join("");
+    if (!$("injury-since").value) $("injury-since").value = now().slice(0, 10);
+    $("admin-injuries").innerHTML = state.injuries.map((row) => {
+      const player = state.players.find((entry) => entry.id === row.player_id);
+      const meta = [`${t("injurySince")} ${esc(formatDate(row.since_date))}`, row.expected_return ? `${t("injuryReturn")} ${esc(row.expected_return)}` : ""]
+        .filter(Boolean).join(" · ");
+      return `<div class="admin-row injury-row">
+        ${photoSpan(player || { display_name: row.player_id })}
+        <div class="ar-id"><a href="player.html?id=${encodeURIComponent(row.player_id)}">${esc(player?.display_name || row.player_id)}</a><small>${esc(row.detail)}</small></div>
+        <span class="ar-meta">${meta}</span>
+        <div class="ar-actions">
+          <button class="quiet-button small" type="button" data-action="remove-injury" data-id="${esc(row.player_id)}">${esc(t("injuryRemove"))}</button>
+        </div>
+      </div>`;
+    }).join("") || `<p class="empty">${esc(t("injuriesEmpty"))}</p>`;
+  }
+
+  async function addInjury(event) {
+    event.preventDefault();
+    const playerId = $("injury-player").value;
+    const detail = $("injury-detail").value.trim();
+    const since = $("injury-since").value;
+    if (!playerId || !detail || !since) { setStatus(t("adminSaveFail"), "fail"); return; }
+    try {
+      const [row] = await YCACData.insert("injuries", {
+        player_id: playerId, detail, since_date: since,
+        expected_return: $("injury-return").value.trim() || null,
+        updated_at: new Date().toISOString(), updated_by: YCACAuth.session?.email || "coach",
+      });
+      state.injuries = [...state.injuries, row].sort((a, b) => String(a.since_date).localeCompare(String(b.since_date)));
+      $("injury-detail").value = "";
+      $("injury-return").value = "";
+      $("injury-since").value = "";
+      renderInjuries();
+      setStatus(t("adminSaved"), "ok");
+    } catch (error) {
+      console.error(error);
+      setStatus(t("adminSaveFail"), "fail");
+    }
+  }
+
+  async function removeInjury(id) {
+    try {
+      await YCACData.remove("injuries", `player_id=eq.${encodeURIComponent(id)}`);
+      state.injuries = state.injuries.filter((row) => row.player_id !== id);
+      renderInjuries();
+      setStatus(t("adminSaved"), "ok");
+    } catch (error) {
+      console.error(error);
+      setStatus(t("adminSaveFail"), "fail");
+    }
+  }
+
   // ---- wiring ---------------------------------------------------------------
 
   function onPlayerRowAction(event) {
@@ -844,6 +904,11 @@
       if (button) saveContent(button.closest("[data-slug]").dataset.slug);
     });
     $("backup-button").addEventListener("click", backup);
+    $("injury-form").addEventListener("submit", addInjury);
+    $("admin-injuries").addEventListener("click", (event) => {
+      const button = event.target.closest('[data-action="remove-injury"]');
+      if (button) removeInjury(button.dataset.id);
+    });
     if (window.YCACI18n) YCACI18n.onChange(() => renderAll());
 
     try {

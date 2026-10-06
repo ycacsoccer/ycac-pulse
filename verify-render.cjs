@@ -68,6 +68,10 @@ const check = (ok, label, detail = "") => {
   check(el("perf-tml-scorers").innerHTML.includes("goal-bar"), "TML scorer bars rendered");
   check(el("perf-friendly-scorers").innerHTML.includes("goal-bar"), "friendly scorer bars rendered");
 
+  // squad status (revamp 15): visible only once the injuries table is live
+  const injuryCards = (el("injury-list").innerHTML.match(/injury-card/g) || []).length;
+  check(!el("squad-status").hidden && injuryCards === 4, "squad status: current injuries rendered", `${injuryCards} cards`);
+
   const tmlRows = (el("tml-attendance").innerHTML.match(/<tr>/g) || []).length;
   const fndRows = (el("fnd-attendance").innerHTML.match(/<tr>/g) || []).length;
   check(tmlRows >= 30, "TML attendance table rows", `${tmlRows} rows`);

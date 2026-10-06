@@ -18,7 +18,7 @@
   const DECLINED_STATES = ["declined", "unavailable"];
   const GROUPS = ["GK", "DF", "MF", "AT", "Other"];
 
-  const state = { lens: "tml", season: null, players: [], signups: [], appearances: [], fixtures: [] };
+  const state = { lens: "tml", season: null, players: [], signups: [], appearances: [], fixtures: [], injuries: [] };
 
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
   const formatDate = (value) => (value && window.YCACI18n ? YCACI18n.formatDate(value) : value || "");
@@ -32,12 +32,13 @@
   }
 
   async function load() {
-    const [players, matches, appearances, goals, signups] = await Promise.all([
+    const [players, matches, appearances, goals, signups, injuries] = await Promise.all([
       YCACData.select("players", "select=id,display_name,shirt_number,primary_position,photo_path,active&order=display_name"),
       YCACData.select("matches", "select=*&order=date"),
       YCACData.select("appearances", "select=*"),
       YCACData.select("goals", "select=*"),
       YCACData.select("signups", "select=match_id,player_id,status"), // team table: needs the session
+      YCACData.select("injuries", "select=*&order=since_date"),
     ]);
     let overrides = {};
     try {
@@ -48,6 +49,7 @@
     state.players = players;
     state.signups = signups;
     state.appearances = appearances;
+    state.injuries = injuries;
     state.season = YCACStats.computeSeason({ players, matches, appearances, goals, signups, statusOverrides: overrides });
     state.fixtures = state.season.fixtures;
   }
@@ -192,12 +194,26 @@
       : `<p class="empty">${esc(t("flagNone"))}</p>`;
   }
 
+  function renderInjuries() { /* revamp 15 — squad status cards, empty state is good news */
+    const target = $("coach-injuries");
+    if (!target) return;
+    if (!state.injuries.length) { target.innerHTML = `<p class="empty">${esc(t("injuriesEmpty"))}</p>`; return; }
+    const byId = new Map(state.players.map((player) => [player.id, player]));
+    target.innerHTML = state.injuries.map((row) => {
+      const player = byId.get(row.player_id) || { display_name: row.player_id };
+      const meta = [`${t("injurySince")} ${esc(formatDate(row.since_date))}`, row.expected_return ? `${t("injuryReturn")} ${esc(row.expected_return)}` : ""]
+        .filter(Boolean).join(" · ");
+      return `<a class="injury-card" href="player.html?id=${encodeURIComponent(row.player_id)}">${photoCell(player)}<span class="ic-body"><strong class="ic-name">${esc(player.display_name)}</strong><span class="ic-detail">${esc(row.detail)}</span><span class="ic-meta">${meta}</span></span></a>`;
+    }).join("");
+  }
+
   function renderAll() {
     if (!state.season) return;
     renderSummary();
     renderFixture();
     renderBoard();
     renderCoverage();
+    renderInjuries();
     renderFlags();
   }
 

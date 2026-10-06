@@ -11,7 +11,7 @@
   const VALID_ID = /^[a-z0-9_-]+$/i;
 
   const id = new URLSearchParams(location.search).get("id") || "";
-  const state = { player: null, players: [], matches: [], appearances: [], goals: [], entry: null, isCoach: false };
+  const state = { player: null, players: [], matches: [], appearances: [], goals: [], entry: null, injury: null, isCoach: false };
 
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
   const formatDate = (value) => (value && window.YCACI18n ? YCACI18n.formatDate(value) : value || "");
@@ -33,6 +33,10 @@
     state.matches = matches;
     state.appearances = appearances;
     state.goals = goals;
+    try { // current injury badge — supplementary, never blocks the profile
+      const injury = await YCACData.select("injuries", `select=*&player_id=eq.${id}`);
+      state.injury = injury[0] || null;
+    } catch (error) { state.injury = null; }
     // Profiles render for inactive/retired players too — force-include this row.
     state.entry = YCACStats.computeSeason({ players: [{ ...player, active: true }], matches, appearances, goals }).players[0];
     return true;
@@ -67,6 +71,7 @@
           ${facts.map(([label, value]) => `<span><small>${esc(label)}</small>${value}</span>`).join("")}
           <span><small>${esc(t("filterTier"))}</small><span class="tier-badge chip-${entry.tier}">${TIER_EMOJI[entry.tier]} ${esc(t(TIER_KEYS[entry.tier]))}</span></span>
         </div>
+        ${state.injury ? `<p class="profile-injury"><span class="injured-badge">${esc(t("injuredBadge"))}</span> ${esc(state.injury.detail)}<small>${esc(t("injurySince"))} ${esc(formatDate(state.injury.since_date))}${state.injury.expected_return ? ` · ${esc(t("injuryReturn"))} ${esc(state.injury.expected_return)}` : ""}</small></p>` : ""}
         <div class="profile-upload">
           ${state.isCoach ? `<button id="photo-upload" class="quiet-button" type="button">${esc(t("uploadPhoto"))}</button>` : ""}
           <span id="upload-status" class="upload-status" aria-live="polite"></span>
