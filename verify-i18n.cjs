@@ -55,7 +55,7 @@ for (const file of ["index.html", "squad-picker.html", "login.html", "coach.html
 for (const file of ["app.js", "squad-picker.js", "login.js", "auth.js", "coach.js", "players.js", "player.js", "admin.js", "match.js", "team.js"]) {
   collect(/\bt\("([^"]+)"/g, read(file), file);
   // KEYS tables store key names as values ("tierCore": …) — collect those too
-  collect(/"((?:coach|lens|tier|signup|flag|stat|shirt|foot|admin|content|note)[A-Z][A-Za-z0-9]*)"/g, read(file), file);
+  collect(/"((?:coach|lens|tier|signup|flag|stat|shirt|foot|admin|content|note|players)[A-Z][A-Za-z0-9]*)"/g, read(file), file);
 }
 
 let missingCount = 0;

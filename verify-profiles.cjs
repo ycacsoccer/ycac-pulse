@@ -141,6 +141,15 @@ async function main() {
     check(profileJs.includes("profile-tiles") && profileJs.includes("kpiGoalsPerGame"),
       "profile hero stat tiles (apps, goals, goals/game, attendance)");
 
+    // --- 1d. wave 18 — position sections + selection-group wording ------------
+    const gridPage = fs.readFileSync(path.join(__dirname, "players.html"), "utf8");
+    check(gridPage.includes('class="position-sections"') && gridPage.includes('data-i18n="filterTierNote"'),
+      "players page: position sections + selection-group explainer");
+    check(gridPage.includes('data-i18n="filterTier"') && !gridPage.includes(">Tier<") && !gridPage.includes("Tier filter"),
+      "tier wording replaced on the player list");
+    check(gridJs.includes("POSITION_SECTIONS") && gridJs.includes("position-section"),
+      "grid broken down into position sections");
+
     // --- 2. photo upload is coach-only ---------------------------------------
     const anonUpload = await postObject(null);
     check(anonUpload.status >= 400, "anon photo upload denied", `status ${anonUpload.status}`);

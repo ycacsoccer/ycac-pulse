@@ -432,3 +432,10 @@ a.timeline-entry:hover { background: var(--gold-pale); }
 .timeline-entry.loss .timeline-marker { background: #9d1c1c; box-shadow: 0 0 0 1px #9d1c1c; }
 .timeline-entry.absent { opacity: .6; }
 .timeline-entry.absent .timeline-marker { background: #c8d0da; box-shadow: 0 0 0 1px #c8d0da; }
+
+/* ── Wave 18: player list grouped into position sections + selection-group note ── */
+.position-sections { display: grid; gap: 1.9rem; }
+.position-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; margin-bottom: .9rem; padding-bottom: .5rem; border-bottom: 2px solid var(--navy); }
+.position-section-head h3 { margin: 0; color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.12rem; font-weight: 700; letter-spacing: -.02em; }
+.position-count { color: var(--muted); font-size: .64rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.filter-note { flex: 1 0 100%; margin: .1rem 0 0; padding: .5rem .7rem; background: var(--gold-pale); border-left: 3px solid var(--gold); color: var(--muted); font-size: .68rem; font-weight: 600; line-height: 1.5; }

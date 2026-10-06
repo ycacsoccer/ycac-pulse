@@ -9,6 +9,8 @@
   const TIER_EMOJI = { core: "🟢", rotation: "🔵", depth: "🟡", inactive: "⚪" };
   const TIER_KEYS = { core: "tierCore", rotation: "tierRotation", depth: "tierDepth", inactive: "tierInactive" };
   const POSITION_FILTERS = ["ALL", "GK", "DF", "MF", "AT"];
+  // Grid sections, in formation order — the list is broken down by position.
+  const POSITION_SECTIONS = [["GK", "playersGk"], ["DF", "playersDf"], ["MF", "playersMf"], ["AT", "playersAt"], ["Other", "playersOther"]];
 
   const state = { season: null, entries: [], position: "ALL", tier: "ALL", query: "", injured: new Set() };
 
@@ -46,11 +48,11 @@
       $("players-grid").innerHTML = `<p class="empty">${esc(t("playersNoMatch"))}</p>`;
       return;
     }
-    // wave 17 — cards carry the key facts: shirt/position, tier (+ injury),
-    // TML and friendly appearance percentages, season apps + goals.
+    // wave 17 — cards carry the key facts: shirt/position, selection group
+    // (+ injury), TML and friendly appearance percentages, season apps + goals.
     const denom = { tml: state.season.buckets.tml.length, friendly: state.season.buckets.friendly.length, all: state.season.buckets.all.length };
     const pct = (value) => (value == null ? "–" : `${value}%`);
-    $("players-grid").innerHTML = rows.map((entry) => {
+    const card = (entry) => {
       const tml = entry.competitions.tml, fnd = entry.competitions.friendly, all = entry.competitions.all;
       return `<a class="player-card" href="player.html?id=${encodeURIComponent(entry.id)}">
         ${photoMarkup(entry)}
@@ -66,7 +68,16 @@
         </span>
         <span class="pc-tot">${all.played}/${denom.all} ${esc(t("statApps").toLowerCase())} · ${all.goals} ${esc(t("statGoals").toLowerCase())}</span>
       </a>`;
-    }).join("");
+    };
+    // wave 18 — one section per position group (formation order), skipping empty ones.
+    $("players-grid").innerHTML = POSITION_SECTIONS
+      .map(([group, key]) => ({ key, members: rows.filter((entry) => entry.position_group === group) }))
+      .filter((section) => section.members.length)
+      .map((section) => `<section class="position-section">
+        <div class="position-section-head"><h3>${esc(t(section.key))}</h3><span class="position-count">${section.members.length}</span></div>
+        <div class="players-grid">${section.members.map(card).join("")}</div>
+      </section>`)
+      .join("");
   }
 
   function renderAll() {
