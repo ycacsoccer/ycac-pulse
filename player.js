@@ -140,9 +140,27 @@
     }).join("");
   }
 
+  function renderPositions() { /* revamp 13 — pitch diagram: best ★ + capable */
+    const player = state.player;
+    const best = player.primary_position || "";
+    const capable = player.secondary_positions || [];
+    if (!best && !capable.length) { $("profile-positions").innerHTML = `<p class="empty">${esc(t("positionsEmpty"))}</p>`; return; }
+    const diagram = window.YCACPositionMap ? YCACPositionMap.svg(best, capable) : "";
+    const label = (cls, key, value) => `<span class="pm-label ${cls}"><small>${esc(t(key))}</small><strong>${esc(value)}</strong></span>`;
+    $("profile-positions").innerHTML = `
+      <div class="position-map-grid">
+        <div class="position-map-figure">${diagram}</div>
+        <div class="position-map-key">
+          ${best ? label("pm-label-best", "positionBest", best) : ""}
+          ${capable.length ? label("pm-label-capable", "positionCapable", capable.join(" · ")) : ""}
+        </div>
+      </div>`;
+  }
+
   function renderAll() {
     if (!state.player) return;
     renderHero();
+    renderPositions();
     renderStats();
     renderHistory();
     renderGoals();

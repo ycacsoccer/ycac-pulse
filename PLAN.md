@@ -177,6 +177,18 @@ Thresholds live in `stats.js`; coach can override per player in `coach_notes`.
 | **11** | Squad picker rewire (Supabase, photos, core-weighted suggest) | ✅ **done** — team-gated boot, coach-only save to `saved_squads` (deactivate-then-insert), photo cards, stats.js suggest; Apps Script/gviz gone; `verify-picker.cjs` 41/41 |
 | **12** | Cleanup: dead code in `squad-picker.js` (~8 duplicate defs), gviz/Apps Script removal, retire `.xlsx` generators, README | ✅ **done** — 27 dead lines gone (one `squadImageSVG` left), `verify-stats.cjs` now reads Supabase, `.xlsx` generators + workbooks deleted, orphan i18n keys pruned; README data-source section rewritten |
 
+**Revamp waves (PLAN v4, 06 Oct 2026)** — coach's requests after go-live:
+
+| Phase | Scope | Status |
+|---|---|---|
+| **13** | **Position diagrams** — seed `secondary_positions` for the squad, pitch diagram on every profile: best position ★ + capable positions | ✅ **done** — 33 outfield players seeded (GKs none, Rick → ST override), `positionmap.js` SVG pitch, Positions panel on profile, 6 new checks in `verify-profiles.cjs` (27/27) |
+| **14** | **Performance charts + attendance split** — `charts.js` (hand-rolled SVG, no libraries): per-competition goals timeline, W/D-L results and scorer bars on the public index (TML main panel, friendly secondary); the availability table is **replaced** by a TML attendance table (primary, sorted by TML %) plus a friendly attendance fold; index section restructure | planned |
+| **15** | **Injuries** — `0002_injuries.sql` (public read / coach write), seed Kosei · Ryoga · Yuto · Souta, admin **Injuries** tab, public squad-status panel on index, badges on players grid, profile, squad picker and coach board | planned |
+| **16** | Docs refresh + full suite green | planned |
+
+Note: the injuries wave needs one manual step — no SQL-execution path exists for the service key,
+so `0002_injuries.sql` gets pasted into the Supabase SQL Editor once (README workflow).
+
 Phases ship independently. Phase 3 needs no Supabase and can start immediately; phases 4–11 need
 the project to exist. **All phases are now done** (0–12); the `verify-*.cjs` suite guards each area.
 

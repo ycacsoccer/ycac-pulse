@@ -113,6 +113,24 @@ async function main() {
     check(YCACStats.TIER_ORDER.includes(entry.tier) && (entry.reliability === null || Number.isInteger(entry.reliability)), "tier + reliability valid", `tier ${entry.tier}, reliability ${entry.reliability}`);
     check(["left", "right", "both", null].includes(player.preferred_foot), "preferred_foot value valid", String(player.preferred_foot));
 
+    // --- 1b. position diagram (revamp 13) ------------------------------------
+    const outfield = players.filter((row) => row.primary_position !== "GK");
+    const keepers = players.filter((row) => row.primary_position === "GK");
+    check(outfield.length > 0 && outfield.every((row) => Array.isArray(row.secondary_positions) && row.secondary_positions.length > 0),
+      "every outfield player has capable positions", `${outfield.length} outfield players`);
+    check(keepers.every((row) => (row.secondary_positions || []).length === 0), "keepers have no capable outfield positions", `${keepers.length} keepers`);
+    const positionMap = require("./positionmap.js");
+    check(players.every((row) => positionMap.known(row.primary_position)), "every primary position has diagram coordinates");
+    const page = fs.readFileSync(path.join(__dirname, "player.html"), "utf8");
+    check(page.includes('id="profile-positions"') && page.includes('src="positionmap.js"'), "player.html includes the diagram panel + positionmap.js");
+    const sample = outfield[0];
+    const markup = positionMap.svg(sample.primary_position, sample.secondary_positions);
+    check(markup.includes("pm-best") && sample.secondary_positions.every((code) => markup.includes(`>${code.toUpperCase()}<`)),
+      "diagram renders best + capable dots", `${sample.display_name}: ${sample.primary_position} + ${sample.secondary_positions.join(",")}`);
+    const deduped = positionMap.svg("RB", ["RB", "LB"]);
+    check((deduped.match(/>RB</g) || []).length === 1 && (deduped.match(/>LB</g) || []).length === 1,
+      "best position excluded from capable dots");
+
     // --- 2. photo upload is coach-only ---------------------------------------
     const anonUpload = await postObject(null);
     check(anonUpload.status >= 400, "anon photo upload denied", `status ${anonUpload.status}`);

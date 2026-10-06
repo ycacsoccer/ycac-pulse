@@ -323,3 +323,20 @@ a.match:hover { background: var(--gold-pale); }
   .attendance-panel th:nth-child(3), .attendance-panel td:nth-child(3) { left: 154px; min-width: 60px; max-width: 60px; }
   .attendance-panel th:nth-child(4), .attendance-panel td:nth-child(4) { left: 214px; min-width: 44px; max-width: 44px; }
 }
+
+/* ---- player position diagram (revamp wave 13) ---- */
+.position-map-grid { display: grid; grid-template-columns: minmax(220px, 300px) 1fr; gap: clamp(1.2rem, 4vw, 2.4rem); align-items: center; }
+.position-map-figure { max-width: 300px; margin: 0 auto; }
+svg.position-map { display: block; width: 100%; height: auto; }
+svg.position-map .pm-lines { fill: none; stroke: #c9d4e0; stroke-width: 1.5; }
+svg.position-map .pm-pitch { fill: #f7fafc; }
+svg.position-map .pm-best circle { fill: var(--navy); stroke: var(--gold); stroke-width: 3; }
+svg.position-map .pm-best text { fill: #fff; font: 700 9px 'DM Sans', Arial, sans-serif; text-anchor: middle; }
+svg.position-map .pm-capable circle { fill: #fff; stroke: var(--navy); stroke-width: 1.6; opacity: .75; }
+svg.position-map .pm-capable text { fill: var(--navy); font: 700 8.5px 'DM Sans', Arial, sans-serif; text-anchor: middle; opacity: .8; }
+.position-map-key { display: grid; gap: .8rem; }
+.pm-label { display: grid; gap: .2rem; padding: .7rem .9rem; border-left: 3px solid var(--line); background: var(--mist); }
+.pm-label small { color: var(--muted); font-size: .62rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.pm-label strong { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.05rem; }
+.pm-label-best { border-left-color: var(--gold); background: var(--gold-pale); }
+@media (max-width: 640px) { .position-map-grid { grid-template-columns: 1fr; } }
