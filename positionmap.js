@@ -61,7 +61,25 @@
     </svg>`;
   }
 
-  const api = { COORDS, known, svg };
+  /* editable(primary, secondary) — wave 20 coach editor: EVERY coordinate
+     becomes a tappable slot (data-pos) so positions are chosen from the pitch
+     itself. States: pm-best (gold ring) / pm-capable / pm-empty (open slot).
+     Not aria-hidden — slots are focusable buttons (role/tabindex). */
+  function editable(primary, secondary = []) {
+    const best = String(primary || "").toUpperCase();
+    const capable = [...new Set((secondary || []).map((code) => String(code).toUpperCase()).filter((code) => code && code !== best))].filter(known);
+    const slots = Object.keys(COORDS).map((code) => {
+      const state = best && code === best ? "pm-best" : capable.includes(code) ? "pm-capable" : "pm-empty";
+      const point = COORDS[code];
+      const radius = state === "pm-best" ? 10 : state === "pm-capable" ? 9 : 8;
+      return `<g class="pm-slot ${state}" data-pos="${code}" role="button" tabindex="0" aria-label="${esc(code)}"><circle cx="${point.x}" cy="${point.y}" r="${radius}" /><text x="${point.x}" y="${point.y}" dy="3">${esc(code)}</text></g>`;
+    }).join("");
+    return `<svg class="position-map editable" viewBox="0 0 200 300">
+      <g class="pm-lines">${pitchOutline()}</g>${slots}
+    </svg>`;
+  }
+
+  const api = { COORDS, known, svg, editable };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (typeof window !== "undefined") window.YCACPositionMap = api;
 })();

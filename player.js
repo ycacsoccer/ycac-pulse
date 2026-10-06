@@ -3,7 +3,9 @@
    attendance), info, positions diagram, stats split TML/Friendly/All
    (attendance + goals per game rows), a PERFORMANCE TIMELINE of every final
    match — absences labelled — and goals. Coaches get an "Update photo"
-   control (storage RLS enforces is_coach() regardless of what the UI shows). */
+   control and a pitch-tap position editor (tap a slot to set the BEST
+   position or toggle CAN-PLAY ones) — storage/table RLS enforce is_coach()
+   regardless of what the UI shows. */
 (() => {
   const t = (key, vars) => (window.YCACI18n ? YCACI18n.t(key, vars) : key);
   const $ = (id) => document.getElementById(id);
@@ -13,7 +15,10 @@
   const VALID_ID = /^[a-z0-9_-]+$/i;
 
   const id = new URLSearchParams(location.search).get("id") || "";
-  const state = { player: null, players: [], matches: [], appearances: [], goals: [], entry: null, injury: null, isCoach: false };
+  // posEdit: coach position editor draft (wave 20) — posMode picks what a tap
+  // means (set BEST vs toggle CAN-PLAY); posStatus is an i18n key or "".
+  const state = { player: null, players: [], matches: [], appearances: [], goals: [], entry: null, injury: null, isCoach: false,
+    posEdit: false, posMode: "best", posBest: "", posCapable: [], posStatus: "" };
 
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
   const formatDate = (value) => (value && window.YCACI18n ? YCACI18n.formatDate(value) : value || "");
@@ -182,11 +187,24 @@
     }).join("");
   }
 
+  /* View mode — pitch diagram (revamp 13). Coaches get an "Edit positions"
+     button + the last save status; the editor itself is rendered when a
+     position draft is open (renderPositionEditor below). */
+  const posStatusText = () => (state.posStatus === "positionsSaving" ? t("positionsSaving")
+    : state.posStatus === "positionsSaved" ? t("positionsSaved")
+    : state.posStatus === "positionsSaveFail" ? t("positionsSaveFail") : "");
+
   function renderPositions() { /* revamp 13 — pitch diagram: best ★ + capable */
+    if (state.posEdit) { renderPositionEditor(); return; }
     const player = state.player;
     const best = player.primary_position || "";
     const capable = player.secondary_positions || [];
-    if (!best && !capable.length) { $("profile-positions").innerHTML = `<p class="empty">${esc(t("positionsEmpty"))}</p>`; return; }
+    const status = posStatusText();
+    const coachRow = state.isCoach ? `<div class="pos-edit-row">
+        <button class="quiet-button small" type="button" data-pos-action="edit">${esc(t("positionsEdit"))}</button>
+        ${status ? `<span class="upload-status" aria-live="polite">${esc(status)}</span>` : ""}
+      </div>` : "";
+    if (!best && !capable.length) { $("profile-positions").innerHTML = `<p class="empty">${esc(t("positionsEmpty"))}</p>${coachRow}`; return; }
     const diagram = window.YCACPositionMap ? YCACPositionMap.svg(best, capable) : "";
     const label = (cls, key, value) => `<span class="pm-label ${cls}"><small>${esc(t(key))}</small><strong>${esc(value)}</strong></span>`;
     $("profile-positions").innerHTML = `
@@ -196,7 +214,126 @@
           ${best ? label("pm-label-best", "positionBest", best) : ""}
           ${capable.length ? label("pm-label-capable", "positionCapable", capable.join(" · ")) : ""}
         </div>
+      </div>${coachRow}`;
+  }
+
+  /* Editor mode — every coordinate becomes a tappable slot (positionmap
+     .editable). The mode toggle decides what a tap does; Save writes
+     primary_position + secondary_positions in one PATCH (RLS still requires
+     is_coach() regardless of what the UI shows). */
+  function renderPositionEditor() {
+    const best = state.posBest;
+    const capable = state.posCapable;
+    const diagram = window.YCACPositionMap ? YCACPositionMap.editable(best, capable) : "";
+    const hint = state.posMode === "best" ? t("positionsEditHintBest") : t("positionsEditHintCapable");
+    const status = posStatusText();
+    const label = (cls, key, value) => `<span class="pm-label ${cls}"><small>${esc(t(key))}</small><strong>${esc(value || "–")}</strong></span>`;
+    const modeBtn = (mode, key) => `<button class="pos-mode${state.posMode === mode ? " is-on" : ""}" type="button" data-pos-mode="${mode}" aria-pressed="${state.posMode === mode}">${esc(t(key))}</button>`;
+    $("profile-positions").innerHTML = `
+      <div class="position-map-grid editing">
+        <div class="position-map-figure">${diagram}</div>
+        <div class="position-map-key">
+          <div class="pos-mode-row" role="group">${modeBtn("best", "positionBest")}${modeBtn("capable", "positionCapable")}</div>
+          <p class="pos-hint">${esc(hint)}</p>
+          ${label("pm-label-best", "positionBest", best)}
+          ${label("pm-label-capable", "positionCapable", capable.join(" · "))}
+          <div class="pos-edit-row">
+            <button class="primary-button small" type="button" data-pos-action="save" ${state.posStatus === "positionsSaving" ? "disabled" : ""}>${esc(t("adminSave"))}</button>
+            <button class="quiet-button small" type="button" data-pos-action="cancel">${esc(t("adminCancel"))}</button>
+            ${status ? `<span class="upload-status" aria-live="polite">${esc(status)}</span>` : ""}
+          </div>
+        </div>
       </div>`;
+  }
+
+  function startEdit() {
+    if (!state.isCoach || !state.player) return;
+    state.posEdit = true;
+    state.posMode = "best";
+    state.posBest = state.player.primary_position || "";
+    state.posCapable = [...(state.player.secondary_positions || [])];
+    state.posStatus = "";
+    renderPositions();
+  }
+
+  function pickSlot(code) {
+    const slot = String(code || "").toUpperCase();
+    if (!window.YCACPositionMap || !YCACPositionMap.known(slot)) return;
+    if (state.posMode === "best") {
+      if (slot !== state.posBest) { // a best pick supersedes any can-play entry
+        state.posBest = slot;
+        state.posCapable = state.posCapable.filter((item) => String(item).toUpperCase() !== slot);
+      }
+    } else if (slot !== String(state.posBest || "").toUpperCase()) {
+      // unknown (non-_COORDS) codes already stored are left untouched
+      state.posCapable = state.posCapable.some((item) => String(item).toUpperCase() === slot)
+        ? state.posCapable.filter((item) => String(item).toUpperCase() !== slot)
+        : [...state.posCapable, slot];
+    }
+    state.posStatus = "";
+    renderPositions();
+  }
+
+  async function savePositions() {
+    if (!state.posEdit || !state.isCoach || state.posStatus === "positionsSaving") return;
+    state.posStatus = "positionsSaving";
+    renderPositions();
+    const patch = {
+      primary_position: state.posBest || null,
+      secondary_positions: state.posCapable.filter((item) => String(item).toUpperCase() !== String(state.posBest || "").toUpperCase()),
+    };
+    try {
+      const rows = await YCACData.update("players", patch, `id=eq.${state.player.id}`);
+      // RLS may let the request through while writing NOTHING (0 rows) —
+      // that is a failed save, never a success.
+      if (!Array.isArray(rows) || rows.length !== 1) throw new Error(`position save affected ${Array.isArray(rows) ? rows.length : "?"} row(s)`);
+      state.player.primary_position = patch.primary_position;
+      state.player.secondary_positions = patch.secondary_positions;
+      state.posEdit = false;
+      state.posStatus = "positionsSaved";
+      // position_group feeds the stats table (GK clean sheets) + hero facts
+      state.entry = YCACStats.computeSeason({ players: [{ ...state.player, active: true }], matches: state.matches, appearances: state.appearances, goals: state.goals }).players[0];
+      renderAll();
+    } catch (error) {
+      console.error(error);
+      state.posStatus = "positionsSaveFail";
+      renderPositions(); // stay in the editor so the coach can retry
+    }
+  }
+
+  function handlePosAction(action) {
+    if (action === "edit") return startEdit();
+    if (!state.posEdit || !state.isCoach) return; // stale listeners no-op
+    if (action === "cancel") { state.posEdit = false; state.posStatus = ""; renderPositions(); }
+    else if (action === "save") savePositions();
+  }
+
+  /* One delegated listener each on #profile-positions (the panel element
+     survives every innerHTML swap). Slots are SVG <g role="button"> — they
+     need an explicit keydown; the mode/action controls are real buttons. */
+  function onPositionsClick(event) {
+    const target = event && event.target;
+    if (!target || typeof target.closest !== "function") return;
+    const action = target.closest("[data-pos-action]");
+    if (action) { handlePosAction(action.getAttribute("data-pos-action")); return; }
+    if (!state.posEdit || !state.isCoach) return;
+    const mode = target.closest("[data-pos-mode]");
+    if (mode) {
+      state.posMode = mode.getAttribute("data-pos-mode") === "capable" ? "capable" : "best";
+      state.posStatus = "";
+      renderPositions();
+      return;
+    }
+    const slot = target.closest("[data-pos]");
+    if (slot) pickSlot(slot.getAttribute("data-pos"));
+  }
+
+  function onPositionsKeydown(event) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const target = event && event.target;
+    if (!target || typeof target.closest !== "function") return;
+    const slot = target.closest("[data-pos]");
+    if (slot && state.posEdit && state.isCoach) { event.preventDefault(); pickSlot(slot.getAttribute("data-pos")); }
   }
 
   function renderAll() {
@@ -236,6 +373,8 @@
 
   (async () => {
     $("photo-input").addEventListener("change", uploadPhoto);
+    $("profile-positions").addEventListener("click", onPositionsClick);
+    $("profile-positions").addEventListener("keydown", onPositionsKeydown);
     if (window.YCACI18n) YCACI18n.onChange(() => renderAll());
     if (!VALID_ID.test(id)) { renderNotFound(); return; }
     try {
@@ -244,7 +383,7 @@
       renderAll();
       if (YCACAuth.session) {
         try { state.isCoach = await YCACAuth.isCoach(); } catch (error) { state.isCoach = false; }
-        if (state.isCoach) renderHero();
+        if (state.isCoach) renderAll(); // hero photo button + positions Edit control
       }
     } catch (error) {
       console.error(error);

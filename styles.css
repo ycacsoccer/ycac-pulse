@@ -337,6 +337,22 @@ svg.position-map .pm-capable text { fill: var(--navy); font: 700 8.5px 'DM Sans'
 .pm-label small { color: var(--muted); font-size: .62rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 .pm-label strong { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.05rem; }
 .pm-label-best { border-left-color: var(--gold); background: var(--gold-pale); }
+
+/* wave 20 — coach position editor: tap-a-slot pitch + mode toggle */
+svg.position-map .pm-slot { cursor: pointer; outline: none; }
+svg.position-map .pm-slot circle { transition: stroke .15s ease, fill .15s ease; }
+svg.position-map .pm-empty circle { fill: #fff; stroke: var(--line); stroke-width: 1.6; stroke-dasharray: 3 3; }
+svg.position-map .pm-empty text { fill: var(--muted); font: 700 8.5px 'DM Sans', Arial, sans-serif; text-anchor: middle; }
+svg.position-map .pm-slot:hover circle,
+svg.position-map .pm-slot:focus-visible circle { stroke: var(--gold); stroke-width: 3; stroke-dasharray: none; }
+svg.position-map .pm-slot:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.position-map-grid.editing { align-items: start; }
+.pos-mode-row { display: flex; flex-wrap: wrap; gap: .4rem; }
+.pos-mode { padding: .5rem .85rem; min-height: 38px; background: white; border: 1px solid var(--line); color: var(--navy); font: 700 .68rem 'DM Sans', Arial, sans-serif; letter-spacing: .04em; cursor: pointer; }
+.pos-mode.is-on { color: white; background: var(--navy); border-color: var(--navy); }
+.pos-hint { margin: 0; color: var(--muted); font-size: .76rem; line-height: 1.55; }
+.pos-edit-row { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; }
+.pos-edit-row button[disabled] { opacity: .6; cursor: default; }
 @media (max-width: 640px) { .position-map-grid { grid-template-columns: 1fr; } }
 
 /* ---- performance charts: goals timeline + scorers (revamp wave 14) ---- */

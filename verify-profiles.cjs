@@ -1,8 +1,8 @@
 // Data-path + storage check for the profile pages (players.html / player.html):
 //   node verify-profiles.cjs
-// Public queries run as anon; the photo-upload flow runs exactly like player.js
-// does it (upload → PATCH players.photo_path → restore) with ephemeral users.
-// Everything it creates is removed afterwards.
+// Public queries run as anon; the photo-upload flow AND the wave-20 position
+// editor run exactly like the page does them (coach PATCH → verify → restore)
+// with ephemeral users. Everything it creates is removed afterwards.
 const fs = require("fs");
 const path = require("path");
 const YCACStats = require("./stats.js");
@@ -79,7 +79,7 @@ async function main() {
   if (!secret || !publishable) throw new Error("missing credentials (.env / config.js)");
   console.log(`Verifying profile pages against ${env.SUPABASE_URL}\n`);
 
-  const state = { coachId: null, teamId: null, rosterAdded: false, photoPlayer: null, originalPhoto: undefined };
+  const state = { coachId: null, teamId: null, rosterAdded: false, photoPlayer: null, originalPhoto: undefined, posPlayer: null, originalPositions: null };
 
   try {
     await slate();
@@ -159,6 +159,22 @@ async function main() {
     check(gridJs.includes("POSITION_SECTIONS") && gridJs.includes("position-section"),
       "grid broken down into position sections");
 
+    // --- 1e. wave 20 — coach position editor (tap-a-slot on the pitch) -------
+    const editMarkup = positionMap.editable(sample.primary_position, sample.secondary_positions);
+    const slotCount = (editMarkup.match(/data-pos="/g) || []).length;
+    check(slotCount === Object.keys(positionMap.COORDS).length,
+      "editable diagram renders every position slot", `${slotCount} slots`);
+    check(!editMarkup.includes("aria-hidden") && editMarkup.includes('role="button"') && editMarkup.includes('tabindex="0"'),
+      "editable slots are focusable buttons (not aria-hidden)");
+    check(editMarkup.includes('pm-slot pm-best"') && editMarkup.includes('pm-slot pm-capable"') && editMarkup.includes('pm-slot pm-empty"'),
+      "editable diagram marks best / capable / empty slot states");
+    check(profileJs.includes("YCACPositionMap.editable") && profileJs.includes('data-pos-action="edit"') && profileJs.includes("state.isCoach"),
+      "player.js: coach-gated pitch editor wired to #profile-positions");
+    check(profileJs.includes('update("players"') && profileJs.includes("secondary_positions") && profileJs.includes("rows.length !== 1"),
+      "player.js saves best + can-play positions with a 0-row guard");
+    check(profileJs.includes('addEventListener("keydown"') && profileJs.includes('closest("[data-pos]")'),
+      "pitch slots are keyboard-operable (keydown → pickSlot)");
+
     // --- 2. photo upload is coach-only ---------------------------------------
     const anonUpload = await postObject(null);
     check(anonUpload.status >= 400, "anon photo upload denied", `status ${anonUpload.status}`);
@@ -193,10 +209,51 @@ async function main() {
 
     const del = await fetch(`${STORAGE}/object/player-photos/${PROBE_PATH}`, { method: "DELETE", headers: { apikey: publishable, Authorization: `Bearer ${coachToken}` } });
     check(del.ok, "coach deletes own photo object", `status ${del.status}`);
+
+    // --- 4. wave 20 — position editor writes (best + can-play) ---------------
+    state.posPlayer = player.id;
+    const posOriginal = await call(`${BASE}/players?id=eq.${player.id}&select=primary_position,secondary_positions`, { headers: adminHeaders });
+    state.originalPositions = { primary_position: posOriginal[0].primary_position, secondary_positions: posOriginal[0].secondary_positions };
+
+    // anon + team may fire the SAME PATCH player.js runs — both must be no-ops
+    const attemptPositions = async (token, body) => {
+      const response = await fetch(`${BASE}/players?id=eq.${player.id}`, {
+        method: "PATCH",
+        headers: { ...(token ? bearerHeaders(token) : anonHeaders), Prefer: "return=representation" },
+        body: JSON.stringify(body),
+      });
+      const text = await response.text();
+      let rows = null;
+      try { rows = text ? JSON.parse(text) : null; } catch (error) { rows = null; }
+      return { status: response.status, rows };
+    };
+    const anonAttempt = await attemptPositions(null, { primary_position: "GK" });
+    check(anonAttempt.status >= 400 || (Array.isArray(anonAttempt.rows) && anonAttempt.rows.length === 0),
+      "anon position edit denied", `status ${anonAttempt.status}`);
+    const teamAttempt = await attemptPositions(teamGrant.access_token, { primary_position: "GK" });
+    check(teamAttempt.status >= 400 || (Array.isArray(teamAttempt.rows) && teamAttempt.rows.length === 0),
+      "team session position edit denied (read-only)", `status ${teamAttempt.status}`);
+    const afterAttempts = await call(`${BASE}/players?id=eq.${player.id}&select=primary_position`, { headers: adminHeaders });
+    check(afterAttempts[0].primary_position === state.originalPositions.primary_position,
+      "position unchanged after anon/team attempts", String(afterAttempts[0].primary_position));
+
+    // the coach flow, exactly like player.js savePositions()
+    const probeBest = Object.keys(positionMap.COORDS).find((code) => code !== state.originalPositions.primary_position) || "ST";
+    const probeCapable = ["LW", "RW"].filter((code) => code !== probeBest);
+    const posPatched = await call(`${BASE}/players?id=eq.${player.id}`, {
+      method: "PATCH", headers: { ...bearerHeaders(coachToken), Prefer: "return=representation" },
+      body: JSON.stringify({ primary_position: probeBest, secondary_positions: probeCapable }),
+    });
+    check(posPatched.length === 1 && posPatched[0].primary_position === probeBest
+      && Array.isArray(posPatched[0].secondary_positions) && posPatched[0].secondary_positions.join(",") === probeCapable.join(","),
+      "coach writes best + can-play positions", `${posPatched.length} row`);
   } finally {
     // --- restore everything ---------------------------------------------------
     if (state.photoPlayer !== null && state.originalPhoto !== undefined) {
       await call(`${BASE}/players?id=eq.${state.photoPlayer}`, { method: "PATCH", headers: adminHeaders, body: JSON.stringify({ photo_path: state.originalPhoto }) }).catch(() => {});
+    }
+    if (state.posPlayer !== null && state.originalPositions) {
+      await call(`${BASE}/players?id=eq.${state.posPlayer}`, { method: "PATCH", headers: adminHeaders, body: JSON.stringify(state.originalPositions) }).catch(() => {});
     }
     await slate();
   }
@@ -210,6 +267,12 @@ async function main() {
     const restored = await call(`${BASE}/players?id=eq.${state.photoPlayer}&select=photo_path`, { headers: adminHeaders });
     check((restored[0]?.photo_path ?? null) === state.originalPhoto, "photo_path restored to original", String(restored[0]?.photo_path));
   }
+  if (state.posPlayer && state.originalPositions) {
+    const posRestored = await call(`${BASE}/players?id=eq.${state.posPlayer}&select=primary_position,secondary_positions`, { headers: adminHeaders });
+    check(posRestored[0].primary_position === state.originalPositions.primary_position
+      && JSON.stringify(posRestored[0].secondary_positions) === JSON.stringify(state.originalPositions.secondary_positions),
+      "positions restored to original", String(posRestored[0].primary_position));
+  }
   const roster = await call(`${BASE}/coach_roster?select=email`, { headers: adminHeaders });
   check(roster.length === 1, "coach_roster restored", roster.map((row) => row.email).join(", "));
   const users = await call(`${AUTH}/admin/users`, { headers: adminHeaders });
@@ -221,7 +284,7 @@ async function main() {
     console.log(`${failures.length} FAILURE(S): ${failures.join(" | ")}`);
     process.exit(1);
   }
-  console.log("Profile pages verified: public queries, stats split, photo upload (coach-only).");
+  console.log("Profile pages verified: public queries, stats split, photo + position writes (coach-only).");
 }
 
 main().catch((error) => { console.error(`ERROR ${error.message}`); process.exit(1); });

@@ -27,6 +27,8 @@ Live at https://ycacsoccer.github.io/ycac-pulse/
 | 16 | Docs refresh | done — README/PLAN current; full 13-verifier suite green |
 | 17 | Chart & card round 2 | done — diverging goals chart (for above zero, against below), KPI rate strips (goals/game, conceded/game, win %, attendance/game), player cards with TML + friendly percentages, profile hero stat tiles + performance timeline with every match incl. absences; verified by `node verify-profile-render.cjs` (14 verifiers total) |
 | 18 | Player list round 2 | done — player grid grouped into position sections (GK/DF/MF/AT); "Tier" renamed **Selection group** and the four bands named by appearance frequency only (**Plays often / Plays sometimes / Plays occasionally / Not yet played**) with a tactics/availability explainer — no ability or hierarchy wording; 329 i18n keys ×3 |
+| 19 | Profile goal-badge fix | done — profile goal rows are badged TML/FND from the match's competition (the goals query was missing `competition`, so every friendly goal read TML); guarded by `verify-profile-render.cjs` + `verify-profiles.cjs` |
+| 20 | Coach position editor | done — on a player profile a coach taps a slot on the pitch diagram to set the **best position** or toggle **can-play** positions (mode switch, Save/Cancel, keyboard-operable slots); coach-only UI, writes still RLS-gated by `is_coach()` with a 0-row save guard; 335 i18n keys ×3; covered by `verify-profiles.cjs` + `verify-profile-render.cjs` |
 
 The plan (10 requirements mapped to screens) and the reasoning behind it live in [`PLAN.md`](PLAN.md).
 
@@ -87,7 +89,9 @@ node verify-injuries.cjs   node verify-profile-render.cjs
 - **render** — executes `index.html`'s `render()` under a DOM stub against live data
   (this test caught the attendance `match.match_id` bug)
 - **profile-render** — executes the player grid + profile under a DOM stub: card
-  percentages, hero stat tiles, one timeline row per final match (absences included)
+  percentages, hero stat tiles, one timeline row per final match (absences included),
+  goal badges vs ground truth, and the coach position editor driven click-by-click
+  (Edit → tap pitch slots → mode switch → save → cancel)
 - **injuries** — migration contract, public read, anon/team write denial, coach CRUD
 
 ## Publish with GitHub Pages

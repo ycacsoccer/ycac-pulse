@@ -1,6 +1,6 @@
 # YC&AC Pulse — Coach & Management Revamp Plan
 
-v6 · Oct 2026 · Status: **all 18 phases complete — all 14 `verify-*.cjs` checks green**
+v7 · Oct 2026 · Status: **all 20 phases complete — all 14 `verify-*.cjs` checks green**
 
 > **v2:** data source moved off Google Sheets to Supabase.
 > **v3:** ten numbered requirements captured from the coach/management side; login model,
@@ -11,6 +11,8 @@ v6 · Oct 2026 · Status: **all 18 phases complete — all 14 `verify-*.cjs` che
 > player cards with TML/friendly percentages, profile performance timeline incl. absences.
 > **v6:** player list round 2 (wave 18): grid grouped into position sections;
 > "Tier" renamed **Selection group** site-wide with a tactics/availability explainer.
+> **v7:** goal-badge fix (wave 19) + coach position editor (wave 20): profile goal rows
+> badged from the match's competition; coaches set best/can-play positions by tapping pitch slots.
 
 ---
 
@@ -193,12 +195,14 @@ Thresholds live in `stats.js`; coach can override per player in `coach_notes`.
 | **16** | Docs refresh + full suite green | ✅ **done** — README status table extended (13–16), migration steps cover `0002`, new Verify section documents all 13 verifiers; PLAN/README current; full suite green at commit |
 | **17** | **Chart & card round 2** — diverging goals chart (for above the zero line, against below it), KPI rate strips per competition (goals/game, conceded/game, win %, attendance/game), player cards showing TML + friendly appearance percentages, profile hero stat tiles and a performance timeline of every final match with absences labelled | ✅ **done** — `charts.js` diverging SVG + `kpis()` (baseline-anchored geometry asserted), `#perf-*-kpi` strips, `pc-quick` card cells, `profile-tiles` in the hero, `#profile-timeline` (TML/friendly groups, ⚪ Absent rows, result-coloured rail) + new `verify-profile-render.cjs` (grid + profile executed under a DOM stub vs live data) — **all 14 verifiers green** |
 | **18** | **Player list round 2** — grid grouped into position sections (GK/DF/MF/AT with name + count heads) and the "Tier" concept renamed so it never reads as an ability ranking: **Selection group** named purely by appearance frequency (**Plays often / Plays sometimes / Plays occasionally / Not yet played** — no hierarchy words) + an explainer that it is a tactics/formation planning aid from attendance & availability, reassessed every match | ✅ **done** — `POSITION_SECTIONS` grouping in `players.js` (skips empty groups, works with filters/search), site-wide value rename in `i18n.js` (EN/JA/ZH: よく出場/たまに出場/数試合に出場/まだ出場なし · 经常出场/有时出场/偶尔出场/尚未出场), `filterTierNote` callout on players + coach pages, `.position-sections` styles; 6 new keys ×3 (**329 total**), `verify-i18n` KEYS regex extended for dynamic `t(section.key)` use — **all 14 verifiers green** |
+| **19** | **Profile goal-badge fix** — each goal row on a profile must be badged TML/FND from the match it was scored in: the goals query silently omitted `competition`, so `compClass()` defaulted **every** friendly goal to TML on the profile (the DB data itself was correct) | ✅ **done** — goals query now `select=*,matches(date,opponent,competition)` in `player.js`; `verify-profile-render` asserts rendered TML/FND badge counts against ground truth per scorer, `verify-profiles` guards that every goal row embeds `match.competition` — **all 14 verifiers green** |
+| **20** | **Coach position editor** — on a player profile a coach taps a slot on the pitch diagram to set the **best position** or toggle **can-play** positions (segmented mode switch, keyboard-operable slots, Save/Cancel), replacing manual position entry for the common case | ✅ **done** — `positionmap.js` `.editable()` renders all 17 `_COORDS` slots as `role=button`/`tabindex` targets (pm-best / pm-capable / pm-empty), `player.js` draft state + one delegated click/keydown pair on `#profile-positions` + `YCACData.update("players", …)` with a **0-row save guard** (RLS still enforces `is_coach()` whatever the UI shows), coach-only "Edit positions" control re-rendered once the role resolves; styles for `.pm-slot`/`.pm-empty`/`.pos-mode-row`/`.pos-edit-row`; 6 new keys ×3 (**335 total**), `verify-profiles` (editable diagram + anon/team denied + coach write round-trip with restore) + `verify-profile-render` (public view has no editor; full Edit → tap → mode → save → cancel interaction under a listener-recording DOM stub) — **all 14 verifiers green** |
 
 Note: the injuries wave needs one manual step — no SQL-execution path exists for the service key,
 so `0002_injuries.sql` gets pasted into the Supabase SQL Editor once (README workflow).
 
 Phases ship independently. Phase 3 needs no Supabase and can start immediately; phases 4–11 need
-the project to exist. **All phases are now done** (0–18, including the post-launch revamp waves 13–18); the `verify-*.cjs` suite (14 scripts) guards each area.
+the project to exist. **All phases are now done** (0–20, including the post-launch revamp waves 13–20); the `verify-*.cjs` suite (14 scripts) guards each area.
 
 ---
 

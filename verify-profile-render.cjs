@@ -2,9 +2,11 @@
 //   node verify-profile-render.cjs
 // Executes players.js (grid) and player.js (profile) under a minimal DOM stub
 // against live ANON data. Asserts the wave-17 cards carry TML + friendly
-// appearance percentages, the profile shows hero stat tiles, and the timeline
+// appearance percentages, the profile shows hero stat tiles, the timeline
 // has a row for EVERY final match — absences labelled (the picked player is
-// the one who has missed the most matches while still having played).
+// the one who has missed the most matches while still having played) — and
+// (wave 20) drives the coach position editor: Edit → tap pitch slots →
+// mode switch → save (stubbed, no DB write) → cancel.
 const fs = require("fs");
 global.window = globalThis;
 global.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
@@ -59,8 +61,11 @@ const get = async (path) => {
   const htmlIds = new Set(pages.flatMap((page) => [...page.matchAll(/id="([^"]+)"/g)].map((match) => match[1])));
   const unknownIds = [];
   const elements = new Map();
-  const makeEl = (id) => ({ id, innerHTML: "", textContent: "", value: "", hidden: false, title: "", style: {}, dataset: {},
-    classList: { toggle() {}, add() {}, remove() {} }, setAttribute() {}, getAttribute: () => null, addEventListener() {} });
+  // listeners are RECORDED (not no-ops) so section 6 can dispatch real clicks
+  // at the delegated handlers player.js attaches to #profile-positions.
+  const makeEl = (id) => ({ id, innerHTML: "", textContent: "", value: "", hidden: false, title: "", style: {}, dataset: {}, listeners: {},
+    classList: { toggle() {}, add() {}, remove() {} }, setAttribute() {}, getAttribute: () => null,
+    addEventListener(type, fn) { (this.listeners[type] = this.listeners[type] || []).push(fn); } });
   const bySelector = (selector) => {
     if (!selector.startsWith("#")) return makeEl(selector);
     const id = selector.slice(1);
@@ -125,6 +130,10 @@ const get = async (path) => {
   check(tiles === 4 && hero.includes("Goals / game") && hero.includes(`pt-of">/${finals.length}<`) && /\d+%/.test(hero),
     "hero stat tiles: apps/goals, goals per game, attendance", `${tiles} tiles`);
 
+  // wave 20: visitors see the diagram only — no pitch-tap editor controls
+  check(!el("profile-positions").innerHTML.includes("data-pos-action") && !el("profile-positions").innerHTML.includes("data-pos-mode"),
+    "public profile: diagram without editor controls");
+
   const stats = el("profile-stats").innerHTML;
   check(stats.includes("Attendance") && stats.includes("Goals / game"),
     "stats table: attendance + goals-per-game rows");
@@ -174,6 +183,98 @@ const get = async (path) => {
   } else {
     check(false, "no scorer has goals in both competitions to badge-check");
   }
+
+  // --- 6. wave 20: coach position editor (tap a slot → draft → save) --------
+  const posMap = require("./positionmap.js");
+  delete require.cache[require.resolve("./player.js")];
+  global.YCACAuth = { session: { access_token: "e2e-stub" }, isCoach: async () => true, ensureFresh: async () => null };
+  // wipe listeners recorded by the earlier (public) instances so only the
+  // coach instance below reacts to the dispatches
+  (elements.get("profile-positions")).listeners = {};
+  el("profile-positions").innerHTML = "";
+  require("./player.js");
+  const editDeadline = Date.now() + 15000;
+  while (Date.now() < editDeadline && !el("profile-positions").innerHTML.includes('data-pos-action="edit"')) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  const posPanel = () => el("profile-positions").innerHTML;
+  check(posPanel().includes('data-pos-action="edit"'), "coach profile shows the Edit positions control");
+  check(!posPanel().includes("data-pos-mode"), "coach view mode has no editor until Edit is tapped");
+
+  const firePos = (type, event) => ((elements.get("profile-positions").listeners || {})[type] || []).forEach((fn) => fn(event));
+  const tapPos = (attrs) => firePos("click", { target: { closest: (selector) => {
+    const name = selector.replace(/[[\]]/g, "");
+    return attrs[name] !== undefined ? { getAttribute: () => attrs[name] } : null;
+  } } });
+
+  tapPos({ "data-pos-action": "edit" });
+  const slotsOpen = (posPanel().match(/data-pos="/g) || []).length;
+  check(slotsOpen === 17 && posPanel().includes("pm-empty"),
+    "editor renders all 17 pitch slots with open ones", `${slotsOpen} slots`);
+  check(posPanel().includes('data-pos-mode="best" aria-pressed="true"')
+    && posPanel().includes('data-pos-action="save"') && posPanel().includes('data-pos-action="cancel"'),
+    "editor has mode toggle + save/cancel");
+  check(posPanel().includes("Tap a slot on the pitch to set the best position."),
+    "best-mode hint shown (EN)");
+
+  const editingId = new URLSearchParams(global.location.search).get("id") || "";
+  const editingPlayer = players.find((row) => row.id === editingId) || {};
+  const originalBest = String(editingPlayer.primary_position || "").toUpperCase();
+  const bestPick = Object.keys(posMap.COORDS).find((code) => code !== originalBest);
+  tapPos({ "data-pos": bestPick });
+  check(posPanel().includes(`pm-best" data-pos="${bestPick}"`) && posPanel().includes(`<strong>${bestPick}</strong>`),
+    `tapping a slot sets the BEST position (${bestPick})`);
+
+  tapPos({ "data-pos-mode": "capable" });
+  check(posPanel().includes('data-pos-mode="capable" aria-pressed="true"')
+    && posPanel().includes("Tap a slot to add or remove a can-play position."),
+    "mode toggle switches to CAN-PLAY (hint + aria-pressed)");
+
+  const capPool = Object.keys(posMap.COORDS)
+    .filter((code) => code !== bestPick && !(editingPlayer.secondary_positions || []).includes(code));
+  check(capPool.length >= 2, "two free slots available for the can-play test", `${capPool.length} free`);
+  const [capPick, keyPick] = capPool;
+  tapPos({ "data-pos": capPick });
+  check(posPanel().includes(`pm-capable" data-pos="${capPick}"`),
+    `tapping toggles a CAN-PLAY slot (${capPick})`);
+
+  // keyboard: Enter on a <g role="button"> slot does the same as a tap
+  firePos("keydown", { key: "Enter", preventDefault() {}, target: { closest: (selector) => (
+    selector === "[data-pos]" ? { getAttribute: () => keyPick } : null
+  ) } });
+  check(posPanel().includes(`pm-capable" data-pos="${keyPick}"`),
+    `Enter on a slot toggles it too (${keyPick})`);
+
+  // save — stub YCACData.update so NOTHING is written to the live database
+  let savedPayload = null;
+  const realUpdate = global.YCACData.update;
+  global.YCACData.update = async (table, rows, query) => { savedPayload = { table, rows, query }; return [{ id: editingId, ...rows }]; };
+  tapPos({ "data-pos-action": "save" });
+  const saveDeadline = Date.now() + 5000;
+  while (Date.now() < saveDeadline && !savedPayload) await new Promise((resolve) => setTimeout(resolve, 50));
+  check(savedPayload && savedPayload.table === "players" && savedPayload.query === `id=eq.${editingId}`,
+    "save PATCHes the players row", savedPayload ? savedPayload.query : "no payload");
+  check(savedPayload && savedPayload.rows.primary_position === bestPick
+    && Array.isArray(savedPayload.rows.secondary_positions)
+    && savedPayload.rows.secondary_positions.includes(capPick)
+    && !savedPayload.rows.secondary_positions.includes(bestPick),
+    "payload: best set, can-play toggled in, best excluded from can-play");
+  const confirmDeadline = Date.now() + 5000;
+  while (Date.now() < confirmDeadline && !posPanel().includes("Positions updated.")) await new Promise((resolve) => setTimeout(resolve, 50));
+  check(!posPanel().includes("data-pos-mode") && posPanel().includes("Positions updated.")
+    && posPanel().includes('data-pos-action="edit"'),
+    "editor closes with a saved confirmation");
+  global.YCACData.update = realUpdate;
+
+  // cancel — draft changes are discarded, the saved status clears
+  tapPos({ "data-pos-action": "edit" });
+  check(posPanel().includes("data-pos-mode"), "Edit reopens the editor");
+  tapPos({ "data-pos-mode": "capable" });
+  tapPos({ "data-pos": bestPick }); // the BEST slot can't double as can-play
+  tapPos({ "data-pos-action": "cancel" });
+  check(!posPanel().includes("data-pos-mode") && !posPanel().includes("Positions updated.")
+    && posPanel().includes(`<strong>${bestPick}</strong>`),
+    "Cancel discards the draft and clears the save status");
 
   console.log("");
   if (failures.length) {
