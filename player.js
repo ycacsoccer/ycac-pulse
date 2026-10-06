@@ -27,7 +27,9 @@
       YCACData.select("players", "select=*&order=display_name"),
       YCACData.select("matches", "select=*&order=date"),
       YCACData.select("appearances", `select=*,matches(date,opponent,competition,ycac_goals,opponent_goals)&player_id=eq.${id}`),
-      YCACData.select("goals", `select=*,matches(date,opponent)&or=(scorer_id.eq.${id},assist_id.eq.${id})`),
+      // competition must come with the embedded match: renderGoals() badges each
+      // row TML/FND from match.competition (without it every goal read as TML).
+      YCACData.select("goals", `select=*,matches(date,opponent,competition)&or=(scorer_id.eq.${id},assist_id.eq.${id})`),
     ]);
     const player = players.find((row) => row.id === id);
     if (!player) return false;

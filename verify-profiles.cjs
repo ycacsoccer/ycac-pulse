@@ -97,10 +97,19 @@ async function main() {
     check(Boolean(player), "top scorer resolved for the detail page", `${player?.display_name} (${scorerCounts.get(topScorerId)} goals)`);
 
     const appRows = await call(`${BASE}/appearances?select=*,matches(date,opponent,competition,ycac_goals,opponent_goals)&player_id=eq.${player.id}`, { headers: anonHeaders });
-    const goalRows = await call(`${BASE}/goals?select=*,matches(date,opponent)&or=(scorer_id.eq.${player.id},assist_id.eq.${player.id})`, { headers: anonHeaders });
+    const goalRows = await call(`${BASE}/goals?select=*,matches(date,opponent,competition)&or=(scorer_id.eq.${player.id},assist_id.eq.${player.id})`, { headers: anonHeaders });
     check(appRows.length >= 5, "appearances query with embedded match", `${appRows.length} rows`);
     check(Boolean(appRows[0]?.matches?.date) && !Array.isArray(appRows[0].matches), "embedded match arrives as an object with date");
     check(goalRows.some((goal) => goal.scorer_id === player.id && goal.matches?.date), "goals or-filter (scorer OR assist) with embedded match", `${goalRows.length} rows`);
+    // wave 19: the profile badges each goal row TML/FND from match.competition —
+    // a goals query WITHOUT competition silently labels every goal "TML".
+    check(goalRows.length > 0 && goalRows.every((goal) => Boolean(goal.matches?.competition)),
+      "every goal row embeds match competition (profile TML/FND badge depends on it)",
+      `${goalRows.filter((goal) => goal.matches?.competition).length} of ${goalRows.length} rows`);
+    const compById = Object.fromEntries(matches.map((match) => [match.id, match.competition]));
+    const scoredByComp = allGoals.reduce((acc, goal) => { const c = compById[goal.match_id] || ""; return /friendly/i.test(c) ? { ...acc, fnd: acc.fnd + 1 } : /tml/i.test(c) ? { ...acc, tml: acc.tml + 1 } : acc; }, { tml: 0, fnd: 0 });
+    check(scoredByComp.tml > 0 && scoredByComp.fnd > 0, "season has goals in BOTH competitions (badge split is meaningful)",
+      `${scoredByComp.tml} TML + ${scoredByComp.fnd} FND`);
 
     const finals = new Set(matches.filter((match) => match.ycac_goals != null && match.opponent_goals != null).map((match) => match.id));
     const entry = YCACStats.computeSeason({ players: [{ ...player, active: true }], matches, appearances: appRows, goals: goalRows }).players[0];

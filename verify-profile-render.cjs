@@ -142,6 +142,39 @@ const get = async (path) => {
   check(timeline.includes('href="match.html?id='), "timeline rows link to match review");
   check(el("profile-goals").innerHTML.length > 0, "goals panel renders (rows or empty state)");
 
+  // --- 5. wave 19: goal rows must be BADGED by the match's competition ------
+  // (the goals query used to omit `competition`, so every friendly goal read TML)
+  const compOf = new Map(finals.map((match) => [match.id, match.competition]));
+  const scorer = players.filter((player) => player.active !== false)
+    .map((player) => ({
+      id: player.id, name: player.display_name,
+      tml: goals.filter((g) => g.scorer_id === player.id && /tml/i.test(compOf.get(g.match_id) || "")).length,
+      fnd: goals.filter((g) => g.scorer_id === player.id && /friendly/i.test(compOf.get(g.match_id) || "")).length,
+    }))
+    .find((player) => player.tml > 0 && player.fnd > 0);
+  if (scorer) {
+    delete require.cache[require.resolve("./player.js")];
+    global.location = { search: `?id=${scorer.id}`, href: "http://localhost/", pathname: "/", hash: "" };
+    el("profile-goals").innerHTML = "";
+    require("./player.js");
+    const scoreDeadline = Date.now() + 15000;
+    while (Date.now() < scoreDeadline && !el("profile-goals").innerHTML) await new Promise((r) => setTimeout(r, 100));
+    const goalRows = el("profile-goals").innerHTML;
+    const tmlBadges = (goalRows.match(/h-comp tml">TML/g) || []).length;
+    const fndBadges = (goalRows.match(/h-comp friendly">FND/g) || []).length;
+    check(tmlBadges === scorer.tml && fndBadges === scorer.fnd,
+      `goal badges follow the match competition (${scorer.name})`,
+      `${tmlBadges} TML / ${fndBadges} FND vs ${scorer.tml} / ${scorer.fnd} expected`);
+    // guard the root cause: the goals query must embed competition, otherwise
+    // compClass() can never see "Friendly Match" and defaults every row to TML.
+    const playerSrc = fs.readFileSync(__dirname + "/player.js", "utf8");
+    const goalsQuery = playerSrc.match(/select\("goals",[^)]*\)/)?.[0] || "";
+    check(/matches\(date,opponent,competition\)/.test(goalsQuery),
+      "player.js goals query embeds match competition", goalsQuery.slice(0, 90));
+  } else {
+    check(false, "no scorer has goals in both competitions to badge-check");
+  }
+
   console.log("");
   if (failures.length) {
     console.log(`${failures.length} FAILURE(S): ${failures.join(" | ")}`);
