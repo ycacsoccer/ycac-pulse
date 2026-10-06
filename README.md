@@ -38,7 +38,8 @@ The plan (10 requirements mapped to screens) and the reasoning behind it live in
    - **Project URL** (`https://<ref>.supabase.co`) → `config.js` → `supabaseUrl`
    - **Publishable key** (`sb_publishable_…`, the browser-safe replacement for the old *anon
      public* key) → `config.js` → `supabaseAnonKey`
-   - the team account email → `config.js` → `teamEmail`
+   - the team account email → `config.js` → `teamEmail`, the coach account email →
+     `config.js` → `coachEmail` (login forms are password-only — the addresses are never typed)
    - **Secret key** (`sb_secret_…`, click the eye to reveal) is the old *service_role* equivalent:
      use it only as the `SUPABASE_SERVICE_ROLE_KEY` environment variable for the migration below —
      it bypasses RLS, so it must never go into `config.js` or any committed file.

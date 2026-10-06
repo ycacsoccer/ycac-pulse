@@ -16,7 +16,7 @@ const readEnv = () => Object.fromEntries(
 const readConfig = () => {
   const source = fs.readFileSync(path.join(__dirname, "config.js"), "utf8");
   const grab = (key) => source.match(new RegExp(`${key}:\\s*"([^"]*)"`))?.[1] || "";
-  return { url: grab("supabaseUrl"), publishable: grab("supabaseAnonKey"), teamEmail: grab("teamEmail") };
+  return { url: grab("supabaseUrl"), publishable: grab("supabaseAnonKey"), teamEmail: grab("teamEmail"), coachEmail: grab("coachEmail") };
 };
 
 const env = readEnv();
@@ -79,6 +79,14 @@ async function cleanup({ rosterAdded, users }) {
 async function main() {
   if (!secret || !publishable) throw new Error("missing credentials (.env / config.js)");
   console.log(`Verifying auth contract against ${env.SUPABASE_URL}\n`);
+
+  // --- static contract: password-only login forms ---------------------------
+  const loginPage = fs.readFileSync(path.join(__dirname, "login.html"), "utf8");
+  const loginSource = fs.readFileSync(path.join(__dirname, "login.js"), "utf8");
+  check(!/type="email"/.test(loginPage), "login form asks for passwords only (no email fields)");
+  check(loginPage.includes('id="team-password"') && loginPage.includes('id="coach-password"'), "both password fields present (team + coach cards)");
+  check(loginSource.includes("config.teamEmail") && loginSource.includes("config.coachEmail"), "cards sign in with the configured accounts (email built into the page)");
+  check(Boolean(config.teamEmail) && Boolean(config.coachEmail), "config sets teamEmail + coachEmail", `${config.teamEmail} · ${config.coachEmail}`);
 
   const state = { rosterAdded: false, users: [] };
   let rosterTotal = 0;

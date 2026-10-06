@@ -34,8 +34,9 @@ endpoint, and no field for photos.
 | 10 | **Coach dashboard** — all player statistics | `coach.html` (Phase 5) | ✅ done |
 
 **Decisions recorded this session:**
-- Login = *team password + coach login*: players type one shared team password (opens squad, signups,
-  match review, guidelines); admin actions require your own coach account.
+- Login = *team password + coach login*, both **password-only forms** (no email fields): players
+  type one shared team password (opens squad, signups, match review, guidelines); admin actions
+  need the coach password (both account addresses are built into `config.js`).
 - Signups are **entered by you in the admin tool** (player self-service may come later — the schema
   leaves room for it).
 - Team guideline / coach instruction content is **editable in the admin tool**, not in code.
@@ -99,11 +100,13 @@ All in `supabase/migrations/0001_init.sql` (nothing applied yet, so it stays a s
 
 ### 4.2 Login design (requirement 8)
 
-- **Team password** = one shared Supabase Auth account (`team@…`). A player opens a restricted page,
-  types the team password once → `signInWithPassword` → session persists in the browser. No
-  accounts to manage; rotate by changing that one password.
-- **Coach login** = your own account; `is_coach()` gates every write policy. Admin and coach
-  dashboard actions are impossible for team sessions even if the UI were bypassed.
+- **Team password** = one shared Supabase Auth account (`config.teamEmail`). A player opens a
+  restricted page, types the team password once → `signInWithPassword` → session persists in the
+  browser. No accounts to manage; rotate by changing that one password.
+- **Coach login** = one coach account (`config.coachEmail`), also password-only — the form never
+  asks for an address; the page signs in the configured account. `is_coach()` gates every write
+  policy. Admin and coach dashboard actions are impossible for team sessions even if the UI were
+  bypassed.
 - Pages call `requireTeam()` / `requireCoach()` from `auth.js`, which redirects to a login panel
   (translated, requirement 1) when there is no session.
 - Honest limitation: the team password is shared, so it identifies *the team*, not a person.

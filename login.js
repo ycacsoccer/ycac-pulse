@@ -1,6 +1,7 @@
 /* YC&AC Pulse — login page (Phase 4).
-   Two cards: players/team (shared team password → config.teamEmail) and
-   coach (own account). When arrived via requireTeam/requireCoach the `next`
+   Two cards, both password-only (no email fields): players/team (shared team
+   password → config.teamEmail) and coach (coach password → config.coachEmail).
+   When arrived via requireTeam/requireCoach the `next`
    parameter carries the page that wanted a session; log in and Continue goes
    there. `need=coach` shows the coach-required notice. */
 (() => {
@@ -65,7 +66,7 @@
     event.preventDefault();
     $("login-error").hidden = true;
     try {
-      await YCACAuth.signIn($("coach-email").value.trim(), $("coach-password").value);
+      await YCACAuth.signIn(config.coachEmail, $("coach-password").value);
       await afterSignIn();
     } catch (error) {
       $("coach-password").value = "";
