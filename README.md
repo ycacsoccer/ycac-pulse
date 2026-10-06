@@ -25,6 +25,7 @@ Live at https://ycacsoccer.github.io/ycac-pulse/
 | 14 | Performance charts + attendance split (`charts.js`) | done — hand-rolled SVG trend charts (goals for/against along the timeline, W/D-L chips) + scorer bars in TML/friendly panels; availability table replaced by a TML attendance table + friendly fold; fixed the pre-existing `match.match_id` attendance bug; verified by `node verify-index.cjs` + `node verify-render.cjs` |
 | 15 | Injury tracking (`supabase/migrations/0002_injuries.sql`) | done — applied to the live project, public squad-status panel + badges on grid/profile/dashboard, admin **Injuries** tab (in backups); verified by `node verify-injuries.cjs` (31/31) |
 | 16 | Docs refresh | done — README/PLAN current; full 13-verifier suite green |
+| 17 | Chart & card round 2 | done — diverging goals chart (for above zero, against below), KPI rate strips (goals/game, conceded/game, win %, attendance/game), player cards with TML + friendly percentages, profile hero stat tiles + performance timeline with every match incl. absences; verified by `node verify-profile-render.cjs` (14 verifiers total) |
 
 The plan (10 requirements mapped to screens) and the reasoning behind it live in [`PLAN.md`](PLAN.md).
 
@@ -66,7 +67,7 @@ Do not rename table or column names without updating `stats.js` and the pages th
 
 ## Verify
 
-Thirteen verifiers guard the site against the live Supabase project — run them before every
+Fourteen verifiers guard the site against the live Supabase project — run them before every
 commit/push; each prints `OK`/`FAIL` lines and exits non-zero on any failure:
 
 ```powershell
@@ -74,7 +75,7 @@ node verify-import.cjs     node verify-stats.cjs     node verify-i18n.cjs
 node verify-auth.cjs       node verify-coach.cjs     node verify-profiles.cjs
 node verify-admin.cjs      node verify-match.cjs     node verify-team.cjs
 node verify-index.cjs      node verify-picker.cjs    node verify-render.cjs
-node verify-injuries.cjs
+node verify-injuries.cjs   node verify-profile-render.cjs
 ```
 
 - **import/stats** — row counts, match split, tier engine baselines
@@ -84,6 +85,8 @@ node verify-injuries.cjs
 - **index** — public data path + static contract (charts, TML-first attendance)
 - **render** — executes `index.html`'s `render()` under a DOM stub against live data
   (this test caught the attendance `match.match_id` bug)
+- **profile-render** — executes the player grid + profile under a DOM stub: card
+  percentages, hero stat tiles, one timeline row per final match (absences included)
 - **injuries** — migration contract, public read, anon/team write denial, coach CRUD
 
 ## Publish with GitHub Pages
