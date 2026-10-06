@@ -67,6 +67,12 @@ const check = (ok, label, detail = "") => {
   check(fndTrend.includes("<svg") && fndChips === 7, "friendly trend chart rendered", `${fndChips} chips`);
   check(el("perf-tml-scorers").innerHTML.includes("goal-bar"), "TML scorer bars rendered");
   check(el("perf-friendly-scorers").innerHTML.includes("goal-bar"), "friendly scorer bars rendered");
+  // wave 17: the KPI rate strip under each trend chart (4 tiles per panel)
+  const kpiTiles = (markup) => (markup.match(/class="kpi"/g) || []).length;
+  const tmlKpi = el("perf-tml-kpi").innerHTML, fndKpi = el("perf-friendly-kpi").innerHTML;
+  const firstKpiValue = (tmlKpi.match(/<strong>([^<]*)</) || [])[1] || "?";
+  check(kpiTiles(tmlKpi) === 4 && kpiTiles(fndKpi) === 4 && /[\d]/.test(firstKpiValue),
+    "KPI strips render 4 rate tiles per panel", `TML goals/game ${firstKpiValue}`);
 
   // squad status (revamp 15): visible only once the injuries table is live
   const injuryCards = (el("injury-list").innerHTML.match(/injury-card/g) || []).length;

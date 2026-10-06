@@ -48,6 +48,23 @@ function render(data) {
   const trendOpts = { labels: { dateFmt: formatDate, result: { W: t("vizWin"), D: t("vizDraw"), L: t("vizLoss") } } };
   document.querySelector("#perf-tml-trend").innerHTML = YCACCharts.trendSVG(tmlMatches, trendOpts) || document.querySelector("#empty-state").innerHTML;
   document.querySelector("#perf-friendly-trend").innerHTML = YCACCharts.trendSVG(friendlyMatches, trendOpts) || document.querySelector("#empty-state").innerHTML;
+  // KPI rate strip (wave 17): goals per game, conceded per game, win rate and
+  // attendance per game (average players out per match), one row per panel.
+  const kpiStrip = (matches, appearances) => {
+    const stats = YCACCharts.kpis(matches, { appearances });
+    const rate = (value) => (value == null ? "–" : String(Number(value.toFixed(2))));
+    const tiles = [
+      [rate(stats.gfPerGame), t("kpiGoalsPerGame")],
+      [rate(stats.gaPerGame), t("kpiConcededPerGame")],
+      [stats.winPct == null ? "–" : `${stats.winPct}%`, t("kpiWinRate")],
+      [rate(stats.appsPerGame), t("kpiAttendancePerGame")],
+    ];
+    return tiles.map(([value, label]) => `<div class="kpi"><strong>${esc(value)}</strong><small>${esc(label)}</small></div>`).join("");
+  };
+  const tmlIds = new Set(tmlMatches.map((match) => match.id));
+  const fndIds = new Set(friendlyMatches.map((match) => match.id));
+  document.querySelector("#perf-tml-kpi").innerHTML = kpiStrip(tmlMatches, data.appearances.filter((app) => tmlIds.has(app.match_id)));
+  document.querySelector("#perf-friendly-kpi").innerHTML = kpiStrip(friendlyMatches, data.appearances.filter((app) => fndIds.has(app.match_id)));
   const scorerTotals = (matches) => { const ids = new Set(matches.map((match) => match.id)); const totals = new Map(); for (const goal of data.goals.filter((goal) => ids.has(goal.match_id))) totals.set(goal.scorer_id, (totals.get(goal.scorer_id) || 0) + 1); return [...totals.entries()].sort((a, b) => b[1] - a[1]); };
   const tmlScorers = scorerTotals(tmlMatches), friendlyScorers = scorerTotals(friendlyMatches), largestScorerTotal = Math.max(1, ...tmlScorers.map(([, goals]) => goals), ...friendlyScorers.map(([, goals]) => goals));
   const distribution = (label, scorers, competition) => `<div class="goal-group ${competition}"><div class="goal-group-head"><span>${label}</span><span>${scorers.reduce((total, [, goals]) => total + goals, 0)} ${t("goals")}</span></div><div class="goal-bars">${scorers.map(([id, goals]) => `<div class="goal-bar scorer-bar"><span>${esc(playerName(players, id))}</span><div class="goal-track"><div class="goal-fill" style="width:${goals / largestScorerTotal * 100}%"></div></div><strong class="goal-value">${goals}</strong></div>`).join("")}</div></div>`;

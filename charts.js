@@ -1,10 +1,17 @@
-/* YC&AC Pulse — performance trend chart (revamp wave 14).
-   Hand-rolled SVG, no chart library: paired bars (goals for / goals against)
-   along the fixture timeline, a W-D-L result chip and the score above each
-   column, date + opponent below the axis. Pure functions so verify-index can
-   render it under Node against the live data. */
+/* YC&AC Pulse — performance charts (revamp waves 14 + 17).
+   Hand-rolled SVG, no chart library: a DIVERGING bar chart — goals FOR rise
+   above the zero line (positive, navy), goals AGAINST hang below it (negative,
+   red) — with a W-D-L result chip and the score above each column, date +
+   opponent underneath. Also kpis(): per-competition rate stats (goals per
+   game, win rate, attendance per game). Pure functions so verify-index can
+   render them under Node against the live data. */
 (() => {
-  const W = 680, H = 300, PAD_L = 30, PAD_R = 10, TOP = 64, BASE = 236;
+  const W = 680, H = 340, PAD_L = 34, PAD_R = 10;
+  const CHIP_Y = 14, SCORE_Y = 56;
+  const ZERO = 180;    // the baseline: goals for above it, goals against below
+  const UP_MAX = 104;  // pixel budget each way, so +N and -N are the same scale
+  const DOWN_MAX = UP_MAX;
+  const DATE_Y = 304, OPP_Y = 322;
 
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
 
@@ -37,6 +44,27 @@
     return value.length > max ? `${value.slice(0, max - 1)}…` : value;
   }
 
+  /* Per-competition rate stats for the KPI strip (wave 17).
+     `appearances` (optional) = the appearance rows for these matches only;
+     played/match gives the average squad out per game ("attendance per game"). */
+  function kpis(matches, opts = {}) {
+    const rows = series(matches);
+    const appearances = opts.appearances || [];
+    const played = rows.length;
+    const gf = rows.reduce((total, row) => total + row.gf, 0);
+    const ga = rows.reduce((total, row) => total + row.ga, 0);
+    const wins = rows.filter((row) => row.result === "W").length;
+    const draws = rows.filter((row) => row.result === "D").length;
+    return {
+      played, gf, ga,
+      gfPerGame: played ? gf / played : null,
+      gaPerGame: played ? ga / played : null,
+      wins, draws, losses: played - wins - draws,
+      winPct: played ? Math.round((wins / played) * 100) : null,
+      appsPerGame: played ? appearances.length / played : null,
+    };
+  }
+
   /* trendSVG(matches, opts) → the <svg> markup. opts:
        labels.dateFmt   (date) => string
        labels.result    { W, D, L } localized chip text
@@ -51,37 +79,44 @@
     const top = Math.ceil(max / step) * step;
     const plotW = W - PAD_L - PAD_R;
     const colW = plotW / rows.length;
-    const barMax = BASE - TOP;
-    const y = (value) => BASE - (value / top) * barMax;
+    const yUp = (value) => ZERO - (value / top) * UP_MAX;     // positive: above the line
+    const yDown = (value) => ZERO + (value / top) * DOWN_MAX; // negative: below the line
 
     const gridlines = [];
     for (let value = 0; value <= top; value += step) {
-      gridlines.push(`<line class="tv-grid" x1="${PAD_L}" y1="${y(value)}" x2="${W - PAD_R}" y2="${y(value)}" /><text class="tv-tick" x="${PAD_L - 6}" y="${y(value) + 3}">${value}</text>`);
+      const y = yUp(value);
+      gridlines.push(`<line class="tv-grid" x1="${PAD_L}" y1="${y}" x2="${W - PAD_R}" y2="${y}" /><text class="tv-tick" x="${PAD_L - 6}" y="${y + 3}">${value === 0 ? "0" : `+${value}`}</text>`);
+      if (value > 0) {
+        const yNeg = yDown(value);
+        gridlines.push(`<line class="tv-grid" x1="${PAD_L}" y1="${yNeg}" x2="${W - PAD_R}" y2="${yNeg}" /><text class="tv-tick" x="${PAD_L - 6}" y="${yNeg + 3}">-${value}</text>`);
+      }
     }
 
     const columns = rows.map((row, index) => {
       const cx = PAD_L + colW * (index + 0.5);
       const barW = Math.min(26, colW * 0.3);
+      const hFor = (row.gf / top) * UP_MAX;
+      const hAgainst = (row.ga / top) * DOWN_MAX;
       const chipText = esc((labels.result && labels.result[row.result]) || row.result);
       const dateText = esc(labels.dateFmt ? labels.dateFmt(row.date) : row.date);
       return `<g class="tv-col">
-        <rect class="tv-bar tv-for" x="${cx - barW - 2}" y="${y(row.gf)}" width="${barW}" height="${BASE - y(row.gf)}" rx="2" />
-        <rect class="tv-bar tv-against" x="${cx + 2}" y="${y(row.ga)}" width="${barW}" height="${BASE - y(row.ga)}" rx="2" />
-        <g class="tv-chip tv-chip-${row.result.toLowerCase()}"><rect x="${cx - 15}" y="14" width="30" height="20" rx="10" /><text x="${cx}" y="28">${chipText}</text></g>
-        <text class="tv-score" x="${cx}" y="54">${row.gf}–${row.ga}</text>
-        <text class="tv-date" x="${cx}" y="${BASE + 20}">${dateText}</text>
-        <text class="tv-opp" x="${cx}" y="${BASE + 36}">${esc(truncate(row.opponent, maxOppChars))}</text>
+        <rect class="tv-bar tv-for" x="${cx - barW - 2}" y="${ZERO - hFor}" width="${barW}" height="${hFor}" rx="2" />
+        <rect class="tv-bar tv-against" x="${cx + 2}" y="${ZERO}" width="${barW}" height="${hAgainst}" rx="2" />
+        <g class="tv-chip tv-chip-${row.result.toLowerCase()}"><rect x="${cx - 15}" y="${CHIP_Y}" width="30" height="20" rx="10" /><text x="${cx}" y="${CHIP_Y + 14}">${chipText}</text></g>
+        <text class="tv-score" x="${cx}" y="${SCORE_Y}">${row.gf}–${row.ga}</text>
+        <text class="tv-date" x="${cx}" y="${DATE_Y}">${dateText}</text>
+        <text class="tv-opp" x="${cx}" y="${OPP_Y}">${esc(truncate(row.opponent, maxOppChars))}</text>
       </g>`;
     }).join("");
 
     return `<svg class="trend-svg" viewBox="0 0 ${W} ${H}" role="img" aria-hidden="true" focusable="false">
       <g class="tv-axis">${gridlines.join("")}</g>
-      <line class="tv-baseline" x1="${PAD_L}" y1="${BASE}" x2="${W - PAD_R}" y2="${BASE}" />
+      <line class="tv-baseline" x1="${PAD_L}" y1="${ZERO}" x2="${W - PAD_R}" y2="${ZERO}" />
       ${columns}
     </svg>`;
   }
 
-  const api = { resultOf, series, stepFor, trendSVG };
+  const api = { resultOf, series, stepFor, kpis, trendSVG, ZERO };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (typeof window !== "undefined") window.YCACCharts = api;
 })();

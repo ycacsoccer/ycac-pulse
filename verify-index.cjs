@@ -105,7 +105,7 @@ async function main() {
   check(app.includes("squad-chips") && page.includes('id="squad-chips"'), "stable-squad container wired app.js → index.html");
   check(page.includes('<script src="stats.js">'), "index.html loads stats.js");
   check(page.includes('<script src="charts.js">') && app.includes("YCACCharts.trendSVG"), "performance trend charts wired (charts.js → app.js)");
-  check(["perf-tml-trend", "perf-friendly-trend", "perf-tml-scorers", "perf-friendly-scorers"].every((id) => app.includes(`#${id}`) && page.includes(`id="${id}"`)),
+  check(["perf-tml-trend", "perf-friendly-trend", "perf-tml-scorers", "perf-friendly-scorers", "perf-tml-kpi", "perf-friendly-kpi"].every((id) => app.includes(`#${id}`) && page.includes(`id="${id}"`)),
     "performance containers wired app.js → index.html");
   check(app.includes("#tml-attendance") && app.includes("#fnd-attendance") && page.includes('id="tml-attendance"') && page.includes('id="fnd-attendance"'),
     "attendance split: TML table + friendly table wired");
@@ -124,6 +124,20 @@ async function main() {
   const escapeHtml = (value) => String(value).replace(/[&<>"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[char]));
   check(tmlPlayed.every((match) => trendMarkup.includes(escapeHtml(String(match.opponent).slice(0, 8)))), "trend chart: every TML opponent labelled");
   check(charts.stepFor(12) === 4 && charts.stepFor(3) === 1 && charts.stepFor(120) === 20, "trend chart gridline steps stay readable");
+  // wave 17: diverging geometry — goals for rise from the zero line, goals
+  // against hang below it, both measured on the same symmetric scale
+  const bars = [...trendMarkup.matchAll(/tv-bar tv-(for|against)" x="[-\d.]+" y="([\d.]+)" width="[\d.]+" height="([\d.]+)"/g)]
+    .map((match) => ({ kind: match[1], y: Number(match[2]), h: Number(match[3]) }));
+  const geometryOk = bars.length === tmlPlayed.length * 2 && bars.every((bar) => (bar.kind === "for"
+    ? Math.abs(bar.y + bar.h - charts.ZERO) < 1e-6
+    : Math.abs(bar.y - charts.ZERO) < 1e-6));
+  check(geometryOk && bars.some((bar) => bar.kind === "for" && bar.h > 0) && bars.some((bar) => bar.kind === "against" && bar.h > 0),
+    "trend chart: goals for rise above the zero line, goals against hang below", `${bars.length} bars`);
+  const tmlKpis = charts.kpis(tmlPlayed);
+  const gfTotal = tmlPlayed.reduce((total, match) => total + Number(match.ycac_goals), 0);
+  check(tmlKpis.gf === gfTotal && tmlKpis.gfPerGame === gfTotal / tmlPlayed.length
+    && tmlKpis.winPct === Math.round((wins / tmlPlayed.length) * 100) && tmlKpis.draws === draws && tmlKpis.losses === losses,
+    "kpi rates: goals per game + win rate + record", `${Number(tmlKpis.gfPerGame.toFixed(2))}/game · ${tmlKpis.winPct}% win`);
   check(page.includes('<details class="results-fold"') && page.includes('id="friendly-results"'), "friendly results fold behind <details>");
   check((i18n.match(/indexSquadTitle:/g) || []).length === 3, "indexSquadTitle translated in all 3 languages",
     `${(i18n.match(/indexSquadTitle:/g) || []).length}/3`);
