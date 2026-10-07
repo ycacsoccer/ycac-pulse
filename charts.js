@@ -3,8 +3,8 @@
    above the zero line (positive, navy), goals AGAINST hang below it (negative,
    red) — with a W-D-L result chip and the score above each column, date +
    opponent underneath. Also kpis(): per-competition rate stats (goals per
-   game, win rate, attendance per game). Pure functions so verify-index can
-   render them under Node against the live data. */
+   game, win rate). Pure functions so verify-index can render them under Node
+   against the live data. */
 (() => {
   const W = 680, H = 340, PAD_L = 34, PAD_R = 10;
   const CHIP_Y = 14, SCORE_Y = 56;
@@ -44,12 +44,9 @@
     return value.length > max ? `${value.slice(0, max - 1)}…` : value;
   }
 
-  /* Per-competition rate stats for the KPI strip (wave 17).
-     `appearances` (optional) = the appearance rows for these matches only;
-     played/match gives the average squad out per game ("attendance per game"). */
-  function kpis(matches, opts = {}) {
+  /* Per-competition rate stats for the KPI strip (wave 17). */
+  function kpis(matches) {
     const rows = series(matches);
-    const appearances = opts.appearances || [];
     const played = rows.length;
     const gf = rows.reduce((total, row) => total + row.gf, 0);
     const ga = rows.reduce((total, row) => total + row.ga, 0);
@@ -61,7 +58,6 @@
       gaPerGame: played ? ga / played : null,
       wins, draws, losses: played - wins - draws,
       winPct: played ? Math.round((wins / played) * 100) : null,
-      appsPerGame: played ? appearances.length / played : null,
     };
   }
 

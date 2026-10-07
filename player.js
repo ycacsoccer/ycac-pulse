@@ -1,8 +1,8 @@
 /* YC&AC Pulse — player profile (Phase 6, requirements 9 + photo).
-   Public page: hero with quick stat tiles (apps, goals, goals/game,
-   attendance), info, positions diagram, stats split TML/Friendly/All
-   (attendance + goals per game rows), a PERFORMANCE TIMELINE of every final
-   match — absences labelled — and goals. Coaches get an "Update photo"
+   Public page: hero with quick stat tiles (apps, goals, goals/game — wave 21
+   dropped the attendance tile), info, positions diagram, stats split
+   TML/Friendly/All (goals per game rows), a PERFORMANCE TIMELINE of every
+   final match — absences labelled — and goals. Coaches get an "Update photo"
    control and a pitch-tap position editor (tap a slot to set the BEST
    position or toggle CAN-PLAY ones) — storage/table RLS enforce is_coach()
    regardless of what the UI shows. */
@@ -72,15 +72,15 @@
       entry.reliability != null ? [t("statReliability"), String(entry.reliability)] : "",
     ].filter(Boolean);
 
-    // wave 17 — eye-catch quick stats in the hero: apps, goals, goals per
-    // game and attendance (he is measured against every final match played).
+    // wave 17 — eye-catch quick stats in the hero: apps, goals and goals per
+    // game (wave 21: the attendance tile is gone — appearance records stay
+    // in the timeline and the stats table).
     const all = entry.competitions.all;
     const totalFinals = state.matches.filter(YCACStats.isFinal).length;
     const tiles = [
       [`${all.played}<span class="pt-of">/${totalFinals}</span>`, t("statApps")],
       [String(all.goals), t("statGoals")],
       [rate(all.played ? all.goals / all.played : null), t("kpiGoalsPerGame")],
-      [all.appearance_pct == null ? "–" : `${all.appearance_pct}%`, t("attendance")],
     ];
 
     $("profile-hero").innerHTML = `
@@ -118,7 +118,6 @@
       [t("statApps"), lens.map((name) => entry.competitions[name].played)],
       [t("statStarts"), lens.map((name) => entry.competitions[name].starts)],
       [t("statSubs"), lens.map((name) => entry.competitions[name].subs)],
-      [t("attendance"), lens.map((name) => entry.competitions[name].appearance_pct)],
       [t("statGoals"), lens.map((name) => entry.competitions[name].goals)],
       [t("kpiGoalsPerGame"), lens.map((name) => { const comp = entry.competitions[name]; return comp.played ? rate(comp.goals / comp.played) : "–"; })],
       [t("statAssists"), lens.map((name) => entry.competitions[name].assists)],

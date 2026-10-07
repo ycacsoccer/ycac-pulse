@@ -29,6 +29,7 @@ Live at https://ycacsoccer.github.io/ycac-pulse/
 | 18 | Player list round 2 | done — player grid grouped into position sections (GK/DF/MF/AT); "Tier" renamed **Selection group** and the four bands named by appearance frequency only (**Plays often / Plays sometimes / Plays occasionally / Not yet played**) with a tactics/availability explainer — no ability or hierarchy wording; 329 i18n keys ×3 |
 | 19 | Profile goal-badge fix | done — profile goal rows are badged TML/FND from the match's competition (the goals query was missing `competition`, so every friendly goal read TML); guarded by `verify-profile-render.cjs` + `verify-profiles.cjs` |
 | 20 | Coach position editor | done — on a player profile a coach taps a slot on the pitch diagram to set the **best position** or toggle **can-play** positions (mode switch, Save/Cancel, keyboard-operable slots); coach-only UI, writes still RLS-gated by `is_coach()` with a 0-row save guard; 335 i18n keys ×3; covered by `verify-profiles.cjs` + `verify-profile-render.cjs` |
+| 21 | Attendance leaves the site | done — index attendance tables + search box, the attendance/game KPI tile, the cards' TML/FND appearance-% cells and the profile hero/stats attendance rows are gone (appearances still power results, timelines and selection groups; the coach dashboard keeps its own `%` column); 327 i18n keys ×3; guarded by `verify-index.cjs`, `verify-render.cjs`, `verify-profiles.cjs`, `verify-profile-render.cjs` |
 
 The plan (10 requirements mapped to screens) and the reasoning behind it live in [`PLAN.md`](PLAN.md).
 
@@ -85,11 +86,11 @@ node verify-injuries.cjs   node verify-profile-render.cjs
 - **i18n** — EN/JA/ZH key parity, no hardcoded CJK, every `#id` wired
 - **auth/coach/profiles/admin/match/team/picker** — each page's query path, RLS and gating,
   using ephemeral users that are removed again
-- **index** — public data path + static contract (charts, TML-first attendance)
+- **index** — public data path + static contract (charts, TML-first results, no attendance tables)
 - **render** — executes `index.html`'s `render()` under a DOM stub against live data
-  (this test caught the attendance `match.match_id` bug)
+  (this test caught the old attendance `match.match_id` bug)
 - **profile-render** — executes the player grid + profile under a DOM stub: card
-  percentages, hero stat tiles, one timeline row per final match (absences included),
+  season totals, hero stat tiles, one timeline row per final match (absences included),
   goal badges vs ground truth, and the coach position editor driven click-by-click
   (Edit → tap pitch slots → mode switch → save → cancel)
 - **injuries** — migration contract, public read, anon/team write denial, coach CRUD

@@ -3,10 +3,11 @@
 // All checks are ANON — the index must render from public tables alone.
 // Asserts: the four stats tables read anon with row-shape the renderer needs
 // (photo_path on every player, nullable scores), the TML/friendly/fixture split,
-// join integrity for attendance & top-scorer maps, the stable-squad chips via
+// join integrity for appearance & top-scorer maps, the stable-squad chips via
 // stats.js (same engine as the coach dashboard, derived tiers only), and the
-// static contract: gviz gone, results/fxtures link to match.html, photos in the
-// attendance table, friendly results folded.
+// static contract: gviz gone, results/fxtures link to match.html, photos on
+// squad cards, friendly results folded — and no attendance tables anywhere
+// (wave 21 removed them).
 const fs = require("fs");
 const path = require("path");
 
@@ -55,7 +56,7 @@ async function main() {
   // --- 2. row shape the renderer depends on -------------------------------
   check(players.every((player) => player.id && player.display_name), "every player has id + display_name",
     `${players.filter((p) => p.id && p.display_name).length}/${players.length}`);
-  check(players.every((player) => "photo_path" in player && "active" in player), "photo_path + active fields present (attendance photos)",
+  check(players.every((player) => "photo_path" in player && "active" in player), "photo_path + active fields present (card photos)",
     `${players.filter((p) => p.photo_path).length} with photos`);
   check(matches.every((match) => match.id && match.date && match.competition && "ycac_goals" in match && "opponent_goals" in match),
     "every match has id/date/competition + nullable scores",
@@ -73,7 +74,7 @@ async function main() {
     "TML + friendly + fixtures partition every match",
     `${tmlPlayed.length + friendlyPlayed.length} played, ${fixtures.length} pending`);
 
-  // --- 4. join integrity (attendance maps + top scorers) -------------------
+  // --- 4. join integrity (appearance maps + top scorers) -------------------
   const playerIds = new Set(players.map((p) => p.id));
   const finalIds = new Set(matches.filter((m) => YCACStats.isFinal(m)).map((m) => m.id));
   const appOrphans = appearances.filter((a) => !playerIds.has(a.player_id) || !finalIds.has(a.match_id));
@@ -99,18 +100,22 @@ async function main() {
   const page = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
   const i18n = fs.readFileSync(path.join(__dirname, "i18n.js"), "utf8");
   check(!app.includes("docs.google.com") && !app.includes("getSheet"), "gviz sheet loader is gone from app.js");
-  check(app.includes("YCACStats.computeSeason") && app.includes("YCACStats.positionGroup"), "index shares the stats.js engine with the coach dashboard");
+  check(app.includes("YCACStats.computeSeason") && app.includes("YCACStats.ranked"), "index shares the stats.js engine with the coach dashboard");
   check(app.includes("match.html?id="), "results & fixtures link to match review");
-  check(app.includes("player.html?id=") && app.includes("attendance-player") && app.includes("photoCell"), "attendance rows carry photos + profile links");
+  check(app.includes("player.html?id=") && app.includes("photoCell"), "squad chips carry photos + profile links");
   check(app.includes("squad-chips") && page.includes('id="squad-chips"'), "stable-squad container wired app.js → index.html");
   check(page.includes('<script src="stats.js">'), "index.html loads stats.js");
   check(page.includes('<script src="charts.js">') && app.includes("YCACCharts.trendSVG"), "performance trend charts wired (charts.js → app.js)");
   check(["perf-tml-trend", "perf-friendly-trend", "perf-tml-scorers", "perf-friendly-scorers", "perf-tml-kpi", "perf-friendly-kpi"].every((id) => app.includes(`#${id}`) && page.includes(`id="${id}"`)),
     "performance containers wired app.js → index.html");
-  check(app.includes("#tml-attendance") && app.includes("#fnd-attendance") && page.includes('id="tml-attendance"') && page.includes('id="fnd-attendance"'),
-    "attendance split: TML table + friendly table wired");
-  check(page.includes('<details class="attendance-fold"') && page.includes('id="friendly-attendance-fold"'), "friendly attendance folds behind <details>");
-  check(!page.includes('id="attendance-head"') && !app.includes("#season-timeline"), "old combined attendance table + viz timeline removed");
+  // wave 21 — attendance is no longer a purpose of the site: the tables, the
+  // search box and the per-game KPI are gone from page AND renderer.
+  check(!page.includes('id="tml-attendance"') && !page.includes('id="fnd-attendance"') && !app.includes("#tml-attendance"),
+    "attendance tables removed from index.html + app.js");
+  check(!page.includes("attendance-panel") && !page.includes('id="attendance-search"') && !app.includes("attendance-search"),
+    "attendance panel + search box gone");
+  check(!app.includes("kpiAttendancePerGame") && !page.includes('id="attendance-head"') && !app.includes("#season-timeline"),
+    "attendance KPI tile gone; old combined table + viz timeline stay removed");
 
   // charts.js renders the real TML timeline: one chip per match, correct W/D/L mix
   const charts = require("./charts.js");

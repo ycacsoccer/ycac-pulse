@@ -1,13 +1,14 @@
 /* YC&AC Pulse — public season dashboard (Phase 10, TML-first public revamp).
    Reads Supabase through data.js — the gviz sheet loader is gone. TML leads:
    scoreline, results and the stable squad; friendlies fold away behind a
-   <details>; the attendance table shows photos with the TML summary first.
-   Squad tiers and position groups come from stats.js, the same engine the
-   coach dashboard uses (public pages get fully derived tiers — no coach_notes). */
+   <details>. Squad tiers and position groups come from stats.js, the same
+   engine the coach dashboard uses (public pages get fully derived tiers —
+   no coach_notes). Wave 21: the attendance tables are gone — appearance
+   records still power results, timelines and selection groups, but the site
+   no longer presents attendance as a purpose. */
 const t = (key, vars) => YCACI18n.t(key, vars);
 const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
 let dashboardData;
-let attendanceSearch = "";
 
 function playerName(players, id) { return players.get(id)?.display_name || id; }
 function formatDate(value) { return YCACI18n.formatDate(value); }
@@ -48,23 +49,20 @@ function render(data) {
   const trendOpts = { labels: { dateFmt: formatDate, result: { W: t("vizWin"), D: t("vizDraw"), L: t("vizLoss") } } };
   document.querySelector("#perf-tml-trend").innerHTML = YCACCharts.trendSVG(tmlMatches, trendOpts) || document.querySelector("#empty-state").innerHTML;
   document.querySelector("#perf-friendly-trend").innerHTML = YCACCharts.trendSVG(friendlyMatches, trendOpts) || document.querySelector("#empty-state").innerHTML;
-  // KPI rate strip (wave 17): goals per game, conceded per game, win rate and
-  // attendance per game (average players out per match), one row per panel.
-  const kpiStrip = (matches, appearances) => {
-    const stats = YCACCharts.kpis(matches, { appearances });
+  // KPI rate strip (wave 17): goals per game, conceded per game and win rate,
+  // one row per panel (wave 21: the attendance-per-game tile is gone).
+  const kpiStrip = (matches) => {
+    const stats = YCACCharts.kpis(matches);
     const rate = (value) => (value == null ? "–" : String(Number(value.toFixed(2))));
     const tiles = [
       [rate(stats.gfPerGame), t("kpiGoalsPerGame")],
       [rate(stats.gaPerGame), t("kpiConcededPerGame")],
       [stats.winPct == null ? "–" : `${stats.winPct}%`, t("kpiWinRate")],
-      [rate(stats.appsPerGame), t("kpiAttendancePerGame")],
     ];
     return tiles.map(([value, label]) => `<div class="kpi"><strong>${esc(value)}</strong><small>${esc(label)}</small></div>`).join("");
   };
-  const tmlIds = new Set(tmlMatches.map((match) => match.id));
-  const fndIds = new Set(friendlyMatches.map((match) => match.id));
-  document.querySelector("#perf-tml-kpi").innerHTML = kpiStrip(tmlMatches, data.appearances.filter((app) => tmlIds.has(app.match_id)));
-  document.querySelector("#perf-friendly-kpi").innerHTML = kpiStrip(friendlyMatches, data.appearances.filter((app) => fndIds.has(app.match_id)));
+  document.querySelector("#perf-tml-kpi").innerHTML = kpiStrip(tmlMatches);
+  document.querySelector("#perf-friendly-kpi").innerHTML = kpiStrip(friendlyMatches);
   const scorerTotals = (matches) => { const ids = new Set(matches.map((match) => match.id)); const totals = new Map(); for (const goal of data.goals.filter((goal) => ids.has(goal.match_id))) totals.set(goal.scorer_id, (totals.get(goal.scorer_id) || 0) + 1); return [...totals.entries()].sort((a, b) => b[1] - a[1]); };
   const tmlScorers = scorerTotals(tmlMatches), friendlyScorers = scorerTotals(friendlyMatches), largestScorerTotal = Math.max(1, ...tmlScorers.map(([, goals]) => goals), ...friendlyScorers.map(([, goals]) => goals));
   const distribution = (label, scorers, competition) => `<div class="goal-group ${competition}"><div class="goal-group-head"><span>${label}</span><span>${scorers.reduce((total, [, goals]) => total + goals, 0)} ${t("goals")}</span></div><div class="goal-bars">${scorers.map(([id, goals]) => `<div class="goal-bar scorer-bar"><span>${esc(playerName(players, id))}</span><div class="goal-track"><div class="goal-fill" style="width:${goals / largestScorerTotal * 100}%"></div></div><strong class="goal-value">${goals}</strong></div>`).join("")}</div></div>`;
@@ -77,41 +75,10 @@ function render(data) {
   const season = YCACStats.computeSeason({ players: data.players, matches: data.matches, appearances: data.appearances, goals: data.goals });
   const core = YCACStats.ranked(season.tiers.core);
   document.querySelector("#squad-chips").innerHTML = core.map((entry) => `<a class="squad-chip" href="player.html?id=${encodeURIComponent(entry.id)}">${photoCell(entry)}<span class="sc-name">${esc(entry.display_name)}</span><small>${esc(entry.primary_position || "")}</small></a>`).join("") || document.querySelector("#empty-state").innerHTML;
-  const appearancesByMatch = new Map(data.appearances.map((appearance) => [`${appearance.match_id}:${appearance.player_id}`, appearance]));
-  const goalsByMatch = new Map(); for (const goal of data.goals) { const key = `${goal.match_id}:${goal.scorer_id}`; goalsByMatch.set(key, (goalsByMatch.get(key) || 0) + 1); }
-  // Attendance — TML first: the main table is TML-only, sorted by TML attendance
-  // (main consideration); friendly attendance sits in a folded supplement table.
-  const compClass = (match) => match.competition === "Friendly Match" ? "friendly-match" : "tml-match";
-  const squad = [...players.values()];
-  const summaryFor = (player, matches) => {
-    const ids = new Set(matches.map((match) => match.id));
-    const count = matches.filter((match) => appearancesByMatch.has(`${match.id}:${player.id}`)).length;
-    const goals = [...goalsByMatch.entries()].filter(([key]) => ids.has(key.split(":")[0]) && key.endsWith(`:${player.id}`)).reduce((total, [, value]) => total + value, 0);
-    const cleanSheets = matches.filter((match) => player.primary_position === "GK" && appearancesByMatch.get(`${match.id}:${player.id}`)?.role === "starter" && Number(match.opponent_goals) === 0).length;
-    const pct = matches.length ? Math.round(count / matches.length * 100) : 0;
-    const extras = [`${goals}⚽`, `${cleanSheets}🧤`].filter((value) => value[0] !== "0").join(" ");
-    return { pct, count, text: `${count ? `${pct}%` : "—"}${extras ? ` · ${extras}` : ""}` };
-  };
-  const positionCell = (player) => `${YCACStats.positionGroup(player.primary_position)}${player.primary_position && YCACStats.positionGroup(player.primary_position) !== player.primary_position ? ` · ${esc(player.primary_position)}` : ""}`;
-  const attHead = (longLabel, shortLabel, matches) => `<tr><th>${t("player")}</th><th><span class="attendance-long">${longLabel} ${t("summary")}</span><span class="attendance-short">${shortLabel}</span></th><th>${t("position")}</th>${matches.map((match) => `<th class="match-column ${compClass(match)}" title="${esc(match.opponent)}">${formatDate(match.date)}<small>${esc(match.opponent)}</small></th>`).join("")}</tr>`;
-  const attRow = (player, matches) => {
-    const summary = summaryFor(player, matches);
-    return `<tr><td><a class="attendance-player" href="player.html?id=${encodeURIComponent(player.id)}">${photoCell(player)}<span class="ap-name">${esc(player.display_name)}</span></a></td><td title="${summary.count}/${matches.length} · ${summary.text}">${summary.text}</td><td>${positionCell(player)}</td>${matches.map((match) => { const appearance = appearancesByMatch.get(`${match.id}:${player.id}`); if (!appearance) return `<td class="match-cell empty-cell ${compClass(match)}">—</td>`; const goals = goalsByMatch.get(`${match.id}:${player.id}`) || 0; const cleanSheet = player.primary_position === "GK" && appearance.role === "starter" && Number(match.opponent_goals) === 0; return `<td class="match-cell ${compClass(match)}">${appearance.role === "starter" ? "🟢" : "🔵"}${"⚽".repeat(goals)}${cleanSheet ? "🧤" : ""}</td>`; }).join("")}</tr>`;
-  };
-  const visible = squad.filter((player) => player.display_name.toLocaleLowerCase().includes(attendanceSearch));
-  const byAttendance = (matches) => (a, b) => summaryFor(b, matches).pct - summaryFor(a, matches).pct
-    || YCACStats.POSITION_ORDER[YCACStats.positionGroup(a.primary_position)] - YCACStats.POSITION_ORDER[YCACStats.positionGroup(b.primary_position)]
-    || a.display_name.localeCompare(b.display_name);
-  const empty = document.querySelector("#empty-state").innerHTML;
-  document.querySelector("#tml-attendance-head").innerHTML = attHead("TML", "TML", tmlMatches);
-  document.querySelector("#tml-attendance").innerHTML = [...visible].sort(byAttendance(tmlMatches)).map((player) => attRow(player, tmlMatches)).join("") || empty;
-  document.querySelector("#fnd-attendance-head").innerHTML = attHead(friendlyLabel, "FND", friendlyMatches);
-  document.querySelector("#fnd-attendance").innerHTML = [...visible].sort(byAttendance(friendlyMatches)).map((player) => attRow(player, friendlyMatches)).join("") || empty;
 }
 
 YCACI18n.apply(document);
 YCACI18n.onChange(() => { YCACI18n.apply(document); if (dashboardData) render(dashboardData); });
-document.querySelector("#attendance-search").addEventListener("input", (event) => { attendanceSearch = event.target.value.trim().toLocaleLowerCase(); if (dashboardData) render(dashboardData); });
 (async () => {
   try {
     const [players, matches, appearances, goals, injuries] = await Promise.all([

@@ -1,8 +1,8 @@
 // Render check for the player pages (verify-profile-render.cjs):
 //   node verify-profile-render.cjs
 // Executes players.js (grid) and player.js (profile) under a minimal DOM stub
-// against live ANON data. Asserts the wave-17 cards carry TML + friendly
-// appearance percentages, the profile shows hero stat tiles, the timeline
+// against live ANON data. Asserts the wave-21 cards carry season apps + goals
+// (no appearance percentages), the profile shows hero stat tiles, the timeline
 // has a row for EVERY final match — absences labelled (the picked player is
 // the one who has missed the most matches while still having played) — and
 // (wave 20) drives the coach position editor: Edit → tap pitch slots →
@@ -102,17 +102,16 @@ const get = async (path) => {
   }
   check(unknownIds.length === 0, "every getElementById id exists in players.html/player.html", unknownIds.join(", ") || "none unknown");
 
-  // --- 3. player grid: cards with TML + friendly percentages ---------------
+  // --- 3. player grid: cards with season totals (wave 21: no %-cells) -------
   const grid = el("players-grid").innerHTML;
   const cardCount = (grid.match(/class="player-card"/g) || []).length;
   check(cardCount >= 30, "player grid renders cards", `${cardCount} cards`);
   const tmlCells = (grid.match(/class="pcq tml"/g) || []).length;
   const fndCells = (grid.match(/class="pcq fnd"/g) || []).length;
-  check(tmlCells === cardCount && fndCells === cardCount && cardCount > 0,
-    "every card carries TML + friendly percentage cells", `${tmlCells} TML / ${fndCells} FND of ${cardCount}`);
-  check(/<strong>\d+%<\/strong>/.test(grid) && grid.includes("pc-tot"),
-    "cards show numeric appearance percentages + season totals",
-    (grid.match(/<strong>\d+%<\/strong>/) || ["no pct"])[0]);
+  check(tmlCells === 0 && fndCells === 0 && !grid.includes("pc-quick"),
+    "cards carry no appearance-% cells (wave 21)", `${tmlCells} TML / ${fndCells} FND of ${cardCount}`);
+  check(grid.includes("pc-tot") && /\d+\/\d+ /.test(grid),
+    "cards show season apps + goals totals", (grid.match(/class="pc-tot">[^<]*/) || ["no totals"])[0]);
 
   // --- 3b. wave 18: grouped into position sections, selection wording --------
   const sections = (grid.match(/position-section-head/g) || []).length;
@@ -127,16 +126,16 @@ const get = async (path) => {
   // --- 4. profile: hero tiles, stats rows, full timeline --------------------
   const hero = el("profile-hero").innerHTML;
   const tiles = (hero.match(/class="ptile"/g) || []).length;
-  check(tiles === 4 && hero.includes("Goals / game") && hero.includes(`pt-of">/${finals.length}<`) && /\d+%/.test(hero),
-    "hero stat tiles: apps/goals, goals per game, attendance", `${tiles} tiles`);
+  check(tiles === 3 && hero.includes("Goals / game") && hero.includes(`pt-of">/${finals.length}<`) && !/attendance/i.test(hero),
+    "hero stat tiles: apps, goals, goals per game (no attendance tile)", `${tiles} tiles`);
 
   // wave 20: visitors see the diagram only — no pitch-tap editor controls
   check(!el("profile-positions").innerHTML.includes("data-pos-action") && !el("profile-positions").innerHTML.includes("data-pos-mode"),
     "public profile: diagram without editor controls");
 
   const stats = el("profile-stats").innerHTML;
-  check(stats.includes("Attendance") && stats.includes("Goals / game"),
-    "stats table: attendance + goals-per-game rows");
+  check(stats.includes("Goals / game") && !/attendance/i.test(stats),
+    "stats table: goals-per-game row, no attendance row");
 
   const timeline = el("profile-timeline").innerHTML;
   const rows = (timeline.match(/class="timeline-entry/g) || []).length;

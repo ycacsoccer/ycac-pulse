@@ -13,12 +13,10 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem 4rem; }.hero { disp
 .content-grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; margin-top: 1.25rem; }.panel { background: white; padding: clamp(1.25rem, 3vw, 2.15rem); border: 1px solid var(--line); }.section-heading { display: flex; align-items: end; justify-content: space-between; margin-bottom: 1rem; }.section-heading .eyebrow { margin: 0; color: var(--gold); }.section-heading h2 { margin: .25rem 0 0; color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.55rem; font-weight: 400; letter-spacing: -.04em; }
 .match { display: grid; grid-template-columns: 6.5rem 1fr auto; gap: 1rem; align-items: center; padding: 1.05rem 0; border-top: 1px solid var(--line); }.match-date { color: var(--muted); font-size: .75rem; font-weight: 600; }.match-opponent { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1rem; font-weight: 700; }.match-meta { margin-top: .25rem; color: var(--muted); font-size: .72rem; }.match-score { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.7rem; font-weight: 700; }.match-score.win { color: var(--blue); }.leader { display: grid; grid-template-columns: 1.8rem 1fr auto; gap: .6rem; align-items: center; padding: .9rem 0; border-top: 1px solid var(--line); }.rank { color: var(--gold); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1rem; }.leader-name { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-weight: 700; }.leader-meta { margin-top: .2rem; color: var(--muted); font-size: .72rem; }.leader-total { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.35rem; font-weight: 700; }.leader-total span { color: var(--muted); font-family: 'DM Sans', Arial, sans-serif; font-size: .6rem; letter-spacing: .1em; }
 .fixtures { display: grid; gap: .65rem; margin-bottom: 1.75rem; }.fixture { display: grid; grid-template-columns: 5rem 1fr auto; gap: .75rem; align-items: center; padding: 1rem; color: white; background: var(--navy); }.fixture-date { color: var(--gold); font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }.fixture-opponent { font-family: 'Libre Baskerville', Georgia, serif; font-size: .96rem; font-weight: 700; }.fixture-meta { margin-top: .22rem; color: #c9d7eb; font-size: .7rem; }.fixture-actions { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .7rem; }.fixture-actions a { padding: .38rem .5rem; color: var(--navy); background: var(--gold-pale); font-size: .63rem; font-weight: 700; text-decoration: none; }.fixture-actions a:last-child { color: white; background: transparent; border: 1px solid rgba(255,255,255,.5); }.fixture-actions a:hover { background: var(--gold); color: var(--navy); }.fixture-time { padding-left: .75rem; border-left: 1px solid rgba(255,255,255,.25); color: var(--gold-pale); font-size: .76rem; font-weight: 700; white-space: nowrap; }
-.attendance-panel { margin-top: 1.25rem; }.player-search input { width: min(220px, 42vw); padding: .65rem .8rem; color: var(--ink); border: 1px solid var(--line); border-radius: 0; font: inherit; font-size: .78rem; }.attendance-legend { display: flex; flex-wrap: wrap; gap: .55rem 1rem; margin: -.15rem 0 1.2rem; color: var(--muted); font-size: .72rem; }.attendance-swipe-hint { display: none; color: var(--muted); font-size: .68rem; }.table-wrap { overflow-x: auto; } table { width: 100%; min-width: 680px; border-collapse: collapse; } th, td { padding: .9rem .55rem; border-bottom: 1px solid var(--line); text-align: left; } th { color: var(--muted); font-size: .64rem; letter-spacing: .09em; text-transform: uppercase; } td { font-size: .84rem; } td:first-child { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .95rem; font-weight: 700; }.attendance-panel .table-wrap { overflow-x: auto; border: 1px solid var(--line); -webkit-overflow-scrolling: touch; }.attendance-panel th:nth-child(1), .attendance-panel td:nth-child(1) { position: sticky; left: 0; z-index: 2; min-width: 140px; background: white; }.attendance-panel th:nth-child(2), .attendance-panel td:nth-child(2) { position: sticky; left: 140px; z-index: 2; min-width: 72px; background: white; }.attendance-panel th:nth-child(3), .attendance-panel td:nth-child(3) { position: sticky; left: 212px; z-index: 2; min-width: 78px; background: white; }.attendance-panel th:nth-child(4), .attendance-panel td:nth-child(4) { min-width: 72px; }.attendance-panel thead th:nth-child(-n+3) { z-index: 4; background: #f9fafb; }.attendance-panel td:nth-child(2), .attendance-panel td:nth-child(3) { color: var(--muted); font-size: .72rem; font-weight: 700; white-space: nowrap; }.match-column { min-width: 96px; text-align: center; }.match-column small { display: block; margin-top: .2rem; color: var(--muted); font-size: .6rem; font-weight: 400; letter-spacing: 0; text-transform: none; }.match-cell { min-width: 96px; color: var(--navy); font-size: 1rem; text-align: center; white-space: nowrap; }.match-cell.empty-cell { color: #b5bfca; }.empty { color: var(--muted); }.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.player-search input { width: min(220px, 42vw); padding: .65rem .8rem; color: var(--ink); border: 1px solid var(--line); border-radius: 0; font: inherit; font-size: .78rem; }.table-wrap { overflow-x: auto; } table { width: 100%; min-width: 680px; border-collapse: collapse; } th, td { padding: .9rem .55rem; border-bottom: 1px solid var(--line); text-align: left; } th { color: var(--muted); font-size: .64rem; letter-spacing: .09em; text-transform: uppercase; } td { font-size: .84rem; } td:first-child { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .95rem; font-weight: 700; }.empty { color: var(--muted); }.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .instagram-panel { display: grid; grid-template-columns: 1fr auto; gap: 1rem 2rem; align-items: end; margin-top: 1.25rem; padding: clamp(1.5rem, 4vw, 3rem); color: white; background: var(--navy); }.instagram-panel .eyebrow { grid-column: 1 / -1; margin-bottom: 0; }.instagram-panel h2 { margin: 0; font-family: 'Libre Baskerville', Georgia, serif; font-size: clamp(1.6rem, 4vw, 2.45rem); font-weight: 400; }.instagram-panel p:not(.eyebrow) { margin: .7rem 0 0; color: #cad7e9; line-height: 1.5; }.instagram-panel a { align-self: center; padding: .85rem 1rem; color: var(--navy); background: var(--gold-pale); font-size: .78rem; font-weight: 700; text-decoration: none; }.instagram-panel a:hover { background: var(--gold); } footer { max-width: 1240px; margin: 0 auto; padding: 1.8rem 1.25rem 3rem; color: var(--muted); font-size: .74rem; } footer a { margin-left: .5rem; color: var(--navy); font-weight: 700; }
-.match-column.tml-match { border-top: 3px solid var(--navy); background: #f3f6fa; }.match-column.friendly-match { border-top: 3px solid var(--gold); background: #fbf7ee; }.match-cell.tml-match { background: #f8fafc; }.match-cell.friendly-match { background: #fdfaf4; }
-.attendance-short { display: none; }
 @media (max-width: 760px) { .masthead { min-height: 66px; }.club-mark { width: 39px; height: 39px; }.brand { font-size: 1rem; }.brand small { display: none; }.masthead nav { display: none; }.lang-switch { margin-left: auto; }.hero { grid-template-columns: 1fr; gap: 2rem; padding-top: 4.5rem; }.hero-note { max-width: 28rem; }.scoreline { grid-template-columns: repeat(2, 1fr); }.scoreline-title { grid-column: 1 / -1; min-height: 95px !important; }.scoreline > div:nth-child(4) { border-left: 0; }.performance, .content-grid { grid-template-columns: 1fr; }.match { grid-template-columns: 5.5rem 1fr auto; }.instagram-panel { grid-template-columns: 1fr; }.instagram-panel a { justify-self: start; } }
-@media (max-width: 480px) { .attendance-panel .section-heading { align-items: flex-start; gap: .75rem; }.player-search input { width: 128px; }.attendance-legend { gap: .35rem .7rem; font-size: .65rem; }.attendance-swipe-hint { display: block; margin: -.45rem 0 .65rem; }.attendance-panel th, .attendance-panel td { padding: .7rem .28rem; }.attendance-long { display: none; }.attendance-short { display: inline; }.attendance-panel th:nth-child(1), .attendance-panel td:nth-child(1) { min-width: 94px; max-width: 94px; }.attendance-panel th:nth-child(2), .attendance-panel td:nth-child(2) { left: 94px; min-width: 44px; max-width: 44px; overflow: hidden; text-overflow: ellipsis; }.attendance-panel th:nth-child(3), .attendance-panel td:nth-child(3) { left: 138px; min-width: 60px; max-width: 60px; overflow: hidden; text-overflow: ellipsis; }.attendance-panel td:first-child { font-size: .8rem; }.attendance-panel td:nth-child(2), .attendance-panel td:nth-child(3) { font-size: .58rem; }.match-column, .match-cell { min-width: 76px; }.match-column { font-size: .57rem; }.match-column small { max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.match-cell { font-size: .85rem; } }
+@media (max-width: 480px) { .player-search input { width: 128px; } }
 @media (max-width: 760px) { .masthead { flex-wrap: wrap; }.masthead nav { display: flex; order: 3; width: 100%; margin-left: 0; overflow-x: auto; gap: 1rem; padding: .1rem 0 .35rem; -webkit-overflow-scrolling: touch; }.masthead nav a { flex: 0 0 auto; } }
 
 /* ---- auth slot + login (Phase 4) ---- */
@@ -309,18 +307,6 @@ a.match:hover { background: var(--gold-pale); }
 .results-fold summary::after { content: " +"; margin-left: .5rem; color: var(--gold); font-family: 'DM Sans', Arial, sans-serif; font-weight: 700; }
 .results-fold[open] summary::after { content: " –"; }
 .results-fold .results { margin-top: .75rem; }
-.attendance-player { display: flex; align-items: center; gap: .5rem; max-width: calc(140px - 1.1rem); min-width: 0; color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .95rem; font-weight: 700; text-decoration: none; }
-.attendance-player .monogram, .attendance-player .avatar { flex: none; width: 24px; height: 24px; font-size: .5rem; }
-.attendance-player .ap-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.attendance-player:hover .ap-name { color: var(--gold); }
-/* attendance columns: player · competition summary · position (match columns scroll) */
-.attendance-panel th:nth-child(2), .attendance-panel td:nth-child(2) { min-width: 78px; }
-.attendance-panel th:nth-child(3), .attendance-panel td:nth-child(3) { left: 218px; min-width: 78px; }
-@media (max-width: 480px) {
-  .attendance-player { max-width: calc(94px - .56rem); }
-  .attendance-panel th:nth-child(2), .attendance-panel td:nth-child(2) { left: 94px; min-width: 60px; max-width: 60px; }
-  .attendance-panel th:nth-child(3), .attendance-panel td:nth-child(3) { left: 154px; min-width: 60px; max-width: 60px; }
-}
 
 /* ---- player position diagram (revamp wave 13) ---- */
 .position-map-grid { display: grid; grid-template-columns: minmax(220px, 300px) 1fr; gap: clamp(1.2rem, 4vw, 2.4rem); align-items: center; }
@@ -373,14 +359,6 @@ svg.trend-svg { display: block; width: 100%; height: auto; }
 .tv-date { fill: var(--muted); font: 700 10px 'DM Sans', Arial, sans-serif; text-anchor: middle; }
 .tv-opp { fill: var(--navy); font: 600 10.5px 'DM Sans', Arial, sans-serif; text-anchor: middle; }
 
-/* ---- attendance: TML table first, friendly attendance folds (revamp wave 14) ---- */
-.attendance-fold { margin-top: 1.5rem; padding-top: 1.1rem; border-top: 1px solid var(--line); }
-.attendance-fold summary { cursor: pointer; color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.1rem; font-weight: 700; list-style: none; }
-.attendance-fold summary::-webkit-details-marker { display: none; }
-.attendance-fold summary::after { content: " +"; margin-left: .5rem; color: var(--gold); font-family: 'DM Sans', Arial, sans-serif; font-weight: 700; }
-.attendance-fold[open] summary::after { content: " �V"; }
-.attendance-fold .table-wrap { margin-top: .9rem; }
-
 /* ---- injury tracking: squad status, badges, admin rows (revamp wave 15) ---- */
 .status-panel { border-top: 3px solid #b0413e; }
 .injury-list { display: grid; gap: .75rem; }
@@ -399,23 +377,16 @@ svg.trend-svg { display: block; width: 100%; height: auto; }
 .injury-row .ar-meta { color: var(--muted); font-size: .74rem; font-weight: 700; white-space: nowrap; }
 .injury-row .ar-actions { margin-left: auto; }
 
-/* ── Wave 17: performance KPI rate strip (goals per game, attendance per game …) ── */
-.perf-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .5rem; margin: .45rem 0 .15rem; }
+/* ── Wave 17: performance KPI rate strip (goals per game, win rate …) ── */
+.perf-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; margin: .45rem 0 .15rem; }
 .kpi { display: grid; gap: .22rem; padding: .55rem .6rem .6rem; background: var(--mist); border-top: 2px solid var(--navy); }
 .performance-secondary .kpi { border-top-color: var(--blue); }
 .kpi strong { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.12rem; line-height: 1; }
 .kpi small { color: var(--muted); font-size: .55rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
 @media (max-width: 760px) { .perf-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
-/* ── Wave 17b: player cards — TML/friendly percentages + season totals ── */
+/* ── Wave 17b: player cards — shirt, selection group + season totals ── */
 .pc-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: .35rem; }
-.pc-quick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .35rem; width: 100%; margin-top: .3rem; padding-top: .55rem; border-top: 1px solid var(--line); }
-.pcq { display: grid; justify-items: center; gap: .12rem; padding: .35rem .15rem .4rem; background: var(--mist); border-bottom: 2px solid var(--navy); }
-.pcq.fnd { border-bottom-color: var(--gold); }
-.pcq small { color: var(--muted); font-size: .52rem; font-weight: 700; letter-spacing: .08em; }
-.pcq strong { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .98rem; line-height: 1; }
-.pcq.fnd strong { color: #8a6d1f; }
-.pcq em { color: var(--muted); font-size: .56rem; font-style: normal; font-weight: 700; }
 .pc-tot { color: var(--muted); font-size: .62rem; font-weight: 700; }
 
 /* ── Wave 17b: profile hero quick-stat tiles ── */
