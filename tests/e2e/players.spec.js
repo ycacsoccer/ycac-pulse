@@ -34,6 +34,12 @@ test("wave 26: every card splits TML and Friendly apps/rate/goals/assists", asyn
   await expect(first).toContainText(/\d+ G · \d+ A/);
 });
 
+test("wave 28: age groups are colour-coded on every active player card", async ({ page }) => {
+  await expect(page.locator(".player-card .age-badge")).toHaveCount(expected.gridCards);
+  await expect(page.locator('.player-card:has-text("Ada Sato") .age-badge')).toContainText("17–20");
+  await expect(page.locator('.player-card:has-text("Chris Ito") .age-badge')).toHaveClass(/age-30s/);
+});
+
 test("selection-group filter chips use appearance-frequency wording", async ({ page }) => {
   await expect(page.locator("#tier-filters")).toContainText("Plays often");
   await expect(page.locator("#tier-filters")).toContainText("Not yet played");

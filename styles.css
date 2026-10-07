@@ -132,13 +132,17 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem 4rem; }.hero { disp
 .formation-pitch::after { bottom: -2px; border-bottom: 0; }
 .pitch-half { position: absolute; top: 50%; left: 0; width: 100%; border-top: 2px solid rgba(255,255,255,.72); }
 .pitch-circle { position: absolute; top: 50%; left: 50%; width: 19%; aspect-ratio: 1; border: 2px solid rgba(255,255,255,.72); border-radius: 50%; transform: translate(-50%, -50%); }
-.tactic-node { position: absolute; z-index: 1; left: var(--tx); top: var(--ty); display: grid; grid-template-columns: auto auto; gap: 0 .25rem; place-content: center; width: 58px; min-height: 48px; padding: .28rem; color: white; border: 2px solid rgba(255,255,255,.92); border-radius: 50%; box-shadow: 0 2px 8px rgba(8,26,53,.28); transform: translate(-50%, -50%); cursor: pointer; font-family: 'DM Sans', Arial, sans-serif; }
-.tactic-node span { grid-column: 1 / -1; font-size: .58rem; font-weight: 700; line-height: 1; }
-.tactic-node strong { font-family: 'Libre Baskerville', Georgia, serif; font-size: 1rem; line-height: 1; }
-.tactic-node i { align-self: center; font-size: .5rem; font-style: normal; }
+.tactic-node { position: absolute; z-index: 1; left: var(--tx); top: var(--ty); display: grid; grid-template-columns: 1fr 1fr; gap: .15rem .22rem; width: 72px; min-height: 50px; padding: .3rem .35rem; color: white; border: 2px solid rgba(255,255,255,.92); border-radius: 7px; box-shadow: 0 2px 8px rgba(8,26,53,.3); transform: translate(-50%, -50%); cursor: pointer; font-family: 'DM Sans', Arial, sans-serif; }
+.tactic-role { grid-column: 1 / -1; font-size: .61rem; font-weight: 800; letter-spacing: .04em; line-height: 1; }
+.tactic-count { display: flex; align-items: center; justify-content: center; gap: .15rem; padding: .12rem .18rem; background: rgba(255,255,255,.16); border-radius: 3px; }
+.tactic-count i { color: #ffe4a8; font-size: .52rem; font-style: normal; font-weight: 800; }
+.tactic-count strong { font-family: 'Libre Baskerville', Georgia, serif; font-size: .82rem; line-height: 1; }
+.tactic-node > small { position: absolute; top: -8px; right: -8px; display: inline-flex; align-items: center; justify-content: center; min-width: 21px; height: 21px; padding: 0 .2rem; color: #8f2f2c; background: #fff; border: 1px solid #eec9c7; border-radius: 999px; font-size: .52rem; font-weight: 800; }
 .tactic-node.heat-empty { background: #9d1c1c; }.tactic-node.heat-thin { background: #b96b24; }.tactic-node.heat-fair { background: #92751f; }.tactic-node.heat-strong { background: #1f7a3d; }
 .tactic-node:hover, .tactic-node:focus-visible, .tactic-node.is-selected { outline: 3px solid var(--gold); outline-offset: 2px; }
-.coverage-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: .45rem .8rem; margin-top: .8rem; color: var(--muted); font-size: .62rem; font-weight: 700; }
+.coverage-key, .coverage-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: .45rem .8rem; color: var(--muted); font-size: .62rem; font-weight: 700; }
+.coverage-key { margin-top: .8rem; color: var(--navy); }
+.coverage-legend { margin-top: .4rem; }
 .coverage-legend span::before { display: inline-block; width: .6rem; height: .6rem; margin-right: .3rem; border-radius: 50%; content: ""; }
 .coverage-legend .heat-empty::before { background: #9d1c1c; }.coverage-legend .heat-thin::before { background: #b96b24; }.coverage-legend .heat-fair::before { background: #92751f; }.coverage-legend .heat-strong::before { background: #1f7a3d; }
 .tactic-detail { padding: 1.2rem; background: var(--mist); border-left: 3px solid var(--gold); }
@@ -149,7 +153,7 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem 4rem; }.hero { disp
 .tactic-names a { padding: .38rem .55rem; color: var(--navy); background: white; border: 1px solid var(--line); font-size: .7rem; font-weight: 700; text-decoration: none; }
 .tactic-names a:hover { border-color: var(--gold); }
 .tactic-names small { color: #9d1c1c; font-size: .55rem; }
-@media (max-width: 700px) { .tactics-layout { grid-template-columns: 1fr; }.formation-pitch { width: min(100%, 360px); }.tactic-node { width: 52px; min-height: 44px; } }
+@media (max-width: 700px) { .tactics-layout { grid-template-columns: 1fr; }.formation-pitch { width: min(100%, 360px); }.tactic-node { width: 66px; min-height: 47px; padding-inline: .25rem; } }
 
 /* ---- player profiles (Phase 6) ---- */
 .players-toolbar { display: grid; gap: .9rem; }
@@ -185,6 +189,15 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem 4rem; }.hero { disp
 .profile-facts { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: 1.15rem; }
 .profile-facts > span { display: grid; gap: .15rem; padding: .5rem .8rem; background: rgba(255,255,255,.07); border-left: 2px solid var(--gold); font-size: .8rem; font-weight: 700; }
 .profile-facts small { color: #9db4d4; font-size: .55rem; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; }
+.age-17-20 { --age-color: #0e6075; --age-bg: #d9f3f8; }
+.age-20s { --age-color: #1e6b43; --age-bg: #dff3e7; }
+.age-30s { --age-color: #265a96; --age-bg: #e2ecf8; }
+.age-40s { --age-color: #8a5d13; --age-bg: #f7edcf; }
+.age-50s { --age-color: #6b4689; --age-bg: #eee5f5; }
+.age-badge { display: inline-flex; align-items: center; gap: .3rem; padding: .24rem .55rem; color: var(--age-color); background: var(--age-bg); border: 1px solid color-mix(in srgb, var(--age-color) 32%, white); border-radius: 999px; font-size: .64rem; font-weight: 800; white-space: nowrap; }
+.age-badge small { font-size: .5rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .75; }
+.profile-facts > span.age-fact { color: var(--age-color); background: var(--age-bg); border-left-color: var(--age-color); }
+.profile-facts > span.age-fact small { color: var(--age-color); opacity: .72; }
 .profile-upload { display: flex; align-items: center; gap: .75rem; min-height: 44px; margin-top: 1.1rem; }
 .upload-status { color: var(--gold); font-size: .72rem; font-weight: 700; }
 .age-editor { display: flex; flex-wrap: wrap; align-items: end; gap: .55rem; margin-top: .65rem; }
@@ -537,6 +550,7 @@ a.timeline-entry:hover { background: var(--gold-pale); }
 .b-squad { grid-column: span 7; }
 .b-status { grid-column: span 5; }
 .bento:has(.b-status[hidden]) .b-squad { grid-column: span 12; }
+.b-age { grid-column: 1 / -1; border-top: 3px solid var(--gold); }
 .b-fixtures .fixtures { margin-bottom: 0; }
 @media (max-width: 1000px) { .bento > * { grid-column: 1 / -1; } }
 
@@ -573,6 +587,18 @@ a.timeline-entry:hover { background: var(--gold-pale); }
 .b-timing { grid-column: span 5; display: flex; flex-direction: column; }
 .b-timing .chart-block { flex: 1; display: flex; align-items: center; }
 .chart-note { margin: .55rem 0 0; color: var(--muted); font-size: .64rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.age-note { margin: -.35rem 0 1rem; text-transform: none; letter-spacing: 0; }
+.age-distribution { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .7rem; }
+.age-row { display: grid; gap: .7rem; align-content: start; padding: .85rem; background: var(--mist); border-top: 3px solid var(--age-color); }
+.age-row .age-badge { justify-self: start; }
+.age-measure { display: grid; gap: .45rem; }
+.age-value { display: grid; grid-template-columns: auto 1fr auto; gap: .3rem; align-items: baseline; }
+.age-value strong { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.45rem; line-height: 1; }
+.age-value small { color: var(--muted); font-size: .56rem; font-weight: 700; }
+.age-value em { color: var(--age-color); font-size: .68rem; font-style: normal; font-weight: 800; }
+.age-track { height: .45rem; overflow: hidden; background: #dfe5eb; }
+.age-track i { display: block; height: 100%; min-width: 2px; background: var(--age-color); }
+@media (max-width: 800px) { .age-distribution { grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); } }
 svg.timing-svg, svg.trajectory-svg { display: block; width: 100%; height: auto; }
 .tm-bar { fill: var(--gold); }
 .tm-count { fill: var(--navy); font: 700 12px 'Libre Baskerville', Georgia, serif; text-anchor: middle; }

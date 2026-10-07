@@ -16,6 +16,8 @@
 
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
   const monogram = (name) => String(name || "?").split(/\s+/).map((word) => word[0]).slice(0, 2).join("").toUpperCase();
+  const ageBadge = (entry) => entry.age_band && window.YCACAgeBands
+    ? `<span class="age-badge ${YCACAgeBands.className(entry.age_band)}"><small>${esc(t("ageGroup"))}</small>${esc(YCACAgeBands.label(entry.age_band))}</span>` : "";
 
   function photoMarkup(entry) {
     const initials = `<span class="monogram" aria-hidden="true">${esc(monogram(entry.display_name))}</span>`;
@@ -63,6 +65,7 @@
         <span class="pc-meta">${entry.shirt_number != null ? `#${entry.shirt_number} · ` : ""}${esc(entry.primary_position || "")}</span>
         <span class="pc-badges">
           <span class="tier-badge chip-${entry.tier}">${TIER_EMOJI[entry.tier]} ${esc(t(TIER_KEYS[entry.tier]))}</span>
+          ${ageBadge(entry)}
           ${state.injured.has(entry.id) ? `<span class="injured-badge">${esc(t("injuredBadge"))}</span>` : ""}
         </span>
         <span class="pc-tot">

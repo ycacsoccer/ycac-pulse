@@ -30,7 +30,7 @@ function applyOr(rows, expression) {
   )));
 }
 
-async function mockSupabase(page) {
+async function mockSupabase(page, options = {}) {
   const log = { rest: [], requestedTables: [], denied: [], hosts: new Set() };
 
   await page.route("**/rest/v1/**", async (route) => {
@@ -40,6 +40,15 @@ async function mockSupabase(page) {
     log.rest.push(`${tail}${url.search}`);
 
     const table = tail.split("/")[0];
+    if (options.coach && tail === "rpc/is_coach") {
+      return route.fulfill({ status: 200, contentType: "application/json", body: "true" });
+    }
+    if (options.coach && table === "signups") {
+      return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    }
+    if (options.coach && table === "coach_notes") {
+      return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    }
     if (tail.startsWith("rpc/") || !PUBLIC_TABLES.has(table)) {
       log.denied.push(tail);
       return route.fulfill({ status: 401, contentType: "application/json", body: DENY_BODY });

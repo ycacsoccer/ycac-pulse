@@ -164,7 +164,13 @@
     const node = (slot) => {
       const level = YCACTactics.heat(slot.count);
       const names = slot.candidates.map((player) => player.display_name).join(", ");
-      return `<button class="tactic-node heat-${level}${slot.id === selected?.id ? " is-selected" : ""}" type="button" data-tactic-slot="${esc(slot.id)}" style="--tx:${slot.x}%;--ty:${slot.y}%" title="${esc(names || t("coachNoCoverage"))}" aria-label="${esc(`${slot.label}: ${slot.count} ${t("coachAvailable")}`)}"><span>${esc(slot.label)}</span><strong>${slot.count}</strong>${slot.unavailableCount ? `<i>+${slot.unavailableCount}</i>` : ""}</button>`;
+      const spoken = `${slot.label}: ${t("positionBest")} ${slot.bestCount}; ${t("positionCapable")} ${slot.capableCount}; ${slot.count} ${t("coachAvailable")}`;
+      return `<button class="tactic-node heat-${level}${slot.id === selected?.id ? " is-selected" : ""}" type="button" data-tactic-slot="${esc(slot.id)}" style="--tx:${slot.x}%;--ty:${slot.y}%" title="${esc(names || t("coachNoCoverage"))}" aria-label="${esc(spoken)}">
+        <span class="tactic-role">${esc(slot.label)}</span>
+        <span class="tactic-count best"><i>★</i><strong>${slot.bestCount}</strong></span>
+        <span class="tactic-count capable"><i>+</i><strong>${slot.capableCount}</strong></span>
+        ${slot.unavailableCount ? `<small title="${esc(t("coachUnavailable"))}">⚕ ${slot.unavailableCount}</small>` : ""}
+      </button>`;
     };
     const playerLinks = (players) => players.length
       ? players.map((player) => `<a href="player.html?id=${encodeURIComponent(player.id)}">${esc(player.display_name)}${player.unavailable ? ` <small>${esc(t("coachUnavailable"))}</small>` : ""}</a>`).join("")
@@ -173,12 +179,13 @@
     const capable = selected ? selected.candidates.filter((player) => player.fit === "capable") : [];
     target.innerHTML = `<div>
         <div class="formation-pitch" aria-label="${esc(state.formation)} ${esc(t("coachTactics"))}"><i class="pitch-half"></i><i class="pitch-circle"></i>${slots.map(node).join("")}</div>
+        <div class="coverage-key"><span>★ ${esc(t("positionBest"))}</span><span>+ ${esc(t("positionCapable"))}</span><span>⚕ ${esc(t("coachUnavailable"))}</span></div>
         <div class="coverage-legend"><span class="heat-empty">0 ${esc(t("coverageEmpty"))}</span><span class="heat-thin">1 ${esc(t("coverageThin"))}</span><span class="heat-fair">2 ${esc(t("coverageFair"))}</span><span class="heat-strong">3+ ${esc(t("coverageStrong"))}</span></div>
       </div>
       <aside class="tactic-detail">
         <p class="eyebrow">${esc(state.formation)}</p><h3>${esc(selected?.label || "")}</h3>
-        <div><strong>${esc(t("coachBestFit"))}</strong><div class="tactic-names">${playerLinks(best)}</div></div>
-        <div><strong>${esc(t("positionCapable"))}</strong><div class="tactic-names">${playerLinks(capable)}</div></div>
+        <div><strong>★ ${esc(t("coachBestFit"))} · ${selected?.bestCount || 0} ${esc(t("coachAvailable"))}</strong><div class="tactic-names">${playerLinks(best)}</div></div>
+        <div><strong>+ ${esc(t("positionCapable"))} · ${selected?.capableCount || 0} ${esc(t("coachAvailable"))}</strong><div class="tactic-names">${playerLinks(capable)}</div></div>
       </aside>`;
   }
 

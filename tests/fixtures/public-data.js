@@ -5,13 +5,13 @@
    check) and a current injury. Nothing here touches the network. */
 
 const players = [
-  { id: "p-ada", display_name: "Ada Sato", primary_position: "GK", shirt_number: 1, photo_path: null, active: true, secondary_positions: [] },
-  { id: "p-ben", display_name: "Ben Miller", primary_position: "CB", shirt_number: 4, photo_path: null, active: true, secondary_positions: ["RB", "LB"] },
+  { id: "p-ada", display_name: "Ada Sato", primary_position: "GK", shirt_number: 1, age_band: "17-20", photo_path: null, active: true, secondary_positions: [] },
+  { id: "p-ben", display_name: "Ben Miller", primary_position: "CB", shirt_number: 4, age_band: "20s", photo_path: null, active: true, secondary_positions: ["RB", "LB"] },
   { id: "p-chr", display_name: "Chris Ito", primary_position: "CM", shirt_number: 8, age_band: "30s", photo_path: null, active: true, secondary_positions: ["DM"] },
-  { id: "p-dan", display_name: "Dana Park", primary_position: "LW", shirt_number: 7, photo_path: null, active: true, secondary_positions: ["ST"] },
-  { id: "p-evn", display_name: "Evan Cole", primary_position: "ST", shirt_number: 9, photo_path: null, active: true, secondary_positions: ["LW"] },
+  { id: "p-dan", display_name: "Dana Park", primary_position: "LW", shirt_number: 7, age_band: "30s", photo_path: null, active: true, secondary_positions: ["ST"] },
+  { id: "p-evn", display_name: "Evan Cole", primary_position: "ST", shirt_number: 9, age_band: "40s", photo_path: null, active: true, secondary_positions: ["LW"] },
   // inactive: must not appear in the grid or the squad chips
-  { id: "p-fum", display_name: "Fumi Sato", primary_position: "RW", shirt_number: 11, photo_path: null, active: false, secondary_positions: ["ST"] },
+  { id: "p-fum", display_name: "Fumi Sato", primary_position: "RW", shirt_number: 11, age_band: "50s", photo_path: null, active: false, secondary_positions: ["ST"] },
 ];
 
 const matches = [
@@ -77,6 +77,7 @@ const expected = {
   injuryCards: 1,
   tmlKpiTiles: 3,               // wave 21: attendance tile is gone
   heroCompetitionCards: 2,     // wave 26: TML + Friendly summaries
+  ageBands: 5,                 // wave 28: all five broad public bands
   chris: { tmlGoals: 2, fndGoals: 1, played: 6, absent: 1 },  // 7 finals − 6 apps (missed f2)
   evan: { played: 2, absent: 5 },                            // the most-absent player
 };

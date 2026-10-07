@@ -86,7 +86,11 @@
         || (Number(a.fit !== "best") - Number(b.fit !== "best"))
         || a.display_name.localeCompare(b.display_name));
       const available = candidates.filter((player) => !player.unavailable);
-      return { ...formationSlot, candidates, available, count: available.length, unavailableCount: candidates.length - available.length };
+      const best = available.filter((player) => player.fit === "best");
+      const capable = available.filter((player) => player.fit === "capable");
+      return { ...formationSlot, candidates, available, best, capable,
+        bestCount: best.length, capableCount: capable.length,
+        count: available.length, unavailableCount: candidates.length - available.length };
     });
   }
 

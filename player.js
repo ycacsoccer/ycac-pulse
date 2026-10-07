@@ -17,7 +17,7 @@
   const id = new URLSearchParams(location.search).get("id") || "";
   // posEdit: coach position editor draft (wave 20) — posMode picks what a tap
   // means (set BEST vs toggle CAN-PLAY); posStatus is an i18n key or "".
-  const AGE_BANDS = ["17-20", "20s", "30s", "40s", "50s"];
+  const AGE_BANDS = window.YCACAgeBands ? YCACAgeBands.ORDER : ["17-20", "20s", "30s", "40s", "50s"];
   const state = { player: null, players: [], matches: [], appearances: [], goals: [], entry: null, injury: null, isCoach: false,
     ageStatus: "", posEdit: false, posMode: "best", posBest: "", posCapable: [], posStatus: "" };
 
@@ -27,7 +27,8 @@
   const compClass = (match) => /friendly/i.test(match?.competition || "") ? "friendly" : "tml";
   const rate = (value) => (value == null ? "–" : String(Number(value.toFixed(2)))); // 1.50 → "1.5"
   const outcomeOf = (match) => { const gf = Number(match.ycac_goals), ga = Number(match.opponent_goals); return gf > ga ? "win" : gf === ga ? "draw" : "loss"; };
-  const ageLabel = (value) => value === "17-20" ? "17–20" : value || "";
+  const ageLabel = (value) => window.YCACAgeBands ? YCACAgeBands.label(value) : value === "17-20" ? "17–20" : value || "";
+  const ageClass = (value) => window.YCACAgeBands ? YCACAgeBands.className(value) : `age-${value}`;
   const ageStatusText = () => state.ageStatus === "saving" ? t("ageSaving") : state.ageStatus === "saved" ? t("ageSaved") : state.ageStatus === "fail" ? t("ageSaveFail") : "";
 
   async function load() {
@@ -72,7 +73,7 @@
       positions.length ? [t("position"), positions.map(esc).join(" · ")] : "",
       player.shirt_number != null ? [t("shirtNumber"), `#${player.shirt_number}`] : "",
       player.preferred_foot && FOOT_KEYS[player.preferred_foot] ? [t("infoFoot"), t(FOOT_KEYS[player.preferred_foot])] : "",
-      player.age_band ? [t("ageGroup"), ageLabel(player.age_band)] : "",
+      player.age_band ? [t("ageGroup"), ageLabel(player.age_band), `age-fact ${ageClass(player.age_band)}`] : "",
       entry.reliability != null ? [t("statReliability"), String(entry.reliability)] : "",
     ].filter(Boolean);
 
@@ -100,7 +101,7 @@
         <h1>${esc(player.display_name)}</h1>
         ${sub ? `<p class="profile-sub">${sub}</p>` : ""}
         <div class="profile-facts">
-          ${facts.map(([label, value]) => `<span><small>${esc(label)}</small>${value}</span>`).join("")}
+          ${facts.map(([label, value, cls]) => `<span${cls ? ` class="${esc(cls)}"` : ""}><small>${esc(label)}</small>${value}</span>`).join("")}
           <span><small>${esc(t("filterTier"))}</small><span class="tier-badge chip-${entry.tier}">${TIER_EMOJI[entry.tier]} ${esc(t(TIER_KEYS[entry.tier]))}</span></span>
         </div>
         <div class="profile-competition-grid">

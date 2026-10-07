@@ -90,6 +90,8 @@ const get = async (path) => {
   require("./data.js");
   global.YCACData = window.YCACData;
   global.YCACStats = YCACStats;
+  require("./agebands.js");
+  global.YCACAgeBands = window.YCACAgeBands;
   require("./positionmap.js");
   global.YCACPositionMap = window.YCACPositionMap;
   require("./players.js"); // grid
@@ -112,6 +114,8 @@ const get = async (path) => {
   "every card splits TML + Friendly", `${splits} rows across ${cardCount} cards`);
   check(grid.includes("Appearance rate") && /\d+%/.test(grid) && grid.includes(" G · ") && grid.includes(" A</span>"),
     "card rows carry apps, appearance rate, goals and assists");
+  check((grid.match(/class="age-badge /g) || []).length === cardCount,
+    "every active player card has a colour-coded age badge", `${cardCount} badges`);
 
   // --- 3b. wave 18: grouped into position sections, selection wording --------
   const sections = (grid.match(/position-section-head/g) || []).length;

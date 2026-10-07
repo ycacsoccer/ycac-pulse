@@ -42,6 +42,8 @@ require("./config.js");
 require("./data.js");
 global.YCACData = window.YCACData;
 global.YCACStats = require("./stats.js");
+require("./agebands.js");
+global.YCACAgeBands = window.YCACAgeBands;
 require("./charts.js");
 global.YCACCharts = window.YCACCharts;
 require("./standings.js");
@@ -92,6 +94,13 @@ const check = (ok, label, detail = "") => {
     "render() never queries an attendance element");
   const anyAttendance = [...elements.values()].some((node) => /attendance/i.test(node.innerHTML || ""));
   check(!anyAttendance, "no rendered output mentions attendance");
+
+  // wave 28 — broad age groups are public and every active player is assigned.
+  const ageDistribution = el("age-distribution").innerHTML;
+  const ageRows = (ageDistribution.match(/class="age-row /g) || []).length;
+  const ageTotal = [...ageDistribution.matchAll(/<strong>(\d+)<\/strong>/g)].reduce((sum, match) => sum + Number(match[1]), 0);
+  check(ageRows === 5, "age distribution renders all five bands", `${ageRows} bands`);
+  check(ageTotal === 40, "age distribution covers every active player", `${ageTotal} players`);
 
   check(el("fixtures").innerHTML.includes("fixture") || el("fixtures").innerHTML.includes("No data"), "fixtures render (or empty state)", `${(el("fixtures").innerHTML.match(/class="fixture"/g) || []).length} fixtures`);
   check(el("squad-chips").innerHTML.includes("squad-chip"), "squad chips render");

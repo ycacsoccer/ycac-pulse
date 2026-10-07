@@ -123,6 +123,18 @@ function render(data) {
     return `<a class="injury-card" href="player.html?id=${encodeURIComponent(row.player_id)}">${photoCell(player)}<span class="ic-body"><strong class="ic-name">${esc(player.display_name)}</strong><span class="ic-detail">${esc(row.detail)}</span><span class="ic-meta">${meta}</span></span></a>`;
   }).join("");
 
+  // Wave 28: public age distribution — broad, coach-maintained bands only.
+  // Exact birth dates are deliberately not stored.
+  const ageRows = window.YCACAgeBands ? YCACAgeBands.distribution(data.players) : [];
+  document.querySelector("#age-distribution").innerHTML = ageRows.map((row) => `
+    <div class="age-row ${YCACAgeBands.className(row.band)}">
+      <span class="age-badge ${YCACAgeBands.className(row.band)}">${esc(row.label)}</span>
+      <div class="age-measure">
+        <div class="age-value"><strong>${row.count}</strong><small>${esc(t("agePlayers", { count: row.count }))}</small><em>${row.percent}%</em></div>
+        <div class="age-track"><i style="width:${row.percent}%"></i></div>
+      </div>
+    </div>`).join("");
+
   // Performance charts — SVG trend per competition (revamp 14): goals for/against
   // bars along the timeline with W-D-L chips, then the scorer bars underneath.
   const perfLegend = `<span><i class="key-for"></i>${t("goalsFor")}</span><span><i class="key-against"></i>${t("goalsAgainst")}</span>`;

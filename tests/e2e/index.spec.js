@@ -138,6 +138,14 @@ test("squad chips show the TML core; the injury panel shows current injuries", a
   await expect(page.locator("#injury-list .injury-card")).toHaveCount(expected.injuryCards);
 });
 
+test("wave 28: public age distribution shows every band with counts and percentages", async ({ page }) => {
+  await expect(page.locator("#age-distribution .age-row")).toHaveCount(expected.ageBands);
+  await expect(page.locator("#age-distribution")).toContainText("17–20");
+  await expect(page.locator("#age-distribution")).toContainText("50s");
+  await expect(page.locator("#age-distribution .age-row.age-30s")).toContainText("2");
+  await expect(page.locator("#age-distribution .age-row.age-30s")).toContainText("40%");
+});
+
 test("requests only the public tables, from the project host, and logs no errors", async ({ page }) => {
   await expect(page.locator("#squad-chips .squad-chip")).toHaveCount(expected.coreChips.length);
   expect(publicOnly(api)).toBe(true);

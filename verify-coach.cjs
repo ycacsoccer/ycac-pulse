@@ -66,8 +66,9 @@ async function main() {
   check(coachSource.includes("YCACAuth.requireCoach") && !coachSource.includes("YCACAuth.requireTeam"),
     "coach dashboard uses the single coach gate");
   check(coachPage.includes('id="tactics-map"') && coachPage.includes('src="tactics.js"')
-    && coachSource.includes("YCACTactics.coverage") && coachSource.includes("secondary_positions"),
-  "coach dashboard wires the formation coverage heat map");
+    && coachSource.includes("YCACTactics.coverage") && coachSource.includes("secondary_positions")
+    && coachSource.includes("slot.bestCount") && coachSource.includes("slot.capableCount"),
+  "coach dashboard wires best-position + can-play counts into the formation map");
 
   let userId = null;
   try {

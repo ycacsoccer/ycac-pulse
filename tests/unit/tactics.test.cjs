@@ -25,6 +25,8 @@ test("coverage includes best and capable positions without counting injuries", (
 
   const leftBack = coverage.find((slot) => slot.id === "lb");
   assert.equal(leftBack.count, 1);
+  assert.equal(leftBack.bestCount, 1);
+  assert.equal(leftBack.capableCount, 0);
   assert.equal(leftBack.available[0].fit, "best");
 });
 

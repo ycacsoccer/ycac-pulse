@@ -123,8 +123,8 @@ async function main() {
   check(page.includes('id="season-record"') && app.includes("#season-record") && page.includes('data-seg="tml"') && app.includes("paintBand"),
     "segmented stat band wired (3 lenses → 6 cells, GD + win rate included)");
   check(!page.includes('id="tml-record"') && !app.includes("setStats("), "twin tml-/friendly- scorelines + setStats() removed");
-  check(page.includes('class="bento"') && ["b-fixtures", "b-results", "b-perf-tml", "b-perf-friendly", "b-squad", "b-status", "b-trajectory", "b-timing"].every((cls) => page.includes(cls)),
-    "bento board: fixtures, results, performance ×2, trajectory, timing, squad, injuries");
+  check(page.includes('class="bento"') && ["b-fixtures", "b-results", "b-perf-tml", "b-perf-friendly", "b-squad", "b-status", "b-trajectory", "b-timing", "b-age"].every((cls) => page.includes(cls)),
+    "bento board: fixtures, results, performance ×2, trajectory, timing, age, squad, injuries");
   // wave 24 — data modules wired: form guide + streak in the band, assists
   // beside the scorers, goal timing + trajectory in two new bento cells.
   check(page.includes('id="season-form"') && app.includes("#season-form") && page.includes('id="season-streak"') && app.includes("#season-streak") && app.includes("streakWon"),
@@ -148,6 +148,10 @@ async function main() {
   "public nav reduced to Fixtures / Standings / Players / Schedule", `${(publicNav.match(/<a /g) || []).length} links`);
   check(!publicNav.includes("team.html") && !publicNav.includes("squad-picker.html"),
     "private Team + Squad Picker links removed from the public nav");
+  // wave 28 — age groups are a public, colour-coded squad view.
+  check(page.includes('<script src="agebands.js">') && page.includes('id="age-distribution"')
+    && app.includes("YCACAgeBands.distribution") && app.includes("#age-distribution"),
+  "public age distribution wired (agebands.js → app.js → index.html)");
   // wave 23 — the two cascade leaks stay fixed: coach .fixture-card child rules
   // scoped away from the public navy card, and the match-page gold score scoped.
   const styles = fs.readFileSync(path.join(__dirname, "styles.css"), "utf8");
