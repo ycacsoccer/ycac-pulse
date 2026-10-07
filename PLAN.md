@@ -1,6 +1,6 @@
 # YC&AC Pulse — Coach & Management Revamp Plan
 
-v8 · Oct 2026 · Status: **all 21 phases complete — all 14 `verify-*.cjs` checks green**
+v9 · Oct 2026 · Status: **all 22 phases complete — `npm run verify` green (syntax, 27 unit tests, 14 verifiers, 22 E2E)**
 
 > **v2:** data source moved off Google Sheets to Supabase.
 > **v3:** ten numbered requirements captured from the coach/management side; login model,
@@ -16,6 +16,9 @@ v8 · Oct 2026 · Status: **all 21 phases complete — all 14 `verify-*.cjs` che
 > **v8:** attendance leaves the site (wave 21): the public attendance tables, appearance-% cards,
 > attendance KPI tile and profile attendance rows are gone — appearances still drive results,
 > timelines and selection groups.
+> **v9:** test automation (phase 22): `npm run verify` runs syntax → unit → verifiers → Playwright
+> E2E; husky gates the commit, GitHub Actions gates the Pages deploy, a smoke suite gates what
+> actually went live.
 
 ---
 
@@ -201,12 +204,13 @@ Thresholds live in `stats.js`; coach can override per player in `coach_notes`.
 | **19** | **Profile goal-badge fix** — each goal row on a profile must be badged TML/FND from the match it was scored in: the goals query silently omitted `competition`, so `compClass()` defaulted **every** friendly goal to TML on the profile (the DB data itself was correct) | ✅ **done** — goals query now `select=*,matches(date,opponent,competition)` in `player.js`; `verify-profile-render` asserts rendered TML/FND badge counts against ground truth per scorer, `verify-profiles` guards that every goal row embeds `match.competition` — **all 14 verifiers green** |
 | **20** | **Coach position editor** — on a player profile a coach taps a slot on the pitch diagram to set the **best position** or toggle **can-play** positions (segmented mode switch, keyboard-operable slots, Save/Cancel), replacing manual position entry for the common case | ✅ **done** — `positionmap.js` `.editable()` renders all 17 `_COORDS` slots as `role=button`/`tabindex` targets (pm-best / pm-capable / pm-empty), `player.js` draft state + one delegated click/keydown pair on `#profile-positions` + `YCACData.update("players", …)` with a **0-row save guard** (RLS still enforces `is_coach()` whatever the UI shows), coach-only "Edit positions" control re-rendered once the role resolves; styles for `.pm-slot`/`.pm-empty`/`.pos-mode-row`/`.pos-edit-row`; 6 new keys ×3 (**335 total**), `verify-profiles` (editable diagram + anon/team denied + coach write round-trip with restore) + `verify-profile-render` (public view has no editor; full Edit → tap → mode → save → cancel interaction under a listener-recording DOM stub) — **all 14 verifiers green** |
 | **21** | **Attendance leaves the site** — attendance stops being a *purpose* of the public pages: the index attendance tables (TML table + folded friendly supplement) and their search box, the attendance-per-game KPI tile, the player-card TML/FND appearance-% cells and the profile hero/stats attendance rows are all removed | ✅ **done** — `index.html`/`app.js` lose the panel, the `attendanceSearch` handler and the position-cell helper (`stats.js` `positionGroup` no longer used on index), `charts.js` `kpis()` takes no `appearances` option, `players.js` cards fall back to `apps · goals`, `player.js` hero drops to 3 tiles and the stats table drops its attendance row; **appearance records stay** — they still power results, timelines, selection groups and the coach dashboard's own `%` column; 8 keys ×3 removed (**327 total**), `filterTierNote` copy in EN/JA/ZH + both pages drops the "attendance and availability" wording; `verify-index` (stats-engine check now `computeSeason` + `ranked`, three negative checks for the panel), `verify-render` (waits on squad chips, 3 KPI tiles, "no rendered output mentions attendance"), `verify-profiles` + `verify-profile-render` (no `%` cells, 3 hero tiles, no attendance row) re-aimed at the absence — **all 14 verifiers green** |
+| **22** | **Test automation + deploy gate** — one entry point (`npm run verify`) that funnels four gates: syntax → unit → verifiers → Playwright E2E; the commit is gated by Husky, the deploy by GitHub Actions, and what actually went live by a smoke suite | ✅ **done** — `scripts/check-syntax.js` (`node --check` on every git-tracked `.js`/`.cjs`, JSON parse), `tests/unit/*.test.cjs` (**27 `node --test` tests**: tier/reliability/coverage rules + season split in `stats.js`, diverging-chart geometry + `kpis()` in `charts.js`, key parity/interpolation/wave-21 removals in `i18n.js` — the long-standing "no frontend unit tests" gap), `scripts/run-verifiers.js` splitting the 14 suites into `--group=anon` (CI: i18n, stats, index, render, profile-render) and `--group=live` (local, `.env`: the 9 that create ephemeral users and write rows), Playwright `tests/e2e/**` — **22 tests** over index/grid/profile with **every Supabase call mocked** (`page.route` → `tests/fixtures/public-data.js`: no credentials, no network, deterministic), including public-tables-only, language switch, and no horizontal overflow at 320/390/1440; `.husky/pre-commit` → `verify:fast`; `.github/workflows/pages.yml` → verify → `build:site` (whitelist → `_site/` + `build-info.json`) → `deploy-pages` → `test:smoke` (commit propagation, live pages, login gating), Pages switched from branch to **Actions** deploy so a red run blocks publishing; two real bugs found and fixed along the way — `i18n.setLanguage()` crashing outside a browser, and the fixture card overflowing at 320px — **`npm run verify` + `npm run verify:live` green** |
 
 Note: the injuries wave needs one manual step — no SQL-execution path exists for the service key,
 so `0002_injuries.sql` gets pasted into the Supabase SQL Editor once (README workflow).
 
 Phases ship independently. Phase 3 needs no Supabase and can start immediately; phases 4–11 need
-the project to exist. **All phases are now done** (0–21, including the post-launch revamp waves 13–21); the `verify-*.cjs` suite (14 scripts) guards each area.
+the project to exist. **All phases are now done** (0–22, including the post-launch revamp waves 13–21 and the test-automation phase 22); the `verify-*.cjs` suite (14 scripts) plus `npm run verify` (syntax, 27 unit tests, E2E) guard each area.
 
 ---
 

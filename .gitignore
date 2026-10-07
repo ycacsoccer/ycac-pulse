@@ -3,3 +3,13 @@
 
 # Dependencies / tooling output
 node_modules/
+
+# Playwright output (test runs + HTML report)
+playwright-report/
+test-results/
+
+# Publishable-file whitelist output (CI uploads this as the Pages artifact)
+_site/
+
+# husky's internal harness — recreated by `npx husky` (npm run setup:dev)
+.husky/_/

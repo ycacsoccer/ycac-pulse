@@ -1,0 +1,4 @@
+# Fast gates only: syntax + unit tests (a second or two, no network, no
+# credentials). The network layers — live verifiers and Playwright — run in
+# `npm run verify` before you push and in CI on every push.
+npm run verify:fast

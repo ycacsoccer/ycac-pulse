@@ -30,6 +30,7 @@ Live at https://ycacsoccer.github.io/ycac-pulse/
 | 19 | Profile goal-badge fix | done — profile goal rows are badged TML/FND from the match's competition (the goals query was missing `competition`, so every friendly goal read TML); guarded by `verify-profile-render.cjs` + `verify-profiles.cjs` |
 | 20 | Coach position editor | done — on a player profile a coach taps a slot on the pitch diagram to set the **best position** or toggle **can-play** positions (mode switch, Save/Cancel, keyboard-operable slots); coach-only UI, writes still RLS-gated by `is_coach()` with a 0-row save guard; 335 i18n keys ×3; covered by `verify-profiles.cjs` + `verify-profile-render.cjs` |
 | 21 | Attendance leaves the site | done — index attendance tables + search box, the attendance/game KPI tile, the cards' TML/FND appearance-% cells and the profile hero/stats attendance rows are gone (appearances still power results, timelines and selection groups; the coach dashboard keeps its own `%` column); 327 i18n keys ×3; guarded by `verify-index.cjs`, `verify-render.cjs`, `verify-profiles.cjs`, `verify-profile-render.cjs` |
+| 22 | Test automation + deploy gate | done — one entry point (`npm run verify` = syntax → unit → verifiers → Playwright E2E), husky pre-commit runs the fast gates, GitHub Actions runs the same verify **before** building the Pages artifact (a red run blocks the publish) and smoke-tests the deployed site against `build-info.json`; 27 `node --test` unit tests close the "no frontend unit tests" gap; found + fixed a 320px fixture-card overflow |
 
 The plan (10 requirements mapped to screens) and the reasoning behind it live in [`PLAN.md`](PLAN.md).
 
@@ -69,45 +70,79 @@ The plan (10 requirements mapped to screens) and the reasoning behind it live in
 
 Do not rename table or column names without updating `stats.js` and the pages that read them.
 
+## Commands
+
+| Command | Runs | Needs |
+|---|---|---|
+| `npm run setup:dev` | `npm ci` + Playwright Chromium + husky hooks — once per machine | network |
+| `npm run verify` | **the gate**: syntax → unit → anon verifiers → Playwright E2E | network only |
+| `npm run verify:fast` | syntax + unit only (what the pre-commit hook runs) | nothing, offline |
+| `npm run verify:live` | `verify` + the 9 service-key suites | `.env` |
+| `npm run test:e2e` | Playwright against the local server with a **mocked** Supabase | nothing |
+| `npm run test:smoke` | Playwright against the **published** site (`SMOKE_COMMIT=` optional) | network |
+| `npm run test:verify` / `test:verify:live` | the verifiers alone, `--group=anon` / `live` | `.env` for live |
+| `npm run build:site` | whitelist copy of the publishable files → `_site/` + `build-info.json` | git |
+| `npm run serve` | local static server on port 4319 | nothing |
+
 ## Verify
 
-Fourteen verifiers guard the site against the live Supabase project — run them before every
-commit/push; each prints `OK`/`FAIL` lines and exits non-zero on any failure:
+`npm run verify` is the single entry point. It runs four gates in order and stops at the first
+failure:
+
+| # | Gate | Command | What it checks |
+|---|---|---|---|
+| 1 | Syntax | `node scripts/check-syntax.js` | every git-tracked `.js`/`.cjs` parses (`node --check`), every `.json` is valid; skips `node_modules`, `_site`, `playwright-report`, `test-results`, `*.gs` |
+| 2 | Unit | `node --test tests/unit/*.test.cjs` | 27 tests on the frontend logic with plain `node:test` (no framework): tier/reliability/coverage rules and the season split in `stats.js`, chart geometry + KPI maths in `charts.js`, key parity, interpolation and the wave-21 key removals in `i18n.js` |
+| 3 | Verifiers | `node scripts/run-verifiers.js --group=anon` | the live contract suites that need only the publishable key: `verify-i18n`, `verify-stats`, `verify-index`, `verify-render`, `verify-profile-render` |
+| 4 | E2E | `playwright test` | 22 tests in `tests/e2e/` against `scripts/serve-static.js` with **every Supabase call mocked** (`page.route` → `tests/fixtures/public-data.js`): deterministic, no credentials, no network |
 
 ```powershell
-node verify-import.cjs     node verify-stats.cjs     node verify-i18n.cjs
-node verify-auth.cjs       node verify-coach.cjs     node verify-profiles.cjs
-node verify-admin.cjs      node verify-match.cjs     node verify-team.cjs
-node verify-index.cjs      node verify-picker.cjs    node verify-render.cjs
-node verify-injuries.cjs   node verify-profile-render.cjs
+npm run verify        # gates 1–4
+npm run verify:live   # + the 9 suites that hold SUPABASE_SERVICE_ROLE_KEY in .env
 ```
 
-- **import/stats** — row counts, match split, tier engine baselines
-- **i18n** — EN/JA/ZH key parity, no hardcoded CJK, every `#id` wired
-- **auth/coach/profiles/admin/match/team/picker** — each page's query path, RLS and gating,
-  using ephemeral users that are removed again
-- **index** — public data path + static contract (charts, TML-first results, no attendance tables)
-- **render** — executes `index.html`'s `render()` under a DOM stub against live data
-  (this test caught the old attendance `match.match_id` bug)
-- **profile-render** — executes the player grid + profile under a DOM stub: card
-  season totals, hero stat tiles, one timeline row per final match (absences included),
-  goal badges vs ground truth, and the coach position editor driven click-by-click
-  (Edit → tap pitch slots → mode switch → save → cancel)
-- **injuries** — migration contract, public read, anon/team write denial, coach CRUD
+The other nine verifiers (`verify-import`, `auth`, `coach`, `profiles`, `admin`, `match`, `team`,
+`picker`, `injuries`) create ephemeral users and write/restore rows against the real project, so
+they only run where `.env` exists: `npm run verify:live`, before you push.
+
+> `verify-stats.cjs` carries an `EXPECTED` snapshot of the database (row counts, tier buckets).
+> Entering a new match or editing the roster makes it fail **on purpose** — bump that block in the
+> same commit and the suite goes green again.
+
+### Enforcement points
+
+- **Husky pre-commit** (`.husky/pre-commit`) runs `npm run verify:fast` — a file that doesn't parse
+  or a unit regression cannot be committed.
+- **GitHub Actions** (`.github/workflows/pages.yml`) runs the full `npm run verify` on every push
+  and pull request, *then* builds the publishable artifact and deploys it. Pages is set to deploy
+  from **GitHub Actions**, so a failing run means the site is **not** republished.
+- **Post-deploy smoke** (same workflow, `npm run test:smoke`): polls `build-info.json` until the
+  published commit matches the pushed SHA, then loads the public pages against live data —
+  3 KPI tiles, no attendance surface, player cards, a real profile, no horizontal overflow, and
+  team-only pages still bouncing anonymous visitors to `login.html`.
+
+**Workflow rule:** change → pre-commit (`verify:fast`) → push → CI `verify` → CI builds + deploys
+→ CI smoke-tests the published site. If any step is red, nothing ships.
 
 ## Publish with GitHub Pages
 
-1. Create a new GitHub repository, for example `ycac-pulse-stats`.
-2. Upload the site files: every `.html`, `.css`, and `.js` file in the folder (pages, styles,
-   `i18n.js`, `config.js`, `data.js`, `auth.js` …). The `.cjs` scripts, `supabase/`, and the
-   `PLAN.md`/`README.md` docs are tooling, not part of the site.
-   **Never upload `.env`** — it holds the secret key (only the publishable/anon key belongs in
-   `config.js`). If you turn this folder into a git repository, the included `.gitignore`
-   already excludes `.env`.
-3. In the repository, open **Settings** > **Pages**.
-4. Under **Build and deployment**, select **Deploy from a branch**.
-5. Select the `main` branch and the `/ (root)` folder, then save.
-6. GitHub will provide the public site URL within a few minutes.
+Deployment is a **workflow job**, not a branch: `main` → `.github/workflows/pages.yml` →
+`verify` → `build:site` → `deploy-pages` → `smoke`.
+
+One-time setup:
+
+1. Create the GitHub repository and push this folder to `main` (`.gitignore` already excludes
+   `.env`, `node_modules/`, `_site/` and the Playwright output).
+2. **Settings → Pages → Build and deployment → Source: GitHub Actions** (that is what makes the
+   workflow the gate — a red `verify` run leaves the currently published site untouched).
+3. Nothing else: every push to `main` is verified, built and deployed automatically.
+
+What gets published is the whitelist in `scripts/build-site.js` — pages, stylesheets, runtime
+scripts and `favicon.svg` (29 files) plus `build-info.json`, which the smoke test uses to confirm
+the deployed commit. Verifier scripts, tests, `supabase/`, `PLAN.md`/`README.md` and — by
+construction — `.env` are never copied into `_site/`.
+
+Preview a build locally: `npm run build:site` then `npm run serve` (http://127.0.0.1:4319).
 
 ## Data source
 

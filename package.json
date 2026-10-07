@@ -1,0 +1,27 @@
+{
+  "name": "ycac-pulse",
+  "version": "1.0.0",
+  "private": true,
+  "description": "YC&AC Pulse — static season dashboard (GitHub Pages) on a Supabase backend. Test automation: syntax gate + node:test unit tests + 14 live contract verifiers + Playwright E2E (mocked API) + post-deploy smoke.",
+  "scripts": {
+    "setup:dev": "npm ci && playwright install chromium && husky",
+    "serve": "node scripts/serve-static.js --port 4319",
+    "check:syntax": "node scripts/check-syntax.js",
+    "test:unit": "node --test \"tests/unit/*.test.cjs\"",
+    "test:verify": "node scripts/run-verifiers.js --group=anon",
+    "test:verify:live": "node scripts/run-verifiers.js --group=live",
+    "test:e2e": "playwright test",
+    "test:smoke": "playwright test --config=playwright.smoke.config.js",
+    "build:site": "node scripts/build-site.js",
+    "verify:fast": "npm run check:syntax && npm run test:unit",
+    "verify": "npm run verify:fast && npm run test:verify && npm run test:e2e",
+    "verify:live": "npm run verify && npm run test:verify:live"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "husky": "^9.1.7"
+  }
+}

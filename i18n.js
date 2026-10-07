@@ -710,7 +710,7 @@ const YCACI18n = (() => {
       url.searchParams.set("lang", next);
       window.history.replaceState(null, "", url);
     }
-    apply(document);
+    if (typeof document !== "undefined") apply(document); // Node has no document (unit tests, verifiers)
     listeners.forEach((listener) => listener(language));
   }
 
