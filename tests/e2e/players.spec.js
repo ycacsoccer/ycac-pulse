@@ -30,6 +30,12 @@ test("wave 21: cards carry season totals, never appearance percentages", async (
   expect(body).not.toMatch(/\b\d+%/); // no bare percentages on a card
 });
 
+test("wave 23: goal totals singularise — '1 goal', never '1 goals'", async ({ page }) => {
+  const body = await page.locator("#players-grid").innerText();
+  expect(body).not.toMatch(/\b1 goals\b/);
+  expect(body).toMatch(/\b1 goal\b/); // Ben + Dana carry a single goal each
+});
+
 test("selection-group filter chips use appearance-frequency wording", async ({ page }) => {
   await expect(page.locator("#tier-filters")).toContainText("Plays often");
   await expect(page.locator("#tier-filters")).toContainText("Not yet played");

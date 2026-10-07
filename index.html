@@ -87,61 +87,74 @@
             <a class="club-link" href="https://ycac.jp" target="_blank" rel="noreferrer" data-i18n="clubLink">YC&amp;AC Club Website</a>
           </div>
         </div>
-        <aside class="hero-note"><span data-i18n="officialTeam">YC&amp;AC Official Soccer Top Team</span><strong data-i18n="heroNote">Proudly representing Yokohama Country &amp; Athletic Club</strong></aside>
+        <aside class="matchday" id="matchday" aria-label="Matchday">
+          <!-- wave 23: static fallback shown until app.js renders the matchday
+               cards (next fixture / last result); survives a data failure. -->
+          <div class="hero-note"><span data-i18n="officialTeam">YC&amp;AC Official Soccer Top Team</span><strong data-i18n="heroNote">Proudly representing Yokohama Country &amp; Athletic Club</strong></div>
+        </aside>
       </section>
 
-      <section id="season" class="scoreline" aria-label="Season record">
-        <div class="scoreline-title"><span>TML Division 3</span><small id="updated">Loading live data...</small></div>
-        <div><strong id="tml-record">-</strong><span data-i18n="record">Record</span></div>
-        <div><strong id="tml-goals-for">-</strong><span data-i18n="goalsFor">Goals for</span></div>
-        <div><strong id="tml-goals-against">-</strong><span data-i18n="goalsAgainst">Goals against</span></div>
-        <div><strong id="tml-clean-sheets">-</strong><span data-i18n="cleanSheets">Clean sheets</span></div>
+      <section id="season" class="statband" aria-label="Season record">
+        <div class="sb-head">
+          <div class="segmented" role="group" data-i18n-aria="coachCompetition" aria-label="Competition">
+            <button type="button" class="seg active" data-seg="tml" data-i18n="lensTml" aria-pressed="true">TML Division 3</button>
+            <button type="button" class="seg" data-seg="friendly" data-i18n="lensFriendly" aria-pressed="false">Friendly Matches</button>
+            <button type="button" class="seg" data-seg="all" data-i18n="lensAll" aria-pressed="false">All matches</button>
+          </div>
+          <small id="updated">Loading live data...</small>
+        </div>
+        <div class="sb-grid">
+          <div class="sb-cell"><strong id="season-record">-</strong><span data-i18n="record">Record</span></div>
+          <div class="sb-cell"><strong id="season-goals-for">-</strong><span data-i18n="goalsFor">Goals for</span></div>
+          <div class="sb-cell"><strong id="season-goals-against">-</strong><span data-i18n="goalsAgainst">Goals against</span></div>
+          <div class="sb-cell"><strong id="season-goal-diff">-</strong><span data-i18n="goalDiff">Goal difference</span></div>
+          <div class="sb-cell"><strong id="season-win-rate">-</strong><span data-i18n="kpiWinRate">Win rate</span></div>
+          <div class="sb-cell"><strong id="season-clean-sheets">-</strong><span data-i18n="cleanSheets">Clean sheets</span></div>
+        </div>
       </section>
-      <section class="scoreline friendly-scoreline" aria-label="Friendly match record">
-        <div class="scoreline-title"><span id="friendly-title">Friendly Matches</span><small id="friendly-updated"></small></div>
-        <div><strong id="friendly-record">-</strong><span data-i18n="record">Record</span></div>
-        <div><strong id="friendly-goals-for">-</strong><span data-i18n="goalsFor">Goals for</span></div>
-        <div><strong id="friendly-goals-against">-</strong><span data-i18n="goalsAgainst">Goals against</span></div>
-        <div><strong id="friendly-clean-sheets">-</strong><span data-i18n="cleanSheets">Clean sheets</span></div>
-      </section>
+      <!-- wave 23: one 12-column bento board — fixtures + results lead,
+           performance next, stable squad, injuries dropped to the last cell. -->
+      <div class="bento">
+        <section class="panel b-fixtures">
+          <div class="section-heading"><div><p class="eyebrow" data-i18n="upcoming">Upcoming</p><h2 data-i18n="fixtures">Next Matches</h2></div></div>
+          <div id="fixtures" class="fixtures"></div>
+        </section>
 
-      <section id="squad-status" class="panel status-panel" hidden>
-        <div class="section-heading"><div><p class="eyebrow" data-i18n="injuriesEyebrow">Squad status</p><h2 data-i18n="injuriesTitle">Current injuries</h2></div></div>
-        <div id="injury-list" class="injury-list"></div>
-      </section>
+        <section class="panel results-panel b-results">
+          <div class="section-heading"><div><p class="eyebrow">TML Division 3</p><h2 data-i18n="results">Results</h2></div></div>
+          <div id="tml-results" class="results"></div>
+          <details class="results-fold">
+            <summary><span data-i18n="results">Results</span> — <span id="friendly-results-label">Friendly Matches</span></summary>
+            <div id="friendly-results" class="results"></div>
+          </details>
+        </section>
 
-      <section class="performance" aria-label="Season performance">
-        <article class="panel performance-panel">
+        <article class="panel performance-panel b-perf-tml">
           <div class="section-heading"><div><p class="eyebrow">TML Division 3</p><h2 data-i18n="perfTrend">Goals per match</h2></div><div class="chart-key" id="perf-tml-key"></div></div>
           <div id="perf-tml-trend" class="chart-block"></div>
           <div id="perf-tml-kpi" class="perf-kpis"></div>
           <div class="section-heading sub-section"><div><p class="eyebrow" data-i18n="vizEyebrow">Goals</p><h2 data-i18n="vizTopScorers">Top Scorers</h2></div></div>
           <div id="perf-tml-scorers" class="chart-block"></div>
         </article>
-        <article class="panel performance-panel performance-secondary">
+
+        <article class="panel performance-panel performance-secondary b-perf-friendly">
           <div class="section-heading"><div><p class="eyebrow" data-i18n="friendlyMatches">Friendly Matches</p><h2 data-i18n="perfTrend">Goals per match</h2></div><div class="chart-key" id="perf-friendly-key"></div></div>
           <div id="perf-friendly-trend" class="chart-block"></div>
           <div id="perf-friendly-kpi" class="perf-kpis"></div>
           <div class="section-heading sub-section"><div><p class="eyebrow" data-i18n="vizEyebrow">Goals</p><h2 data-i18n="vizTopScorers">Top Scorers</h2></div></div>
           <div id="perf-friendly-scorers" class="chart-block"></div>
         </article>
-      </section>
 
-      <section class="content-grid">
-        <article class="panel results-panel">
-          <div class="section-heading"><div><p class="eyebrow" data-i18n="upcoming">Upcoming</p><h2 data-i18n="fixtures">Next Matches</h2></div></div>
-          <div id="fixtures" class="fixtures"></div>
-          <div class="section-heading"><div><p class="eyebrow">TML Division 3</p><h2 data-i18n="results">Results</h2></div></div>
-          <div id="tml-results" class="results"></div>
-          <div class="section-heading sub-section"><div><p class="eyebrow">TML Division 3</p><h2 data-i18n="indexSquadTitle">Stable squad</h2></div><a class="quiet-button small" href="players.html" data-i18n="navPlayers">Players</a></div>
+        <section class="panel b-squad">
+          <div class="section-heading"><div><p class="eyebrow">TML Division 3</p><h2 data-i18n="indexSquadTitle">Stable squad</h2></div><a class="quiet-button small" href="players.html" data-i18n="navPlayers">Players</a></div>
           <div id="squad-chips" class="squad-chips"></div>
-          <details class="results-fold">
-            <summary><span data-i18n="results">Results</span> — <span id="friendly-results-label">Friendly Matches</span></summary>
-            <div id="friendly-results" class="results"></div>
-          </details>
-        </article>
+        </section>
 
-      </section>
+        <section id="squad-status" class="panel status-panel b-status" hidden>
+          <div class="section-heading"><div><p class="eyebrow" data-i18n="injuriesEyebrow">Squad status</p><h2 data-i18n="injuriesTitle">Current injuries</h2></div></div>
+          <div id="injury-list" class="injury-list"></div>
+        </section>
+      </div>
 
       <section class="instagram-panel">
         <p class="eyebrow" data-i18n="instagram">Instagram</p>

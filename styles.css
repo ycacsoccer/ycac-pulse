@@ -5,17 +5,18 @@
 .masthead { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: .85rem; min-height: 76px; padding: .55rem clamp(1.2rem, 5vw, 5rem); background: rgba(255,255,255,.96); border-bottom: 1px solid var(--line); backdrop-filter: blur(12px); }.club-mark { width: 48px; height: 48px; }.club-mark img { width: 100%; height: 100%; object-fit: contain; }.brand { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.24rem; line-height: 1; white-space: nowrap; }.brand span { font-weight: 700; }.brand small { display: block; margin-top: .35rem; color: var(--gold); font-family: 'DM Sans', Arial, sans-serif; font-size: .56rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }.masthead nav { display: flex; gap: 1.35rem; margin-left: auto; }.masthead nav a { color: var(--navy); font-size: .76rem; font-weight: 700; text-decoration: none; }.masthead nav a:hover { color: var(--gold); }.lang-switch select { padding: .48rem .7rem; color: var(--navy); background: white; border: 1px solid var(--navy); border-radius: 0; font-family: 'DM Sans', Arial, sans-serif; font-size: .72rem; font-weight: 700; cursor: pointer; }.lang-switch select:hover { color: white; background: var(--navy); }
 main { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem 4rem; }.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(250px, .42fr); gap: clamp(2rem, 5vw, 5rem); align-items: end; margin: 0 -1.25rem; padding: clamp(4.5rem, 10vw, 8rem) clamp(1.5rem, 5vw, 4rem); color: white; background: radial-gradient(circle at 88% 15%, #285993 0, transparent 30%), linear-gradient(135deg, var(--navy-deep), var(--navy)); }.eyebrow { margin: 0 0 .75rem; color: var(--gold); font-size: .68rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }.hero h1 { max-width: 760px; margin: 0; font-family: 'Libre Baskerville', Georgia, serif; font-size: clamp(3rem, 7vw, 6.3rem); font-weight: 400; letter-spacing: -.08em; line-height: .96; }.hero-copy > p:last-of-type { max-width: 600px; margin: 1.5rem 0 0; color: #d8e2f2; font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.04rem; line-height: 1.65; }.hero-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 2rem; }.schedule-link, .club-link { display: inline-flex; align-items: center; gap: .6rem; min-height: 46px; padding: .75rem 1rem; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-decoration: none; }.schedule-link { color: var(--navy); background: var(--gold-pale); }.schedule-link:hover { background: var(--gold); }.club-link { color: white; border: 1px solid rgba(255,255,255,.5); }.club-link:hover { border-color: var(--gold); color: var(--gold-pale); }.hero-note { display: grid; gap: .75rem; padding: 1.4rem; border-left: 2px solid var(--gold); background: rgba(255,255,255,.06); }.hero-note span { color: var(--gold); font-size: .65rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }.hero-note strong { font-family: 'Libre Baskerville', Georgia, serif; font-size: .95rem; font-weight: 400; line-height: 1.55; }
 main { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem 4rem; }.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(250px, .42fr); gap: clamp(2rem, 5vw, 5rem); align-items: end; margin: 0 -1.25rem; padding: clamp(4.5rem, 10vw, 8rem) clamp(1.5rem, 5vw, 4rem); color: white; background: radial-gradient(circle at 88% 15%, #285993 0, transparent 30%), linear-gradient(135deg, var(--navy-deep), var(--navy)); }.eyebrow { margin: 0 0 .75rem; color: var(--gold); font-size: .68rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }.hero h1 { max-width: 760px; margin: 0; font-family: 'Libre Baskerville', Georgia, serif; font-size: clamp(3rem, 7vw, 6.3rem); font-weight: 400; letter-spacing: -.08em; line-height: .96; }.hero-copy > p:last-of-type { max-width: 600px; margin: 1.5rem 0 0; color: #d8e2f2; font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.04rem; line-height: 1.65; }.hero-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 2rem; }.schedule-link, .club-link { display: inline-flex; align-items: center; gap: .6rem; min-height: 46px; padding: .75rem 1rem; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-decoration: none; }.schedule-link { color: var(--navy); background: var(--gold-pale); }.schedule-link:hover { background: var(--gold); }.club-link { color: white; border: 1px solid rgba(255,255,255,.5); }.club-link:hover { border-color: var(--gold); color: var(--gold-pale); }.hero-note { display: grid; gap: .75rem; padding: 1.4rem; border-left: 2px solid var(--gold); background: rgba(255,255,255,.06); }.hero-note span { color: var(--gold); font-size: .65rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }.hero-note strong { font-family: 'Libre Baskerville', Georgia, serif; font-size: .95rem; font-weight: 400; line-height: 1.55; }
-.scoreline { display: grid; grid-template-columns: 1.45fr repeat(4, 1fr); margin-top: -1px; background: white; border: 1px solid var(--line); box-shadow: 0 14px 34px rgba(8,26,53,.08); }.scoreline > div { min-height: 126px; padding: 1.4rem; border-left: 1px solid var(--line); }.scoreline > div:first-child { border-left: 0; }.scoreline-title { display: flex; flex-direction: column; justify-content: space-between; color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.15rem; }.scoreline-title small { color: var(--muted); font-family: 'DM Sans', Arial, sans-serif; font-size: .67rem; }.scoreline strong { display: block; color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: clamp(1.8rem, 3.8vw, 3rem); line-height: 1; }.scoreline span:not(.scoreline-title span) { display: block; margin-top: .5rem; color: var(--muted); font-size: .64rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
-.friendly-scoreline { margin-top: 1rem; }.friendly-scoreline .scoreline-title { color: var(--blue); }.sub-section { margin-top: 2rem; padding-top: 1.35rem; border-top: 1px solid var(--line); }
-.scoreline strong small { display: block; margin-top: .32rem; color: var(--muted); font-family: 'DM Sans', Arial, sans-serif; font-size: .58rem; font-weight: 700; letter-spacing: .12em; }
-.performance { display: grid; grid-template-columns: 1.15fr .95fr; gap: 1.25rem; margin-top: 1.25rem; }.chart-key, .timeline-key { display: flex; flex-wrap: wrap; gap: .65rem; color: var(--muted); font-size: .65rem; font-weight: 700; }.chart-key span, .timeline-key span { display: inline-flex; align-items: center; gap: .3rem; }.chart-key i, .timeline-key i { display: inline-block; width: .55rem; height: .55rem; border-radius: 50%; }.key-for { background: var(--navy); }.key-against { background: #b0413e; }.tml-dot { background: var(--navy); }.friendly-dot { background: var(--gold); }.goal-distribution { display: grid; gap: 1.2rem; }.goal-group { display: grid; gap: .45rem; }.goal-group-head { display: flex; justify-content: space-between; color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .88rem; font-weight: 700; }.goal-group.friendly .goal-group-head { color: var(--blue); }.goal-bars { display: grid; gap: .32rem; }.goal-bar { display: grid; grid-template-columns: 2.7rem 1fr 1.5rem; gap: .5rem; align-items: center; color: var(--muted); font-size: .66rem; font-weight: 700; }.goal-track { height: .6rem; overflow: hidden; background: #e6ebf0; }.goal-fill { height: 100%; min-width: 3px; background: var(--navy); }.goal-group.friendly .goal-fill { background: var(--blue); }.goal-fill.against { background: #b9c4d2; }.goal-value { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .9rem; text-align: right; }.season-timeline { display: grid; }.timeline-entry { display: grid; grid-template-columns: 5.4rem 1.2rem 1fr auto; gap: .7rem; align-items: stretch; min-height: 58px; }.timeline-date { padding-top: .1rem; color: var(--muted); font-size: .68rem; font-weight: 700; text-align: right; }.timeline-rail { position: relative; }.timeline-rail::after { position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; background: var(--line); content: ''; }.timeline-entry:first-child .timeline-rail::after { top: 50%; }.timeline-entry:last-child .timeline-rail::after { bottom: 50%; }.timeline-marker { position: absolute; z-index: 1; top: .05rem; left: 50%; width: .75rem; height: .75rem; border: 2px solid white; border-radius: 50%; background: var(--navy); box-shadow: 0 0 0 1px var(--navy); transform: translateX(-50%); }.timeline-entry.friendly .timeline-marker { background: var(--gold); box-shadow: 0 0 0 1px var(--gold); }.timeline-match { padding-bottom: 1.05rem; }.timeline-opponent { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .88rem; font-weight: 700; }.timeline-meta { margin-top: .17rem; color: var(--muted); font-size: .66rem; }.timeline-score { align-self: start; min-width: 3.5rem; padding: .25rem .35rem; color: var(--navy); background: #eef2f6; font-family: 'Libre Baskerville', Georgia, serif; font-size: .84rem; font-weight: 700; text-align: center; }.timeline-score.win { color: white; background: var(--blue); }.timeline-score.loss { color: #7c3535; background: #f5e8e8; }.timeline-score span { display: block; margin-top: .12rem; font-family: 'DM Sans', Arial, sans-serif; font-size: .53rem; letter-spacing: .09em; }
+/* wave 23 — the two stacked .scoreline tables are gone; the unified segmented
+   stat band lives in the wave-22 section at the end of this file. */
+.sub-section { margin-top: 2rem; padding-top: 1.35rem; border-top: 1px solid var(--line); }
+/* wave 23 — the .performance wrapper is gone: both panels live in the .bento grid. */
+.chart-key, .timeline-key { display: flex; flex-wrap: wrap; gap: .65rem; color: var(--muted); font-size: .65rem; font-weight: 700; }.chart-key span, .timeline-key span { display: inline-flex; align-items: center; gap: .3rem; }.chart-key i, .timeline-key i { display: inline-block; width: .55rem; height: .55rem; border-radius: 50%; }.key-for { background: var(--navy); }.key-against { background: #b0413e; }.tml-dot { background: var(--navy); }.friendly-dot { background: var(--gold); }.goal-distribution { display: grid; gap: 1.2rem; }.goal-group { display: grid; gap: .45rem; }.goal-group-head { display: flex; justify-content: space-between; color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .88rem; font-weight: 700; }.goal-group.friendly .goal-group-head { color: var(--blue); }.goal-bars { display: grid; gap: .32rem; }.goal-bar { display: grid; grid-template-columns: 2.7rem 1fr 1.5rem; gap: .5rem; align-items: center; color: var(--muted); font-size: .66rem; font-weight: 700; }.goal-track { height: .6rem; overflow: hidden; background: #e6ebf0; }.goal-fill { height: 100%; min-width: 3px; background: var(--navy); }.goal-group.friendly .goal-fill { background: var(--blue); }.goal-fill.against { background: #b9c4d2; }.goal-value { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .9rem; text-align: right; }.season-timeline { display: grid; }.timeline-entry { display: grid; grid-template-columns: 5.4rem 1.2rem 1fr auto; gap: .7rem; align-items: stretch; min-height: 58px; }.timeline-date { padding-top: .1rem; color: var(--muted); font-size: .68rem; font-weight: 700; text-align: right; }.timeline-rail { position: relative; }.timeline-rail::after { position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; background: var(--line); content: ''; }.timeline-entry:first-child .timeline-rail::after { top: 50%; }.timeline-entry:last-child .timeline-rail::after { bottom: 50%; }.timeline-marker { position: absolute; z-index: 1; top: .05rem; left: 50%; width: .75rem; height: .75rem; border: 2px solid white; border-radius: 50%; background: var(--navy); box-shadow: 0 0 0 1px var(--navy); transform: translateX(-50%); }.timeline-entry.friendly .timeline-marker { background: var(--gold); box-shadow: 0 0 0 1px var(--gold); }.timeline-match { padding-bottom: 1.05rem; }.timeline-opponent { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .88rem; font-weight: 700; }.timeline-meta { margin-top: .17rem; color: var(--muted); font-size: .66rem; }.timeline-score { align-self: start; min-width: 3.5rem; padding: .25rem .35rem; color: var(--navy); background: #eef2f6; font-family: 'Libre Baskerville', Georgia, serif; font-size: .84rem; font-weight: 700; text-align: center; }.timeline-score.win { color: white; background: var(--blue); }.timeline-score.loss { color: #7c3535; background: #f5e8e8; }.timeline-score span { display: block; margin-top: .12rem; font-family: 'DM Sans', Arial, sans-serif; font-size: .53rem; letter-spacing: .09em; }
 .goal-bar.scorer-bar { grid-template-columns: 5.2rem 1fr 1.5rem; }.goal-bar.scorer-bar > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .content-grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; margin-top: 1.25rem; }.panel { background: white; padding: clamp(1.25rem, 3vw, 2.15rem); border: 1px solid var(--line); }.section-heading { display: flex; align-items: end; justify-content: space-between; margin-bottom: 1rem; }.section-heading .eyebrow { margin: 0; color: var(--gold); }.section-heading h2 { margin: .25rem 0 0; color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.55rem; font-weight: 400; letter-spacing: -.04em; }
 .match { display: grid; grid-template-columns: 6.5rem 1fr auto; gap: 1rem; align-items: center; padding: 1.05rem 0; border-top: 1px solid var(--line); }.match-date { color: var(--muted); font-size: .75rem; font-weight: 600; }.match-opponent { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1rem; font-weight: 700; }.match-meta { margin-top: .25rem; color: var(--muted); font-size: .72rem; }.match-score { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.7rem; font-weight: 700; }.match-score.win { color: var(--blue); }.leader { display: grid; grid-template-columns: 1.8rem 1fr auto; gap: .6rem; align-items: center; padding: .9rem 0; border-top: 1px solid var(--line); }.rank { color: var(--gold); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1rem; }.leader-name { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-weight: 700; }.leader-meta { margin-top: .2rem; color: var(--muted); font-size: .72rem; }.leader-total { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.35rem; font-weight: 700; }.leader-total span { color: var(--muted); font-family: 'DM Sans', Arial, sans-serif; font-size: .6rem; letter-spacing: .1em; }
 .fixtures { display: grid; gap: .65rem; margin-bottom: 1.75rem; }.fixture { display: grid; grid-template-columns: 5rem 1fr auto; gap: .75rem; align-items: center; padding: 1rem; color: white; background: var(--navy); }.fixture-date { color: var(--gold); font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }.fixture-opponent { font-family: 'Libre Baskerville', Georgia, serif; font-size: .96rem; font-weight: 700; }.fixture-meta { margin-top: .22rem; color: #c9d7eb; font-size: .7rem; }.fixture-actions { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .7rem; }.fixture-actions a { padding: .38rem .5rem; color: var(--navy); background: var(--gold-pale); font-size: .63rem; font-weight: 700; text-decoration: none; }.fixture-actions a:last-child { color: white; background: transparent; border: 1px solid rgba(255,255,255,.5); }.fixture-actions a:hover { background: var(--gold); color: var(--navy); }.fixture-time { padding-left: .75rem; border-left: 1px solid rgba(255,255,255,.25); color: var(--gold-pale); font-size: .76rem; font-weight: 700; white-space: nowrap; }
 .player-search input { width: min(220px, 42vw); padding: .65rem .8rem; color: var(--ink); border: 1px solid var(--line); border-radius: 0; font: inherit; font-size: .78rem; }.table-wrap { overflow-x: auto; } table { width: 100%; min-width: 680px; border-collapse: collapse; } th, td { padding: .9rem .55rem; border-bottom: 1px solid var(--line); text-align: left; } th { color: var(--muted); font-size: .64rem; letter-spacing: .09em; text-transform: uppercase; } td { font-size: .84rem; } td:first-child { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .95rem; font-weight: 700; }.empty { color: var(--muted); }.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .instagram-panel { display: grid; grid-template-columns: 1fr auto; gap: 1rem 2rem; align-items: end; margin-top: 1.25rem; padding: clamp(1.5rem, 4vw, 3rem); color: white; background: var(--navy); }.instagram-panel .eyebrow { grid-column: 1 / -1; margin-bottom: 0; }.instagram-panel h2 { margin: 0; font-family: 'Libre Baskerville', Georgia, serif; font-size: clamp(1.6rem, 4vw, 2.45rem); font-weight: 400; }.instagram-panel p:not(.eyebrow) { margin: .7rem 0 0; color: #cad7e9; line-height: 1.5; }.instagram-panel a { align-self: center; padding: .85rem 1rem; color: var(--navy); background: var(--gold-pale); font-size: .78rem; font-weight: 700; text-decoration: none; }.instagram-panel a:hover { background: var(--gold); } footer { max-width: 1240px; margin: 0 auto; padding: 1.8rem 1.25rem 3rem; color: var(--muted); font-size: .74rem; } footer a { margin-left: .5rem; color: var(--navy); font-weight: 700; }
-@media (max-width: 760px) { .masthead { min-height: 66px; }.club-mark { width: 39px; height: 39px; }.brand { font-size: 1rem; }.brand small { display: none; }.masthead nav { display: none; }.lang-switch { margin-left: auto; }.hero { grid-template-columns: 1fr; gap: 2rem; padding-top: 4.5rem; }.hero-note { max-width: 28rem; }.scoreline { grid-template-columns: repeat(2, 1fr); }.scoreline-title { grid-column: 1 / -1; min-height: 95px !important; }.scoreline > div:nth-child(4) { border-left: 0; }.performance, .content-grid { grid-template-columns: 1fr; }.match { grid-template-columns: 5.5rem 1fr auto; }.instagram-panel { grid-template-columns: 1fr; }.instagram-panel a { justify-self: start; } }
+@media (max-width: 760px) { .masthead { min-height: 66px; }.club-mark { width: 39px; height: 39px; }.brand { font-size: 1rem; }.brand small { display: none; }.masthead nav { display: none; }.lang-switch { margin-left: auto; }.hero { grid-template-columns: 1fr; gap: 2rem; padding-top: 4.5rem; }.hero-note { max-width: 28rem; }.content-grid { grid-template-columns: 1fr; }.match { grid-template-columns: 5.5rem 1fr auto; }.instagram-panel { grid-template-columns: 1fr; }.instagram-panel a { justify-self: start; } }
 @media (max-width: 480px) { .player-search input { width: 128px; }
   /* Fixture card: the 5rem · 1fr · auto grid cannot hold date + details +
      kickoff on a 320px screen — the date takes its own row instead. */
@@ -90,15 +91,18 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem 4rem; }.hero { disp
 .avatar .monogram { position: absolute; inset: 0; }
 .avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 .cs { color: var(--muted); font-size: .62rem; font-weight: 700; }
+/* wave 23 — every child rule is scoped under .fixture-card: the unscoped
+   selectors used to cascade onto the public navy .fixture cards later in the
+   file and turned their date/opponent/kickoff text navy-on-navy (invisible). */
 .fixture-card { display: grid; grid-template-columns: 7.5rem 1fr auto; gap: 1rem; padding: 1rem 1.1rem; background: var(--mist); border: 1px solid var(--line); }
-.fixture-date { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .95rem; font-weight: 700; }
-.fixture-opponent { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.08rem; font-weight: 700; }
-.fixture-meta { margin-top: .3rem; color: var(--muted); font-size: .74rem; }
-.fixture-actions { display: flex; gap: .9rem; margin-top: .55rem; }
-.fixture-actions a { color: var(--blue); font-size: .72rem; font-weight: 700; }
-.fixture-actions a:hover { color: var(--gold); }
-.fixture-time { text-align: right; color: var(--navy); font-weight: 700; font-size: .9rem; }
-.fixture-time small { color: var(--muted); font-size: .58rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.fixture-card .fixture-date { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .95rem; font-weight: 700; }
+.fixture-card .fixture-opponent { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.08rem; font-weight: 700; }
+.fixture-card .fixture-meta { margin-top: .3rem; color: var(--muted); font-size: .74rem; }
+.fixture-card .fixture-actions { display: flex; gap: .9rem; margin-top: .55rem; }
+.fixture-card .fixture-actions a { color: var(--blue); font-size: .72rem; font-weight: 700; }
+.fixture-card .fixture-actions a:hover { color: var(--gold); }
+.fixture-card .fixture-time { text-align: right; color: var(--navy); font-weight: 700; font-size: .9rem; }
+.fixture-card .fixture-time small { color: var(--muted); font-size: .58rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 .signup-responded { margin: .95rem 0 .55rem; color: var(--navy); font-size: .76rem; font-weight: 700; }
 .signup-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: .75rem; }
 .signup-group { padding: .7rem .8rem; background: white; border: 1px solid var(--line); border-left-width: 3px; }
@@ -114,7 +118,7 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem 4rem; }.hero { disp
 .flag-row i { flex: 0 0 auto; width: 9px; height: 9px; margin-top: .4rem; background: #d33; border-radius: 50%; }
 .flag-row strong { display: block; margin-bottom: .4rem; color: var(--navy); font-size: .78rem; }
 .coach-main .empty, .coach-main .loading { color: var(--muted); font-size: .8rem; }
-@media (max-width: 760px) { .fixture-card { grid-template-columns: 1fr; }.fixture-time { text-align: left; }.lens-switch { width: 100%; justify-content: space-between; } }
+@media (max-width: 760px) { .fixture-card { grid-template-columns: 1fr; }.fixture-card .fixture-time { text-align: left; }.lens-switch { width: 100%; justify-content: space-between; } }
 
 /* ---- player profiles (Phase 6) ---- */
 .players-toolbar { display: grid; gap: .9rem; }
@@ -125,14 +129,16 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem 4rem; }.hero { disp
 .filter-chip:hover { border-color: var(--navy); }
 .filter-chip.active { color: white !important; background: var(--navy); border-color: var(--navy); }
 .players-count { margin: 0; color: var(--muted); font-size: .72rem; font-weight: 700; }
-.players-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 1rem; }
-.player-card { display: grid; justify-items: center; gap: .45rem; padding: 1.15rem .8rem 1rem; background: white; border: 1px solid var(--line); text-align: center; text-decoration: none; transition: border-color .15s, transform .15s; }
+/* wave 23 — denser horizontal cards: photo left, facts right, totals on a
+   divider row; wider min column so rows fill the content width. */
+.players-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: .8rem; }
+.player-card { display: grid; grid-template-columns: 52px minmax(0, 1fr); grid-template-areas: "photo name" "photo meta" "badges badges" "tot tot"; column-gap: .85rem; row-gap: .2rem; padding: .85rem 1rem .8rem; background: white; border: 1px solid var(--line); text-align: left; text-decoration: none; transition: border-color .15s, transform .15s; }
 .player-card:hover { border-color: var(--gold); transform: translateY(-2px); }
-.pc-photo { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 72px; height: 72px; }
-.pc-photo .monogram { width: 100%; height: 100%; font-size: 1.05rem; }
+.pc-photo { grid-area: photo; position: relative; display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; align-self: center; }
+.pc-photo .monogram { width: 100%; height: 100%; font-size: .85rem; }
 .pc-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-.pc-name { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .9rem; font-weight: 700; line-height: 1.25; }
-.pc-meta { color: var(--muted); font-size: .7rem; font-weight: 700; }
+.pc-name { grid-area: name; align-self: end; color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .88rem; font-weight: 700; line-height: 1.25; }
+.pc-meta { grid-area: meta; align-self: start; color: var(--muted); font-size: .7rem; font-weight: 700; }
 .pc-stats { color: var(--muted); font-size: .66rem; }
 .player-card .tier-badge { font-size: .62rem; padding: .25rem .5rem; }
 .players-main .empty, .players-main .loading, .player-main .empty, .player-main .loading, .profile-hero .loading { color: var(--muted); font-size: .8rem; }
@@ -151,9 +157,13 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem 4rem; }.hero { disp
 .profile-upload { display: flex; align-items: center; gap: .75rem; min-height: 44px; margin-top: 1.1rem; }
 .upload-status { color: var(--gold); font-size: .72rem; font-weight: 700; }
 .profile-bio-text { max-width: 720px; margin: 0; color: var(--ink); font-size: .9rem; line-height: 1.7; white-space: pre-line; }
-.stats-table th, .stats-table td { text-align: center; }
+/* wave 23 — data-table polish: numerals right-aligned + tabular, zebra rows,
+   and a sticky header once the table outgrows its horizontal scroller. */
+.stats-table th, .stats-table td { text-align: right; font-variant-numeric: tabular-nums; }
 .stats-table thead th:first-child, .stats-table tbody th { text-align: left; }
 .stats-table tbody th { min-width: 8.5rem; }
+.stats-table tbody tr:nth-child(even) { background: var(--mist); }
+@media (min-width: 900px) { .table-wrap:has(.stats-table) { overflow: visible; } .stats-table thead th { position: sticky; top: 76px; background: white; z-index: 1; } }
 .history-list { display: grid; }
 .history-row { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .85rem; padding: .68rem .25rem; border-bottom: 1px solid var(--line); font-size: .78rem; }
 .history-row:last-child { border-bottom: 0; }
@@ -168,7 +178,7 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem 4rem; }.hero { disp
 .h-pos { color: var(--muted); font-size: .7rem; font-weight: 700; }
 .h-goals, .h-min { font-weight: 700; }
 .h-assist { color: var(--blue); font-size: .72rem; font-weight: 700; }
-@media (max-width: 760px) { #profile-hero { flex-direction: column; align-items: flex-start; }.players-grid { grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); }.h-opp { min-width: 6rem; } }
+@media (max-width: 760px) { #profile-hero { flex-direction: column; align-items: flex-start; }.players-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }.h-opp { min-width: 6rem; } }
 
 /* ---- admin tool (Phase 7) ---- */
 .admin-status { min-height: 1.1rem; margin-top: .75rem; color: #cad7e9; font-size: .8rem; font-weight: 700; }
@@ -254,7 +264,9 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem 4rem; }.hero { disp
 .match-hero { display: grid; gap: .5rem; justify-items: start; margin-top: 1.25rem; padding: clamp(1.4rem, 4vw, 2.4rem); color: white; background: radial-gradient(circle at 88% 15%, #285993 0, transparent 30%), linear-gradient(135deg, var(--navy-deep), var(--navy)); border-left: 4px solid var(--gold); }
 .match-hero .eyebrow { margin: 0; }
 .match-hero h1 { margin: 0; font-family: 'Libre Baskerville', Georgia, serif; font-size: clamp(1.5rem, 4.5vw, 2.6rem); font-weight: 400; letter-spacing: -.05em; }
-.match-score { color: var(--gold); font-weight: 700; font-variant-numeric: tabular-nums; }
+/* wave 23 — scoped to .match-hero: the bare .match-score selector used to leak
+   to the index results list and painted draws/losses gold on white. */
+.match-hero .match-score { color: var(--gold); font-weight: 700; font-variant-numeric: tabular-nums; }
 .match-hero .match-meta { margin: 0; color: #cad7e9; font-size: .8rem; font-weight: 700; }
 .match-hero .badge { color: #cad7e9; background: transparent; border-color: #46608c; }
 .match-group h4 { display: flex; align-items: baseline; gap: .45rem; margin: 1.1rem 0 .5rem; color: var(--navy); font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
@@ -390,9 +402,10 @@ svg.trend-svg { display: block; width: 100%; height: auto; }
 .kpi small { color: var(--muted); font-size: .55rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
 @media (max-width: 760px) { .perf-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
-/* ── Wave 17b: player cards — shirt, selection group + season totals ── */
-.pc-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: .35rem; }
-.pc-tot { color: var(--muted); font-size: .62rem; font-weight: 700; }
+/* ── Wave 17b: player cards — shirt, selection group + season totals
+   (wave 23: badges/totals reflowed into full-width rows under the photo) ── */
+.pc-badges { grid-area: badges; display: flex; flex-wrap: wrap; justify-content: flex-start; gap: .35rem; margin-top: .45rem; }
+.pc-tot { grid-area: tot; margin-top: .35rem; padding-top: .45rem; color: var(--muted); border-top: 1px solid var(--line); font-size: .62rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 
 /* ── Wave 17b: profile hero quick-stat tiles ── */
 .profile-tiles { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.15rem; }
@@ -431,3 +444,85 @@ a.timeline-entry:hover { background: var(--gold-pale); }
 .position-section-head h3 { margin: 0; color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.12rem; font-weight: 700; letter-spacing: -.02em; }
 .position-count { color: var(--muted); font-size: .64rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 .filter-note { flex: 1 0 100%; margin: .1rem 0 0; padding: .5rem .7rem; background: var(--gold-pale); border-left: 3px solid var(--gold); color: var(--muted); font-size: .68rem; font-weight: 600; line-height: 1.5; }
+
+/* ── Wave 23: matchday-first hero, unified segmented stat band, bento grid,
+   result badges + competition chips, typography/a11y polish ── */
+
+/* Matchday card — sits in the navy hero, next fixture or last result. */
+.matchday { display: grid; gap: .75rem; align-self: end; }
+.md-card { display: grid; gap: .55rem; padding: 1.3rem 1.4rem; background: rgba(255,255,255,.07); border-left: 2px solid var(--gold); }
+.md-card .eyebrow { margin: 0; }
+.md-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: .6rem; }
+.md-date { color: #fff; font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.02rem; font-weight: 700; }
+.md-kickoff { color: var(--gold-pale); font-size: .82rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.md-kickoff small { display: block; margin-top: .1rem; color: #9db4d4; font-size: .55rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.md-opponent { color: #fff; font-family: 'Libre Baskerville', Georgia, serif; font-size: clamp(1.3rem, 2.2vw, 1.7rem); font-weight: 700; line-height: 1.2; }
+.md-opponent a { color: inherit; text-decoration: none; }
+.md-opponent a:hover { color: var(--gold); }
+.md-line .md-opponent { font-size: clamp(1rem, 1.6vw, 1.15rem); }
+.md-score { color: #fff; font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.7rem; font-variant-numeric: tabular-nums; }
+.md-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .1rem; color: #cad7e9; font-size: .75rem; }
+.md-card .fixture-actions { margin-top: .15rem; }
+.md-card .fixture-actions a { display: inline-block; padding: .4rem .6rem; color: var(--navy); background: var(--gold-pale); font-size: .7rem; font-weight: 700; text-decoration: none; }
+.md-card .fixture-actions a:hover { background: var(--gold); }
+
+/* Result badge — W/D/L pill used in the hero and every results row. */
+.result-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 1.55rem; height: 1.55rem; padding: 0 .35rem; color: var(--white); font-size: .68rem; font-weight: 700; letter-spacing: .04em; }
+.result-badge.win { background: #1f7a3d; }
+.result-badge.draw { background: var(--muted); }
+.result-badge.loss { background: #9d1c1c; }
+/* score colours follow the badge (draws grey, losses red — wins stay blue) */
+.match-score.draw { color: var(--muted); }
+.match-score.loss { color: #9d1c1c; }
+
+/* Competition chip — TML / friendly scannable marker under each opponent. */
+.comp-chip { display: inline-block; margin-right: .45rem; padding: .12rem .45rem; font-size: .58rem; font-weight: 700; letter-spacing: .07em; border: 1px solid; }
+.comp-chip.tml { color: var(--navy); border-color: var(--navy); }
+.comp-chip.friendly { color: #8a6d1f; background: var(--gold-pale); border-color: var(--gold); }
+.match-end { display: flex; align-items: center; gap: .7rem; }
+.match-meta { display: flex; flex-wrap: wrap; align-items: center; }
+
+/* Unified segmented stat band — one card, lens switcher in the head. */
+.statband { display: block; margin-top: -1px; background: white; border: 1px solid var(--line); box-shadow: 0 14px 34px rgba(8,26,53,.08); }
+.sb-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; padding: 1rem 1.4rem; border-bottom: 1px solid var(--line); }
+.segmented { display: flex; flex-wrap: wrap; gap: .35rem; }
+.seg { min-height: 38px; padding: .5rem .9rem; color: var(--navy); background: white; border: 1px solid var(--line); font-family: 'DM Sans', Arial, sans-serif; font-size: .7rem; font-weight: 700; letter-spacing: .04em; cursor: pointer; }
+.seg:hover { border-color: var(--navy); }
+.seg.active { color: var(--white); background: var(--navy); border-color: var(--navy); }
+.sb-head small { color: var(--muted); font-size: .67rem; }
+.sb-grid { display: grid; grid-template-columns: repeat(6, 1fr); }
+.sb-cell { display: flex; flex-direction: column; justify-content: center; min-height: 126px; padding: 1.4rem 1.3rem; border-left: 1px solid var(--line); }
+.sb-cell:first-child { border-left: 0; }
+.sb-cell strong { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: clamp(1.4rem, 2.6vw, 2.1rem); line-height: 1; font-variant-numeric: tabular-nums; }
+.sb-cell strong small { display: block; margin-top: .32rem; color: var(--muted); font-family: 'DM Sans', Arial, sans-serif; font-size: .58rem; font-weight: 700; letter-spacing: .12em; }
+.sb-cell span { margin-top: .55rem; color: var(--muted); font-size: .64rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+
+/* Bento grid — panels flow on a 12-column board; injuries drop to the last cell. */
+.bento { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1.25rem; margin-top: 1.25rem; }
+.b-fixtures { grid-column: span 5; }
+.b-results { grid-column: span 7; }
+.b-perf-tml { grid-column: span 7; }
+.b-perf-friendly { grid-column: span 5; }
+.b-squad { grid-column: span 7; }
+.b-status { grid-column: span 5; }
+.bento:has(.b-status[hidden]) .b-squad { grid-column: span 12; }
+.b-fixtures .fixtures { margin-bottom: 0; }
+@media (max-width: 1000px) { .bento > * { grid-column: 1 / -1; } }
+
+/* Stat band + matchday at mobile widths. */
+@media (max-width: 760px) {
+  .sb-head { padding: .9rem 1rem; }
+  .sb-grid { grid-template-columns: repeat(2, 1fr); }
+  .sb-cell { min-height: 96px; padding: 1.05rem; border-top: 1px solid var(--line); }
+  .sb-cell:nth-child(odd) { border-left: 0; }
+  .sb-cell:nth-child(-n+2) { border-top: 0; }
+  .md-card { padding: 1.1rem 1.15rem; }
+}
+
+/* Typography + a11y polish. */
+.kpi strong, .match-score, .goal-value { font-variant-numeric: tabular-nums; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}

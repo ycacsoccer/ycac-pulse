@@ -116,6 +116,23 @@ async function main() {
     "attendance panel + search box gone");
   check(!app.includes("kpiAttendancePerGame") && !page.includes('id="attendance-head"') && !app.includes("#season-timeline"),
     "attendance KPI tile gone; old combined table + viz timeline stay removed");
+  // wave 23 — presentation rework wiring: matchday-first hero, one segmented
+  // stat band (the twin scorelines are gone), and the bento board.
+  check(app.includes("#matchday") && page.includes('id="matchday"') && page.includes('class="matchday"'),
+    "matchday hero wired app.js → index.html");
+  check(page.includes('id="season-record"') && app.includes("#season-record") && page.includes('data-seg="tml"') && app.includes("paintBand"),
+    "segmented stat band wired (3 lenses → 6 cells, GD + win rate included)");
+  check(!page.includes('id="tml-record"') && !app.includes("setStats("), "twin tml-/friendly- scorelines + setStats() removed");
+  check(page.includes('class="bento"') && ["b-fixtures", "b-results", "b-perf-tml", "b-perf-friendly", "b-squad", "b-status"].every((cls) => page.includes(cls)),
+    "bento board: fixtures, results, performance ×2, squad, injuries");
+  // wave 23 — the two cascade leaks stay fixed: coach .fixture-card child rules
+  // scoped away from the public navy card, and the match-page gold score scoped.
+  const styles = fs.readFileSync(path.join(__dirname, "styles.css"), "utf8");
+  check(!/^\.(fixture-date|fixture-meta|fixture-time|fixture-actions|fixture-opponent) \{/m.test(styles),
+    "coach .fixture-card child rules stay scoped (no navy-on-navy public fixture text)");
+  const scoped = ".match-hero .match-score {";
+  check(styles.includes(scoped) && styles.lastIndexOf(".match-score {") === styles.lastIndexOf(scoped) + ".match-hero ".length,
+    "gold .match-score rule stays scoped under .match-hero (no gold scores on index)");
 
   // charts.js renders the real TML timeline: one chip per match, correct W/D/L mix
   const charts = require("./charts.js");

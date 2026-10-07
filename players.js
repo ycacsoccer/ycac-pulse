@@ -59,7 +59,7 @@
           <span class="tier-badge chip-${entry.tier}">${TIER_EMOJI[entry.tier]} ${esc(t(TIER_KEYS[entry.tier]))}</span>
           ${state.injured.has(entry.id) ? `<span class="injured-badge">${esc(t("injuredBadge"))}</span>` : ""}
         </span>
-        <span class="pc-tot">${all.played}/${state.season.buckets.all.length} ${esc(t("statApps").toLowerCase())} · ${all.goals} ${esc(t("statGoals").toLowerCase())}</span>
+        <span class="pc-tot">${all.played}/${state.season.buckets.all.length} ${esc(t("statApps").toLowerCase())} · ${all.goals} ${all.goals === 1 ? esc(t("statGoalOne")) : esc(t("statGoals").toLowerCase())}</span>
       </a>`;
     };
     // wave 18 — one section per position group (formation order), skipping empty ones.

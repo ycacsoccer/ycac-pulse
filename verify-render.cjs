@@ -94,7 +94,14 @@ const check = (ok, label, detail = "") => {
   check(el("fixtures").innerHTML.includes("fixture") || el("fixtures").innerHTML.includes("No data"), "fixtures render (or empty state)", `${(el("fixtures").innerHTML.match(/class="fixture"/g) || []).length} fixtures`);
   check(el("squad-chips").innerHTML.includes("squad-chip"), "squad chips render");
   check(el("tml-results").innerHTML.includes("match-score"), "TML results render");
-  check(/\d+–\d+–\d+/.test(el("tml-record").innerHTML), "TML record set", el("tml-record").innerHTML.slice(0, 20));
+  // wave 23 — unified segmented band: the record now lives on #season-record
+  // (the twin tml-/friendly- scorelines are gone) and every lens cell is set.
+  check(/\d+–\d+–\d+/.test(el("season-record").innerHTML), "season record set", el("season-record").innerHTML.slice(0, 20));
+  const bandCells = ["season-goals-for", "season-goals-against", "season-goal-diff", "season-win-rate", "season-clean-sheets"];
+  check(bandCells.every((id) => el(id).textContent !== "-"), "stat band cells populated (GD + win rate included)");
+  // wave 23 — matchday-first hero: a last-result card (or the static fallback).
+  const matchday = el("matchday").innerHTML;
+  check(matchday.includes("md-card") || matchday.includes("hero-note"), "matchday hero renders", `${(matchday.match(/md-card/g) || []).length} cards`);
 
   console.log("");
   if (failures.length) { console.log(`${failures.length} FAILURE(S): ${failures.join(" | ")}`); process.exit(1); }

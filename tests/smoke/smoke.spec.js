@@ -38,7 +38,8 @@ test("the published build is the commit we pushed", async ({ request }) => {
 test("index renders live data with charts, KPIs and no attendance surface", async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto("./");
-  await expect(page.locator("#tml-record")).toContainText(/\d+–\d+–\d+/);
+  await expect(page.locator("#season-record")).toContainText(/\d+–\d+–\d+/); // wave 23: unified band
+  await expect(page.locator("#matchday .md-card").first()).toBeVisible(); // wave 23: matchday-first hero
   await expect(page.locator("#perf-tml-trend svg.trend-svg").first()).toBeVisible();
   await expect(page.locator("#perf-tml-kpi .kpi")).toHaveCount(3); // wave 21: attendance tile gone
   await expect(page.locator(".attendance-panel, #attendance-search")).toHaveCount(0);
@@ -72,7 +73,7 @@ for (const width of [390, 1440]) {
   test(`published index has no horizontal overflow at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("./");
-    await expect(page.locator("#tml-record")).toContainText(/\d+–\d+–\d+/);
+    await expect(page.locator("#season-record")).toContainText(/\d+–\d+–\d+/);
     expect(await fitsViewport(page)).toBe(true);
   });
 }
