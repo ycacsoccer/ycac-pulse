@@ -96,3 +96,52 @@ test("trendSVG: labels are escaped", () => {
   assert.ok(svg.includes("Rovers &amp; Sons"));
   assert.ok(!/Rovers & Sons/.test(svg));
 });
+
+test("wave 24: timingBucket maps minutes onto 15-minute buckets", () => {
+  assert.equal(charts.timingBucket(1), 0);
+  assert.equal(charts.timingBucket(15), 0, "15 closes the first bucket");
+  assert.equal(charts.timingBucket(16), 1);
+  assert.equal(charts.timingBucket(30), 1);
+  assert.equal(charts.timingBucket(45), 2, "45 is first-half stoppage time territory");
+  assert.equal(charts.timingBucket(46), 3);
+  assert.equal(charts.timingBucket(75), 4);
+  assert.equal(charts.timingBucket(76), 5);
+  assert.equal(charts.timingBucket(90), 5, "90 closes regular time");
+  assert.equal(charts.timingBucket(91), 6, "90+ bucket for stoppage time");
+  assert.equal(charts.timingBucket(0), 0, "minute 0 lands in the opening bucket");
+  assert.equal(charts.timingBucket(null), -1, "unknown minute is excluded");
+  assert.equal(charts.timingBucket(undefined), -1);
+  assert.equal(charts.timingBucket("45+2"), -1, "non-numeric minutes are excluded");
+});
+
+test("wave 24: timingSVG buckets goals by minute, skipping blanks", () => {
+  const goals = [9, 12, 41, 55, 63, 77, 88].map((minute) => ({ minute }));
+  goals.push({ minute: null }, { minute: undefined }, {});
+  const svg = charts.timingSVG(goals);
+  assert.ok(svg.startsWith("<svg"), "returns markup");
+  assert.equal((svg.match(/class="tm-col"/g) || []).length, 7, "seven buckets drawn");
+  const counts = [...svg.matchAll(/class="tm-count"[^>]*>(\d+)</g)].map((m) => Number(m[1]));
+  assert.deepEqual(counts, [2, 1, 1, 1, 2], "2 in 1–15, 1 in 31–45/46–60/61–75, 2 in 76–90");
+  assert.equal(counts.reduce((total, count) => total + count, 0), 7, "every datable goal counted exactly once");
+  assert.ok(svg.includes(">76–90<"), "bucket labels rendered");
+  assert.equal(charts.timingSVG([]), "", "no goals → no chart");
+  assert.equal(charts.timingSVG([{ minute: null }]), "", "no datable minutes → no chart");
+});
+
+test("wave 24: trajectorySVG plots cumulative goal difference", () => {
+  const finals = [
+    { date: "2026-03-01", opponent: "A", ycac_goals: 2, opponent_goals: 0 },  // +2 → 2
+    { date: "2026-03-15", opponent: "B", ycac_goals: 0, opponent_goals: 1 },  // −1 → 1
+    { date: "2026-04-05", opponent: "C", ycac_goals: 3, opponent_goals: 1 },  // +2 → 3
+  ];
+  const svg = charts.trajectorySVG(finals);
+  assert.ok(svg.startsWith("<svg"), "returns markup");
+  assert.equal((svg.match(/class="tr-dot"/g) || []).length, 3, "one dot per match");
+  assert.equal((svg.match(/class="tr-dot tr-end"/g) || []).length, 1, "plus the emphasised end dot");
+  assert.ok(svg.includes(">+3</text>"), "end label = final cumulative GD, signed");
+  assert.ok(svg.includes(">0</text>"), "zero baseline labelled");
+  const losing = charts.trajectorySVG([{ date: "2026-04-05", opponent: "C", ycac_goals: 0, opponent_goals: 4 }]);
+  assert.ok(losing.includes(">-4</text>"), "a deficit renders as a negative end value");
+  assert.equal(charts.trajectorySVG([]), "", "no matches → no chart");
+  assert.equal(charts.trajectorySVG([{ date: "2026-05-02", opponent: "Fx", ycac_goals: null, opponent_goals: null }]), "", "a fixture alone is not a trajectory");
+});

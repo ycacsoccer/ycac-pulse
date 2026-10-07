@@ -526,3 +526,35 @@ a.timeline-entry:hover { background: var(--gold-pale); }
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
+
+/* ---- Wave 24: data modules — form guide + streak, assists, timing, trajectory ---- */
+.sb-form { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem .9rem; padding: .85rem 1.4rem; border-top: 1px solid var(--line); }
+.sb-form-label { color: var(--muted); font-size: .64rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.form-pills { display: inline-flex; gap: .3rem; }
+.form-pill { display: inline-flex; align-items: center; justify-content: center; width: 1.6rem; height: 1.6rem; color: var(--white); font-family: 'DM Sans', Arial, sans-serif; font-size: .66rem; font-style: normal; font-weight: 700; }
+.form-pill.win { background: #1f7a3d; }
+.form-pill.draw { background: var(--muted); }
+.form-pill.loss { background: #9d1c1c; }
+.streak-note { color: var(--navy); font-size: .74rem; font-weight: 700; }
+
+/* Goal-timing histogram + season trajectory (wave 24). */
+.b-trajectory { grid-column: span 7; }
+.b-timing { grid-column: span 5; display: flex; flex-direction: column; }
+.b-timing .chart-block { flex: 1; display: flex; align-items: center; }
+.chart-note { margin: .55rem 0 0; color: var(--muted); font-size: .64rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+svg.timing-svg, svg.trajectory-svg { display: block; width: 100%; height: auto; }
+.tm-bar { fill: var(--gold); }
+.tm-count { fill: var(--navy); font: 700 12px 'Libre Baskerville', Georgia, serif; text-anchor: middle; }
+.tm-label { fill: var(--muted); font: 700 10px 'DM Sans', Arial, sans-serif; text-anchor: middle; }
+.tr-line { fill: none; stroke: var(--navy); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.tr-dot { fill: var(--white); stroke: var(--navy); stroke-width: 2; }
+.tr-dot.tr-end { fill: var(--gold); stroke: var(--gold); }
+.tr-val { fill: var(--navy); font: 700 13px 'Libre Baskerville', Georgia, serif; text-anchor: middle; }
+.tr-date { fill: var(--muted); font: 600 10px 'DM Sans', Arial, sans-serif; text-anchor: middle; }
+
+/* Assist bars reuse the scorer bar language, in gold. */
+.goal-group.assist .goal-fill { background: var(--gold); }
+
+@media (max-width: 760px) {
+  .sb-form { padding: .8rem 1rem; }
+}

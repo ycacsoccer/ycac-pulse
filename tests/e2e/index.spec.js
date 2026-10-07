@@ -1,7 +1,8 @@
 /* Public index — E2E with a fully mocked Supabase (see ./mocks.js).
    Wave 21's TML-first dashboard (charts + KPIs, no attendance surface), plus
    wave 23's rework: matchday-first hero, the unified segmented stat band,
-   bento layout, result badges — and the fixture CSS-leak regression. */
+   bento layout, result badges — and the fixture CSS-leak regression; wave 24
+   adds the form guide, assists, goal timing and the trajectory curve. */
 const { test, expect } = require("@playwright/test");
 const { mockSupabase, watchErrors, publicOnly, fitsViewport } = require("./mocks");
 const { expected } = require("../fixtures/public-data");
@@ -48,6 +49,34 @@ test("wave 23: the segmented stat band switches lens without a reload", async ({
   await page.click('[data-seg="all"]');
   await expect(page.locator("#season-record")).toContainText("3–2–2");
   await expect(page.locator("#season-clean-sheets")).toHaveText("2"); // m1 + f2
+});
+
+test("wave 24: form guide + streak follow the active lens", async ({ page }) => {
+  const pills = page.locator("#season-form .form-pill");
+  await expect(pills).toHaveCount(4); // TML: m1 W · m2 D · m3 L · m4 W, oldest first
+  await expect(pills.nth(0)).toHaveText("W");
+  await expect(pills.nth(1)).toHaveText("D");
+  await expect(pills.nth(2)).toHaveText("L");
+  await expect(pills.nth(3)).toHaveText("W");
+  await expect(page.locator("#season-streak")).toHaveText("Won 1 in a row"); // m4 4–1 vs Comets
+  await page.click('[data-seg="friendly"]');
+  await expect(pills).toHaveCount(3); // f1 W · f2 D · f3 L
+  await expect(page.locator("#season-streak")).toHaveText("Lost 1 in a row"); // f3 1–2 vs Nomads
+  await page.click('[data-seg="all"]');
+  await expect(pills).toHaveCount(5); // capped at five of seven finals
+});
+
+test("wave 24: assists, goal-timing histogram and trajectory curve render", async ({ page }) => {
+  await expect(page.locator("#perf-tml-assists .goal-bar")).toHaveCount(2); // Chris 3 · Ben 2
+  await expect(page.locator("#perf-tml-assists .goal-group-head")).toContainText("5 assists");
+  await expect(page.locator("#perf-friendly-assists .goal-bar")).toHaveCount(1); // Dan 2
+  await expect(page.locator("#perf-friendly-assists .goal-group-head")).toContainText("2 assists");
+  await expect(page.locator("#timing-chart svg.timing-svg")).toHaveCount(1);
+  await expect(page.locator("#timing-chart .tm-col")).toHaveCount(7); // seven minute buckets
+  await expect(page.locator("#trajectory-chart svg.trajectory-svg")).toHaveCount(1);
+  await expect(page.locator("#trajectory-chart .tr-end")).toHaveCount(1); // emphasised end dot
+  await expect(page.locator("#trajectory-chart")).toContainText("+2"); // 11 for, 9 against
+  expect(errors).toEqual([]);
 });
 
 test("wave 23: fixture text stays readable on the navy card (CSS-leak regression)", async ({ page }) => {

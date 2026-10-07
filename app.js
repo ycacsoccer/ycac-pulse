@@ -6,7 +6,9 @@
    no coach_notes). Wave 21: the attendance tables are gone — appearance
    records still power results, timelines and selection groups, but the site
    no longer presents attendance as a purpose. Wave 23: matchday-first hero
-   (#matchday cards) + one segmented stat band (#season) driven by activeLens. */
+   (#matchday cards) + one segmented stat band (#season) driven by activeLens.
+   Wave 24: data modules — form guide + streak in the band, assists beside
+   the scorers, goal-timing histogram + season trajectory in the bento. */
 const t = (key, vars) => YCACI18n.t(key, vars);
 const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
 let dashboardData;
@@ -28,6 +30,8 @@ const statSnapshot = (matches) => {
 };
 let activeLens = "tml";
 let lensStats = null;
+let lensMatches = null;
+const matchOutcome = (match) => { const gf = Number(match.ycac_goals), ga = Number(match.opponent_goals); return gf > ga ? "win" : gf === ga ? "draw" : "loss"; };
 const paintBand = () => {
   if (!lensStats) return;
   const stats = lensStats[activeLens];
@@ -40,6 +44,22 @@ const paintBand = () => {
   document.querySelector("#season-win-rate").textContent = stats.winPct == null ? "–" : `${stats.winPct}%`;
   document.querySelector("#season-clean-sheets").textContent = stats.cs;
   document.querySelector("#updated").textContent = `${t("liveData")} · ${stats.count} ${stats.count === 1 ? t("matchRecordedOne") : t("matchesRecorded")}`;
+  // Wave 24: form guide — last five results, oldest → newest — + current streak.
+  const rows = (lensMatches && lensMatches[activeLens]) || [];
+  document.querySelector("#season-form").innerHTML = rows.slice(0, 5).reverse().map((match) => {
+    const outcome = matchOutcome(match);
+    const letter = outcome === "win" ? t("vizWin") : outcome === "draw" ? t("vizDraw") : t("vizLoss");
+    return `<i class="form-pill ${outcome}">${esc(letter)}</i>`;
+  }).join("") || "–";
+  let streak = "";
+  if (rows.length) {
+    const outcomes = rows.map(matchOutcome);
+    const run = (predicate) => { let count = 0; while (count < outcomes.length && predicate(outcomes[count])) count += 1; return count; };
+    streak = outcomes[0] === "win" ? t("streakWon", { n: run((outcome) => outcome === "win") })
+      : outcomes[0] === "draw" ? t("streakUnbeaten", { n: run((outcome) => outcome !== "loss") })
+      : t("streakLost", { n: run((outcome) => outcome === "loss") });
+  }
+  document.querySelector("#season-streak").textContent = streak;
   document.querySelectorAll("[data-seg]").forEach((button) => {
     const on = button.dataset.seg === activeLens;
     button.classList.toggle("active", on);
@@ -86,6 +106,7 @@ function render(data) {
   // Wave 23: one segmented band — three lens snapshots, repainted by paintBand().
   const allFinals = [...tmlMatches, ...friendlyMatches].sort((a, b) => b.date.localeCompare(a.date));
   lensStats = { tml: statSnapshot(tmlMatches), friendly: statSnapshot(friendlyMatches), all: statSnapshot(allFinals) };
+  lensMatches = { tml: tmlMatches, friendly: friendlyMatches, all: allFinals };
   paintBand();
   renderMatchday(fixtures, allFinals);
   const friendlyLabel = t("friendlyMatches");
@@ -127,6 +148,15 @@ function render(data) {
   const distribution = (label, scorers, competition) => { const groupTotal = scorers.reduce((total, [, goals]) => total + goals, 0); const bars = scorers.map(([id, goals]) => `<div class="goal-bar scorer-bar"><span>${esc(playerName(players, id))}</span><div class="goal-track"><div class="goal-fill" style="width:${goals / largestScorerTotal * 100}%"></div></div><strong class="goal-value">${goals}</strong></div>`).join(""); return `<div class="goal-group ${competition}"><div class="goal-group-head"><span>${label}</span><span>${groupTotal} ${groupTotal === 1 ? t("goalOne") : t("goals")}</span></div><div class="goal-bars">${bars}</div></div>`; };
   document.querySelector("#perf-tml-scorers").innerHTML = distribution("TML Division 3", tmlScorers, "tml") || document.querySelector("#empty-state").innerHTML;
   document.querySelector("#perf-friendly-scorers").innerHTML = distribution(friendlyLabel, friendlyScorers, "friendly") || document.querySelector("#empty-state").innerHTML;
+  // Wave 24: assists — same bar language as the scorers, one group per panel.
+  const assistTotals = (matches) => { const ids = new Set(matches.map((match) => match.id)); const totals = new Map(); for (const goal of data.goals) { if (goal.assist_id && ids.has(goal.match_id)) totals.set(goal.assist_id, (totals.get(goal.assist_id) || 0) + 1); } return [...totals.entries()].sort((a, b) => b[1] - a[1]); };
+  const tmlAssists = assistTotals(tmlMatches), friendlyAssists = assistTotals(friendlyMatches), largestAssistTotal = Math.max(1, ...tmlAssists.map(([, assists]) => assists), ...friendlyAssists.map(([, assists]) => assists));
+  const assistGroup = (label, assists, competition) => { if (!assists.length) return ""; const groupTotal = assists.reduce((total, [, assists]) => total + assists, 0); const bars = assists.map(([id, assists]) => `<div class="goal-bar assist-bar"><span>${esc(playerName(players, id))}</span><div class="goal-track"><div class="goal-fill" style="width:${assists / largestAssistTotal * 100}%"></div></div><strong class="goal-value">${assists}</strong></div>`).join(""); return `<div class="goal-group assist ${competition}"><div class="goal-group-head"><span>${label}</span><span>${groupTotal} ${groupTotal === 1 ? t("assistOne") : t("assists")}</span></div><div class="goal-bars">${bars}</div></div>`; };
+  document.querySelector("#perf-tml-assists").innerHTML = assistGroup("TML Division 3", tmlAssists, "tml") || document.querySelector("#empty-state").innerHTML;
+  document.querySelector("#perf-friendly-assists").innerHTML = assistGroup(friendlyLabel, friendlyAssists, "friendly") || document.querySelector("#empty-state").innerHTML;
+  // Wave 24: goal-timing histogram (goals.minute) + season trajectory (cumulative GD).
+  document.querySelector("#timing-chart").innerHTML = YCACCharts.timingSVG(data.goals) || document.querySelector("#empty-state").innerHTML;
+  document.querySelector("#trajectory-chart").innerHTML = YCACCharts.trajectorySVG(allFinals, { labels: { dateFmt: formatDate } }) || document.querySelector("#empty-state").innerHTML;
   document.querySelector("#fixtures").innerHTML = fixtures.map((match) => { const signups = `${match.standard_signup_url ? `<a href="${esc(match.standard_signup_url)}" target="_blank" rel="noreferrer">${t("standardSignup")}</a>` : ""}${match.priority_signup_url ? `<a href="${esc(match.priority_signup_url)}" target="_blank" rel="noreferrer">${t("prioritySignup")}</a>` : ""}`; return `<div class="fixture"><div class="fixture-date">${formatDate(match.date)}</div><div><div class="fixture-opponent"><a href="match.html?id=${encodeURIComponent(match.id)}">${t("versus")} ${esc(match.opponent)}</a></div><div class="fixture-meta">${esc(competitionLabel(match))}${match.venue ? ` · ${esc(match.venue)}` : ""}</div>${signups ? `<div class="fixture-actions">${signups}</div>` : ""}</div><div class="fixture-time">${esc(match.kickoff || "TBC")}<br /><small>${t("kickoff")}</small></div></div>`; }).join("") || document.querySelector("#empty-state").innerHTML;
   // Results rows — W/D/L badge + score, competition chip under the opponent.
   const renderResults = (target, matches) => { document.querySelector(target).innerHTML = matches.map((match) => { const gf = Number(match.ycac_goals), ga = Number(match.opponent_goals); const outcome = gf > ga ? "win" : gf === ga ? "draw" : "loss"; const letter = outcome === "win" ? t("vizWin") : outcome === "draw" ? t("vizDraw") : t("vizLoss"); const chip = match.competition === "Friendly Match" ? `<span class="comp-chip friendly">${esc(t("vizFriendly"))}</span>` : `<span class="comp-chip tml">TML</span>`; return `<a class="match" href="match.html?id=${encodeURIComponent(match.id)}"><div class="match-date">${formatDate(match.date)}</div><div><div class="match-opponent">${t("versus")} ${esc(match.opponent)}</div><div class="match-meta">${chip}${match.venue ? esc(match.venue) : ""}</div></div><div class="match-end"><span class="result-badge ${outcome}">${esc(letter)}</span><span class="match-score ${outcome}">${gf}–${ga}</span></div></a>`; }).join("") || document.querySelector("#empty-state").innerHTML; };

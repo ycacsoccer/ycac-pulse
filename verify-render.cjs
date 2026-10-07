@@ -103,6 +103,21 @@ const check = (ok, label, detail = "") => {
   const matchday = el("matchday").innerHTML;
   check(matchday.includes("md-card") || matchday.includes("hero-note"), "matchday hero renders", `${(matchday.match(/md-card/g) || []).length} cards`);
 
+  // wave 24 — data modules: the form guide + streak repaint with the lens;
+  // assists, the goal-timing histogram and the trajectory curve render (or the
+  // empty state while live goals still lack minute/assist data).
+  const formPills = (el("season-form").innerHTML.match(/form-pill/g) || []).length;
+  check(formPills > 0 && formPills <= 5, "form guide renders at most five pills", `${formPills} pills`);
+  check(el("season-streak").textContent.trim().length > 0, "streak readout set", el("season-streak").textContent);
+  const tmlAssists = el("perf-tml-assists").innerHTML;
+  check(tmlAssists.includes("assist-bar") || tmlAssists.includes("No data"), "TML assists render (or empty state)", `${(tmlAssists.match(/assist-bar/g) || []).length} bars`);
+  const fndAssists = el("perf-friendly-assists").innerHTML;
+  check(fndAssists.includes("assist-bar") || fndAssists.includes("No data"), "friendly assists render (or empty state)", `${(fndAssists.match(/assist-bar/g) || []).length} bars`);
+  const timing = el("timing-chart").innerHTML;
+  check(timing.includes("<svg") || timing.includes("No data"), "goal-timing histogram renders (or empty state)");
+  const trajectory = el("trajectory-chart").innerHTML;
+  check(trajectory.includes("<svg") && /class="tr-val"[^>]*>[+-]?\d+</.test(trajectory), "season trajectory rendered with a signed end value");
+
   console.log("");
   if (failures.length) { console.log(`${failures.length} FAILURE(S): ${failures.join(" | ")}`); process.exit(1); }
   console.log("Index rendered end-to-end: charts, KPIs, results, squad — no attendance tables.");

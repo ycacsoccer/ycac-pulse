@@ -112,7 +112,93 @@
     </svg>`;
   }
 
-  const api = { resultOf, series, stepFor, kpis, trendSVG, ZERO };
+  /* ---- wave 24: goal-timing histogram (goals.minute) ---- */
+  const TIMING_LABELS = ["1–15", "16–30", "31–45", "46–60", "61–75", "76–90", "90+"];
+
+  // Which 15-minute bucket a goal minute falls in; -1 when unusable.
+  function timingBucket(minute) {
+    if (minute == null || minute === "") return -1;
+    const m = Number(minute);
+    if (!Number.isFinite(m)) return -1;
+    if (m >= 91) return 6;
+    return Math.min(6, Math.max(0, Math.ceil(m / 15) - 1));
+  }
+
+  function timingSVG(goals) {
+    const counts = TIMING_LABELS.map(() => 0);
+    let seen = 0;
+    for (const goal of goals || []) {
+      const bucket = timingBucket(goal && goal.minute);
+      if (bucket >= 0) { counts[bucket] += 1; seen += 1; }
+    }
+    if (!seen) return "";
+
+    const W = 680, H = 232, PAD_L = 30, PAD_R = 10, BASE = 190, MAX_H = 146;
+    const plotW = W - PAD_L - PAD_R;
+    const colW = plotW / TIMING_LABELS.length;
+    const top = Math.max(1, ...counts);
+
+    const columns = counts.map((count, index) => {
+      const cx = PAD_L + colW * (index + 0.5);
+      const h = (count / top) * MAX_H;
+      const barW = Math.min(52, colW * 0.55);
+      return `<g class="tm-col">
+        <rect class="tm-bar" x="${cx - barW / 2}" y="${BASE - h}" width="${barW}" height="${h}" rx="2" />
+        ${count ? `<text class="tm-count" x="${cx}" y="${BASE - h - 6}">${count}</text>` : ""}
+        <text class="tm-label" x="${cx}" y="${BASE + 18}">${TIMING_LABELS[index]}</text>
+      </g>`;
+    }).join("");
+
+    return `<svg class="timing-svg" viewBox="0 0 ${W} ${H}" role="img" aria-hidden="true" focusable="false">
+      <line class="tv-baseline" x1="${PAD_L}" y1="${BASE}" x2="${W - PAD_R}" y2="${BASE}" />
+      ${columns}
+    </svg>`;
+  }
+
+  /* ---- wave 24: season trajectory — cumulative goal difference ---- */
+  function trajectorySVG(matches, opts = {}) {
+    const rows = series(matches);
+    if (!rows.length) return "";
+
+    let cum = 0;
+    const points = rows.map((row) => { cum += row.gf - row.ga; return { row, cum }; });
+
+    const W = 680, H = 300, PAD_L = 40, PAD_R = 46, TOP = 36, BOT = 246, DATE_Y = 266;
+    const maxAbs = Math.max(2, ...points.map((p) => Math.abs(p.cum)));
+    const step = stepFor(maxAbs);
+    const topTick = Math.ceil(maxAbs / step) * step;
+    const yFor = (value) => TOP + ((topTick - value) / (2 * topTick)) * (BOT - TOP);
+    const plotW = W - PAD_L - PAD_R;
+    const xFor = (index) => (points.length === 1 ? PAD_L + plotW / 2 : PAD_L + (index / (points.length - 1)) * plotW);
+
+    const gridlines = [];
+    for (let value = -topTick; value <= topTick; value += step) {
+      const y = yFor(value);
+      const label = value > 0 ? `+${value}` : `${value}`;
+      gridlines.push(`<line class="tv-grid" x1="${PAD_L}" y1="${y}" x2="${W - PAD_R}" y2="${y}" /><text class="tv-tick" x="${PAD_L - 6}" y="${y + 3}">${label}</text>`);
+    }
+
+    const path = points.map((point, index) => `${index ? "L" : "M"}${xFor(index).toFixed(1)} ${yFor(point.cum).toFixed(1)}`).join(" ");
+    const dots = points.map((point, index) => `<circle class="tr-dot" cx="${xFor(index).toFixed(1)}" cy="${yFor(point.cum).toFixed(1)}" r="4" />`).join("");
+    const dates = points.map((point, index) => {
+      const dateText = opts.labels && opts.labels.dateFmt ? opts.labels.dateFmt(point.row.date) : point.row.date;
+      return `<text class="tr-date" x="${xFor(index).toFixed(1)}" y="${DATE_Y}">${esc(dateText)}</text>`;
+    }).join("");
+    const last = points[points.length - 1];
+    const endValue = last.cum > 0 ? `+${last.cum}` : `${last.cum}`;
+
+    return `<svg class="trajectory-svg" viewBox="0 0 ${W} ${H}" role="img" aria-hidden="true" focusable="false">
+      <g class="tv-axis">${gridlines.join("")}</g>
+      <line class="tv-baseline" x1="${PAD_L}" y1="${yFor(0)}" x2="${W - PAD_R}" y2="${yFor(0)}" />
+      <path class="tr-line" d="${path}" />
+      ${dots}
+      <circle class="tr-dot tr-end" cx="${xFor(points.length - 1).toFixed(1)}" cy="${yFor(last.cum).toFixed(1)}" r="5" />
+      <text class="tr-val" x="${xFor(points.length - 1).toFixed(1)}" y="${yFor(last.cum) - 12}">${endValue}</text>
+      ${dates}
+    </svg>`;
+  }
+
+  const api = { resultOf, series, stepFor, kpis, trendSVG, timingSVG, trajectorySVG, timingBucket, ZERO };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (typeof window !== "undefined") window.YCACCharts = api;
 })();

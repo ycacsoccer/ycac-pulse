@@ -123,8 +123,14 @@ async function main() {
   check(page.includes('id="season-record"') && app.includes("#season-record") && page.includes('data-seg="tml"') && app.includes("paintBand"),
     "segmented stat band wired (3 lenses → 6 cells, GD + win rate included)");
   check(!page.includes('id="tml-record"') && !app.includes("setStats("), "twin tml-/friendly- scorelines + setStats() removed");
-  check(page.includes('class="bento"') && ["b-fixtures", "b-results", "b-perf-tml", "b-perf-friendly", "b-squad", "b-status"].every((cls) => page.includes(cls)),
-    "bento board: fixtures, results, performance ×2, squad, injuries");
+  check(page.includes('class="bento"') && ["b-fixtures", "b-results", "b-perf-tml", "b-perf-friendly", "b-squad", "b-status", "b-trajectory", "b-timing"].every((cls) => page.includes(cls)),
+    "bento board: fixtures, results, performance ×2, trajectory, timing, squad, injuries");
+  // wave 24 — data modules wired: form guide + streak in the band, assists
+  // beside the scorers, goal timing + trajectory in two new bento cells.
+  check(page.includes('id="season-form"') && app.includes("#season-form") && page.includes('id="season-streak"') && app.includes("#season-streak") && app.includes("streakWon"),
+    "form guide + streak wired app.js → index.html");
+  check(["perf-tml-assists", "perf-friendly-assists", "trajectory-chart", "timing-chart"].every((id) => app.includes(`#${id}`) && page.includes(`id="${id}"`)),
+    "assist / goal-timing / trajectory containers wired app.js → index.html");
   // wave 23 — the two cascade leaks stay fixed: coach .fixture-card child rules
   // scoped away from the public navy card, and the match-page gold score scoped.
   const styles = fs.readFileSync(path.join(__dirname, "styles.css"), "utf8");
@@ -161,6 +167,22 @@ async function main() {
     && tmlKpis.winPct === Math.round((wins / tmlPlayed.length) * 100) && tmlKpis.draws === draws && tmlKpis.losses === losses,
     "kpi rates: goals per game + win rate + record", `${Number(tmlKpis.gfPerGame.toFixed(2))}/game · ${tmlKpis.winPct}% win`);
   check(page.includes('<details class="results-fold"') && page.includes('id="friendly-results"'), "friendly results fold behind <details>");
+  // wave 24: the trajectory curve ends on the season's cumulative goal
+  // difference, and the timing histogram counts exactly the datable goals.
+  const finals = [...tmlPlayed, ...friendlyPlayed];
+  const trajectoryMarkup = charts.trajectorySVG(finals);
+  const endValue = (trajectoryMarkup.match(/class="tr-val"[^>]*>([+-]?\d+)</) || [])[1] || "";
+  const totalGd = finals.reduce((total, match) => total + Number(match.ycac_goals) - Number(match.opponent_goals), 0);
+  const expectedEnd = totalGd > 0 ? `+${totalGd}` : `${totalGd}`;
+  check(Boolean(finals.length) && endValue === expectedEnd, "trajectory curve ends on cumulative goal difference",
+    `${endValue} vs ${expectedEnd}`);
+  const datable = goals.filter((goal) => charts.timingBucket(goal.minute) >= 0).length;
+  const timingMarkup = charts.timingSVG(goals);
+  const bucketed = (timingMarkup.match(/class="tm-count"[^>]*>(\d+)</g) || [])
+    .reduce((total, tag) => total + Number(tag.match(/>(\d+)</)[1]), 0);
+  check(timingMarkup.includes("<svg") === (datable > 0) && (!datable || bucketed === datable),
+    "goal-timing histogram counts every datable goal exactly once",
+    `${datable} of ${goals.length} goals carry a minute`);
   check((i18n.match(/indexSquadTitle:/g) || []).length === 3, "indexSquadTitle translated in all 3 languages",
     `${(i18n.match(/indexSquadTitle:/g) || []).length}/3`);
 

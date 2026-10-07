@@ -111,6 +111,12 @@
           <div class="sb-cell"><strong id="season-win-rate">-</strong><span data-i18n="kpiWinRate">Win rate</span></div>
           <div class="sb-cell"><strong id="season-clean-sheets">-</strong><span data-i18n="cleanSheets">Clean sheets</span></div>
         </div>
+        <!-- wave 24: form guide + current streak, repainted with the active lens -->
+        <div class="sb-form">
+          <span class="sb-form-label" data-i18n="formLabel">Form</span>
+          <span class="form-pills" id="season-form"></span>
+          <span class="streak-note" id="season-streak"></span>
+        </div>
       </section>
       <!-- wave 23: one 12-column bento board — fixtures + results lead,
            performance next, stable squad, injuries dropped to the last cell. -->
@@ -135,6 +141,8 @@
           <div id="perf-tml-kpi" class="perf-kpis"></div>
           <div class="section-heading sub-section"><div><p class="eyebrow" data-i18n="vizEyebrow">Goals</p><h2 data-i18n="vizTopScorers">Top Scorers</h2></div></div>
           <div id="perf-tml-scorers" class="chart-block"></div>
+          <div class="section-heading sub-section"><div><h2 data-i18n="topAssists">Top Assists</h2></div></div>
+          <div id="perf-tml-assists" class="chart-block"></div>
         </article>
 
         <article class="panel performance-panel performance-secondary b-perf-friendly">
@@ -143,7 +151,21 @@
           <div id="perf-friendly-kpi" class="perf-kpis"></div>
           <div class="section-heading sub-section"><div><p class="eyebrow" data-i18n="vizEyebrow">Goals</p><h2 data-i18n="vizTopScorers">Top Scorers</h2></div></div>
           <div id="perf-friendly-scorers" class="chart-block"></div>
+          <div class="section-heading sub-section"><div><h2 data-i18n="topAssists">Top Assists</h2></div></div>
+          <div id="perf-friendly-assists" class="chart-block"></div>
         </article>
+
+        <!-- wave 24: season trajectory (cumulative GD) + goal-timing histogram -->
+        <section class="panel b-trajectory">
+          <div class="section-heading"><div><p class="eyebrow" data-i18n="seasonEyebrow">Season 2026</p><h2 data-i18n="trajectoryTitle">Season trajectory</h2></div></div>
+          <div id="trajectory-chart" class="chart-block"></div>
+          <p class="chart-note" data-i18n="cumulativeGd">Cumulative goal difference</p>
+        </section>
+
+        <section class="panel b-timing">
+          <div class="section-heading"><div><p class="eyebrow" data-i18n="vizEyebrow">Goals</p><h2 data-i18n="timingTitle">Goals by minute</h2></div></div>
+          <div id="timing-chart" class="chart-block"></div>
+        </section>
 
         <section class="panel b-squad">
           <div class="section-heading"><div><p class="eyebrow">TML Division 3</p><h2 data-i18n="indexSquadTitle">Stable squad</h2></div><a class="quiet-button small" href="players.html" data-i18n="navPlayers">Players</a></div>
