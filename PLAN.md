@@ -71,7 +71,7 @@ endpoint, and no field for photos.
 
 ## 3. What the data says today (verified)
 
-11 played matches — 4 TML (incl. BFC Tokyo 0–4, 04 Oct, entered 06 Oct) · 7 friendlies · none pending · 38 players, 33 used.
+11 played matches — 4 TML (incl. BFC Tokyo 0–4, 04 Oct, entered 06 Oct) · 7 friendlies · **2 pending fixtures** (17 Oct vs Corinthians Harbour FC, 31 Oct vs Kilimanjaro FC — both at YC&AC, KO 18:00; 16 confirmed signups on the first, entered 07 Oct) · 40 players, 33 used.
 
 Stable squad under the **TML-only core rule** (core = ≥67% of TML matches; friendly attendance
 feeds the reliability score but never changes the tier):

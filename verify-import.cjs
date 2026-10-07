@@ -1,6 +1,6 @@
 // Verifies the Supabase import and the access model: node verify-import.cjs
 // Reads credentials from the local .env (secret, server-side only) and config.js (publishable).
-// 1. row counts match the verified data snapshot (06 Oct 2026: after the BFC Tokyo entry)
+// 1. row counts match the verified data snapshot (07 Oct 2026: the Oct 17 / Oct 31 fixtures + signups)
 // 2. match split: TML / friendly / pending
 // 3. auth users + coach roster (who can write)
 // 4. RLS with real data present: anon sees public tables, nothing from team/coach tables
@@ -45,7 +45,7 @@ async function main() {
 
   // --- 1. counts (read with the secret key: ground truth) --------------------
   const expected = {
-    players: 38, matches: 11, appearances: 165, goals: 42, signups: 44, saved_squads: 70,
+    players: 40, matches: 13, appearances: 165, goals: 42, signups: 60, saved_squads: 70,
     match_notes: 0, team_content: 0, coach_notes: 0, coach_roster: 1,
   };
   for (const [table, want] of Object.entries(expected)) {
@@ -59,7 +59,7 @@ async function main() {
   const friendly = matches.filter((m) => m.competition === "Friendly Match").length;
   const pending = matches.filter((m) => m.ycac_goals === null).length;
   const played = matches.filter((m) => m.ycac_goals !== null).length;
-  check(tml === 4 && friendly === 7, "match split", `${tml} TML (${played - friendly} played + ${pending} pending), ${friendly} friendly`);
+  check(tml === 6 && friendly === 7, "match split", `${tml} TML (${played - friendly} played + ${pending} pending), ${friendly} friendly`);
 
   // --- 3. who can write ------------------------------------------------------
   const roster = await (await fetch(`${BASE}/coach_roster?select=email`, { headers: adminHeaders })).json();
@@ -79,9 +79,9 @@ async function main() {
     const range = res.headers.get("content-range");
     return res.ok ? Number(range?.split("/")[1] ?? "NaN") : `error ${res.status}`;
   };
-  check((await anonSee("players")) === 38, "anon reads public table players (38 rows)");
+  check((await anonSee("players")) === 40, "anon reads public table players (40 rows)");
   check((await anonSee("appearances")) === 165, "anon reads public table appearances (165 rows)");
-  check((await anonSee("signups")) === 0, "anon sees 0 of 44 signups (team table locked)");
+  check((await anonSee("signups")) === 0, "anon sees 0 of 60 signups (team table locked)");
   check((await anonSee("saved_squads")) === 0, "anon sees 0 of 70 saved squads (team table locked)");
   check((await anonSee("coach_roster")) === 0, "anon sees 0 of 1 coach_roster rows (coach table locked)");
 

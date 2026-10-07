@@ -1,7 +1,8 @@
 /* Verifies stats.js against the data in Supabase — the engine's regression
    snapshot (Phase 12 rewired this off gviz; the whole suite now reads one
    source of truth). The EXPECTED block is the import-time snapshot of
-   06 Oct 2026 (BFC Tokyo result + lineup entered); if the database has
+   07 Oct 2026 (Oct 17 / Oct 31 fixtures added; played-match counts unchanged —
+   pending fixtures never enter the stats); if the database has
    moved on (new results entered, roster edits), mismatches are reported
    rather than silently accepted — bump the snapshot deliberately when that happens.
    Usage: node verify-stats.cjs */
@@ -25,8 +26,8 @@ async function grab(table) {
 }
 
 const EXPECTED = {
-  rows: { players: 38, matches: 11, appearances: 165, goals: 42 },
-  counts: { all: 11, tml: 4, friendly: 7, players: 38, used: 33 },
+  rows: { players: 40, matches: 13, appearances: 165, goals: 42 },
+  counts: { all: 11, tml: 4, friendly: 7, players: 40, used: 33 },
   players: {
     rick: { tml: "4/4", friendly: "7/7", all: "11/11", tier: "core", reliability: 100 },
     urabe: { tml: "4/4", friendly: "7/7", all: "11/11", tier: "core" },
