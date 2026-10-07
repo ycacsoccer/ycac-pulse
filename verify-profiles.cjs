@@ -79,7 +79,7 @@ async function main() {
   if (!secret || !publishable) throw new Error("missing credentials (.env / config.js)");
   console.log(`Verifying profile pages against ${env.SUPABASE_URL}\n`);
 
-  const state = { coachId: null, teamId: null, rosterAdded: false, photoPlayer: null, originalPhoto: undefined, posPlayer: null, originalPositions: null };
+  const state = { coachId: null, teamId: null, rosterAdded: false, photoPlayer: null, originalPhoto: undefined, posPlayer: null, originalPositions: null, agePlayer: null, originalAge: undefined };
 
   try {
     await slate();
@@ -150,6 +150,10 @@ async function main() {
     check(profileJs.includes("profile-competition-grid") && profileJs.includes('competitionCard("tml"')
       && profileJs.includes('competitionCard("friendly"') && profileJs.includes("statAppearanceRate"),
     "profile hero splits TML/Friendly and detailed stats include appearance rate");
+    const ageMigration = fs.readFileSync(path.join(__dirname, "supabase", "migrations", "0003_player_age_band.sql"), "utf8");
+    check(ageMigration.includes("add column if not exists age_band") && ageMigration.includes("players_age_band_check")
+      && profileJs.includes('id="age-band-select"') && profileJs.includes('{ age_band: selected || null }'),
+    "coach-editable age band is constrained by migration and wired on the player page");
 
     // --- 1d. wave 18 — position sections + selection-group wording ------------
     const gridPage = fs.readFileSync(path.join(__dirname, "players.html"), "utf8");
@@ -248,6 +252,24 @@ async function main() {
     check(posPatched.length === 1 && posPatched[0].primary_position === probeBest
       && Array.isArray(posPatched[0].secondary_positions) && posPatched[0].secondary_positions.join(",") === probeCapable.join(","),
       "coach writes best + can-play positions", `${posPatched.length} row`);
+
+    // --- 5. wave 27 — age-band editor writes (coach only + constrained) ------
+    state.agePlayer = player.id;
+    const ageOriginal = await call(`${BASE}/players?id=eq.${player.id}&select=age_band`, { headers: adminHeaders });
+    state.originalAge = ageOriginal[0]?.age_band ?? null;
+    const ageProbe = state.originalAge === "30s" ? "40s" : "30s";
+    const anonAge = await attemptPositions(null, { age_band: ageProbe });
+    check(anonAge.status >= 400 || (Array.isArray(anonAge.rows) && anonAge.rows.length === 0), "anon age-band edit denied", `status ${anonAge.status}`);
+    const teamAge = await attemptPositions(teamGrant.access_token, { age_band: ageProbe });
+    check(teamAge.status >= 400 || (Array.isArray(teamAge.rows) && teamAge.rows.length === 0), "team age-band edit denied (read-only)", `status ${teamAge.status}`);
+    const agePatched = await call(`${BASE}/players?id=eq.${player.id}`, {
+      method: "PATCH", headers: { ...bearerHeaders(coachToken), Prefer: "return=representation" }, body: JSON.stringify({ age_band: ageProbe }),
+    });
+    check(agePatched.length === 1 && agePatched[0].age_band === ageProbe, "coach writes players.age_band", ageProbe);
+    const invalidAge = await fetch(`${BASE}/players?id=eq.${player.id}`, {
+      method: "PATCH", headers: { ...bearerHeaders(coachToken), Prefer: "return=representation" }, body: JSON.stringify({ age_band: "60s" }),
+    });
+    check(invalidAge.status >= 400, "database rejects an unsupported age band", `status ${invalidAge.status}`);
   } finally {
     // --- restore everything ---------------------------------------------------
     if (state.photoPlayer !== null && state.originalPhoto !== undefined) {
@@ -255,6 +277,9 @@ async function main() {
     }
     if (state.posPlayer !== null && state.originalPositions) {
       await call(`${BASE}/players?id=eq.${state.posPlayer}`, { method: "PATCH", headers: adminHeaders, body: JSON.stringify(state.originalPositions) }).catch(() => {});
+    }
+    if (state.agePlayer !== null && state.originalAge !== undefined) {
+      await call(`${BASE}/players?id=eq.${state.agePlayer}`, { method: "PATCH", headers: adminHeaders, body: JSON.stringify({ age_band: state.originalAge }) }).catch(() => {});
     }
     await slate();
   }
@@ -274,6 +299,10 @@ async function main() {
       && JSON.stringify(posRestored[0].secondary_positions) === JSON.stringify(state.originalPositions.secondary_positions),
       "positions restored to original", String(posRestored[0].primary_position));
   }
+  if (state.agePlayer && state.originalAge !== undefined) {
+    const ageRestored = await call(`${BASE}/players?id=eq.${state.agePlayer}&select=age_band`, { headers: adminHeaders });
+    check((ageRestored[0]?.age_band ?? null) === state.originalAge, "age_band restored to original", String(ageRestored[0]?.age_band ?? null));
+  }
   const roster = await call(`${BASE}/coach_roster?select=email`, { headers: adminHeaders });
   check(roster.length === 1, "coach_roster restored", roster.map((row) => row.email).join(", "));
   const users = await call(`${AUTH}/admin/users`, { headers: adminHeaders });
@@ -285,7 +314,7 @@ async function main() {
     console.log(`${failures.length} FAILURE(S): ${failures.join(" | ")}`);
     process.exit(1);
   }
-  console.log("Profile pages verified: public queries, stats split, photo + position writes (coach-only).");
+  console.log("Profile pages verified: public queries, stats split, photo + position + age-band writes (coach-only).");
 }
 
 main().catch((error) => { console.error(`ERROR ${error.message}`); process.exit(1); });

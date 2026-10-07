@@ -50,7 +50,7 @@ async function call(url, { method = "GET", headers = {}, body } = {}) {
 
 // The exact query strings coach.js runs.
 const QUERIES = {
-  players: "select=id,display_name,shirt_number,primary_position,photo_path,active&order=display_name",
+  players: "select=id,display_name,shirt_number,primary_position,secondary_positions,photo_path,active&order=display_name",
   matches: "select=*&order=date",
   appearances: "select=*",
   goals: "select=*",
@@ -62,8 +62,12 @@ async function main() {
   if (!secret || !publishable) throw new Error("missing credentials (.env / config.js)");
   console.log(`Verifying coach dashboard data path against ${env.SUPABASE_URL}\n`);
   const coachSource = fs.readFileSync(path.join(__dirname, "coach.js"), "utf8");
+  const coachPage = fs.readFileSync(path.join(__dirname, "coach.html"), "utf8");
   check(coachSource.includes("YCACAuth.requireCoach") && !coachSource.includes("YCACAuth.requireTeam"),
     "coach dashboard uses the single coach gate");
+  check(coachPage.includes('id="tactics-map"') && coachPage.includes('src="tactics.js"')
+    && coachSource.includes("YCACTactics.coverage") && coachSource.includes("secondary_positions"),
+  "coach dashboard wires the formation coverage heat map");
 
   let userId = null;
   try {

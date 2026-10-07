@@ -60,6 +60,22 @@
         <div class="table-wrap"><table id="coverage-table"></table></div>
       </section>
 
+      <section class="panel tactics-panel">
+        <div class="section-heading">
+          <div><p class="eyebrow" data-i18n="coachTacticsEyebrow">Formation planning</p><h2 data-i18n="coachTactics">Tactical coverage map</h2></div>
+          <label class="lens-switch"><span data-i18n="pickerFormation">Formation</span>
+            <select id="formation-lens">
+              <option value="4-2-3-1">4-2-3-1</option>
+              <option value="4-4-2">4-4-2</option>
+              <option value="4-3-3">4-3-3</option>
+              <option value="3-5-2">3-5-2</option>
+            </select>
+          </label>
+        </div>
+        <p class="filter-note" data-i18n="coachTacticsNote">Available coverage from each player's best and can-play positions. Current injuries are shown but excluded from the number.</p>
+        <div id="tactics-map" class="tactics-layout"></div>
+      </section>
+
       <section class="panel">
         <div class="section-heading"><div><p class="eyebrow" data-i18n="injuriesEyebrow">Squad status</p><h2 data-i18n="injuriesTitle">Current injuries</h2></div><a class="quiet-button small" href="admin.html" data-i18n="adminHeading">Admin</a></div>
         <div id="coach-injuries" class="injury-list"></div>
@@ -75,6 +91,7 @@
     <script src="config.js"></script>
     <script src="i18n.js"></script>
     <script src="stats.js"></script>
+    <script src="tactics.js"></script>
     <script src="data.js"></script>
     <script src="auth.js"></script>
     <script src="coach.js"></script>

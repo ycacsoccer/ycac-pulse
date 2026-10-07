@@ -18,7 +18,7 @@
   const DECLINED_STATES = ["declined", "unavailable"];
   const GROUPS = ["GK", "DF", "MF", "AT", "Other"];
 
-  const state = { lens: "tml", season: null, players: [], signups: [], appearances: [], fixtures: [], injuries: [] };
+  const state = { lens: "tml", formation: "4-2-3-1", tacticSlot: "", season: null, players: [], signups: [], appearances: [], fixtures: [], injuries: [] };
 
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
   const formatDate = (value) => (value && window.YCACI18n ? YCACI18n.formatDate(value) : value || "");
@@ -33,7 +33,7 @@
 
   async function load() {
     const [players, matches, appearances, goals, signups, injuries] = await Promise.all([
-      YCACData.select("players", "select=id,display_name,shirt_number,primary_position,photo_path,active&order=display_name"),
+      YCACData.select("players", "select=id,display_name,shirt_number,primary_position,secondary_positions,photo_path,active&order=display_name"),
       YCACData.select("matches", "select=*&order=date"),
       YCACData.select("appearances", "select=*"),
       YCACData.select("goals", "select=*"),
@@ -152,6 +152,36 @@
     $("coverage-table").innerHTML = head + body;
   }
 
+  function renderTactics() {
+    const target = $("tactics-map");
+    if (!target || !window.YCACTactics) return;
+    const unavailable = new Set(state.injuries.map((injury) => injury.player_id));
+    const slots = YCACTactics.coverage(state.season.players, state.formation, unavailable);
+    if (!slots.some((slot) => slot.id === state.tacticSlot)) {
+      state.tacticSlot = [...slots].sort((a, b) => a.count - b.count)[0]?.id || "";
+    }
+    const selected = slots.find((slot) => slot.id === state.tacticSlot) || slots[0];
+    const node = (slot) => {
+      const level = YCACTactics.heat(slot.count);
+      const names = slot.candidates.map((player) => player.display_name).join(", ");
+      return `<button class="tactic-node heat-${level}${slot.id === selected?.id ? " is-selected" : ""}" type="button" data-tactic-slot="${esc(slot.id)}" style="--tx:${slot.x}%;--ty:${slot.y}%" title="${esc(names || t("coachNoCoverage"))}" aria-label="${esc(`${slot.label}: ${slot.count} ${t("coachAvailable")}`)}"><span>${esc(slot.label)}</span><strong>${slot.count}</strong>${slot.unavailableCount ? `<i>+${slot.unavailableCount}</i>` : ""}</button>`;
+    };
+    const playerLinks = (players) => players.length
+      ? players.map((player) => `<a href="player.html?id=${encodeURIComponent(player.id)}">${esc(player.display_name)}${player.unavailable ? ` <small>${esc(t("coachUnavailable"))}</small>` : ""}</a>`).join("")
+      : `<span class="empty">${esc(t("coachNoCoverage"))}</span>`;
+    const best = selected ? selected.candidates.filter((player) => player.fit === "best") : [];
+    const capable = selected ? selected.candidates.filter((player) => player.fit === "capable") : [];
+    target.innerHTML = `<div>
+        <div class="formation-pitch" aria-label="${esc(state.formation)} ${esc(t("coachTactics"))}"><i class="pitch-half"></i><i class="pitch-circle"></i>${slots.map(node).join("")}</div>
+        <div class="coverage-legend"><span class="heat-empty">0 ${esc(t("coverageEmpty"))}</span><span class="heat-thin">1 ${esc(t("coverageThin"))}</span><span class="heat-fair">2 ${esc(t("coverageFair"))}</span><span class="heat-strong">3+ ${esc(t("coverageStrong"))}</span></div>
+      </div>
+      <aside class="tactic-detail">
+        <p class="eyebrow">${esc(state.formation)}</p><h3>${esc(selected?.label || "")}</h3>
+        <div><strong>${esc(t("coachBestFit"))}</strong><div class="tactic-names">${playerLinks(best)}</div></div>
+        <div><strong>${esc(t("positionCapable"))}</strong><div class="tactic-names">${playerLinks(capable)}</div></div>
+      </aside>`;
+  }
+
   function renderFlags() {
     const entries = state.season.players;
     const nameById = new Map(state.players.map((player) => [player.id, player.display_name]));
@@ -213,6 +243,7 @@
     renderFixture();
     renderBoard();
     renderCoverage();
+    renderTactics();
     renderInjuries();
     renderFlags();
   }
@@ -227,6 +258,14 @@
     if (!session) return; // redirecting to login.html?next=coach.html
     $("lens").value = state.lens;
     $("lens").addEventListener("change", (event) => { state.lens = event.target.value; renderBoard(); });
+    $("formation-lens").value = state.formation;
+    $("formation-lens").addEventListener("change", (event) => { state.formation = event.target.value; state.tacticSlot = ""; renderTactics(); });
+    $("tactics-map").addEventListener("click", (event) => {
+      const button = event.target.closest && event.target.closest("[data-tactic-slot]");
+      if (!button) return;
+      state.tacticSlot = button.getAttribute("data-tactic-slot");
+      renderTactics();
+    });
     if (window.YCACI18n) YCACI18n.onChange(() => renderAll());
     try {
       await load();

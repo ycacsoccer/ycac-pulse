@@ -22,6 +22,8 @@ test.describe("profile — Chris Ito (scored in both competitions)", () => {
     await expect(page.locator("#profile-hero")).toContainText("TML Division 3");
     await expect(page.locator("#profile-hero")).toContainText("Friendlies");
     await expect(page.locator("#profile-hero")).toContainText("Appearance rate");
+    await expect(page.locator("#profile-hero")).toContainText("Age group");
+    await expect(page.locator("#profile-hero")).toContainText("30s");
     await expect(page.locator("#profile-hero")).toContainText("Goals");
     await expect(page.locator("#profile-hero")).toContainText("Assists");
     await expect(page.locator("#profile-stats")).toContainText("Goals / game");

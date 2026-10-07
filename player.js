@@ -17,8 +17,9 @@
   const id = new URLSearchParams(location.search).get("id") || "";
   // posEdit: coach position editor draft (wave 20) — posMode picks what a tap
   // means (set BEST vs toggle CAN-PLAY); posStatus is an i18n key or "".
+  const AGE_BANDS = ["17-20", "20s", "30s", "40s", "50s"];
   const state = { player: null, players: [], matches: [], appearances: [], goals: [], entry: null, injury: null, isCoach: false,
-    posEdit: false, posMode: "best", posBest: "", posCapable: [], posStatus: "" };
+    ageStatus: "", posEdit: false, posMode: "best", posBest: "", posCapable: [], posStatus: "" };
 
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
   const formatDate = (value) => (value && window.YCACI18n ? YCACI18n.formatDate(value) : value || "");
@@ -26,6 +27,8 @@
   const compClass = (match) => /friendly/i.test(match?.competition || "") ? "friendly" : "tml";
   const rate = (value) => (value == null ? "–" : String(Number(value.toFixed(2)))); // 1.50 → "1.5"
   const outcomeOf = (match) => { const gf = Number(match.ycac_goals), ga = Number(match.opponent_goals); return gf > ga ? "win" : gf === ga ? "draw" : "loss"; };
+  const ageLabel = (value) => value === "17-20" ? "17–20" : value || "";
+  const ageStatusText = () => state.ageStatus === "saving" ? t("ageSaving") : state.ageStatus === "saved" ? t("ageSaved") : state.ageStatus === "fail" ? t("ageSaveFail") : "";
 
   async function load() {
     const [players, matches, appearances, goals] = await Promise.all([
@@ -69,6 +72,7 @@
       positions.length ? [t("position"), positions.map(esc).join(" · ")] : "",
       player.shirt_number != null ? [t("shirtNumber"), `#${player.shirt_number}`] : "",
       player.preferred_foot && FOOT_KEYS[player.preferred_foot] ? [t("infoFoot"), t(FOOT_KEYS[player.preferred_foot])] : "",
+      player.age_band ? [t("ageGroup"), ageLabel(player.age_band)] : "",
       entry.reliability != null ? [t("statReliability"), String(entry.reliability)] : "",
     ].filter(Boolean);
 
@@ -108,9 +112,17 @@
           ${state.isCoach ? `<button id="photo-upload" class="quiet-button" type="button">${esc(t("uploadPhoto"))}</button>` : ""}
           <span id="upload-status" class="upload-status" aria-live="polite"></span>
         </div>
+        ${state.isCoach ? `<div class="age-editor">
+          <label><span>${esc(t("ageGroup"))}</span><select id="age-band-select"><option value="">${esc(t("ageNotSet"))}</option>${AGE_BANDS.map((band) => `<option value="${band}"${player.age_band === band ? " selected" : ""}>${ageLabel(band)}</option>`).join("")}</select></label>
+          <button id="age-band-save" class="quiet-button small" type="button"${state.ageStatus === "saving" ? " disabled" : ""}>${esc(t("adminSave"))}</button>
+          <span class="upload-status" aria-live="polite">${esc(ageStatusText())}</span>
+        </div>` : ""}
       </div>`;
 
-    if (state.isCoach) $("photo-upload").addEventListener("click", () => $("photo-input").click());
+    if (state.isCoach) {
+      $("photo-upload").addEventListener("click", () => $("photo-input").click());
+      $("age-band-save").addEventListener("click", saveAgeBand);
+    }
 
     const bio = $("profile-bio");
     bio.hidden = !player.bio;
@@ -358,6 +370,24 @@
     $("profile-hero").innerHTML = `<div class="profile-id"><h1>${esc(t("playerNotFound"))}</h1></div>`;
     document.querySelectorAll(".player-main .panel").forEach((panel) => { panel.hidden = true; });
     document.title = `${t("playerNotFound")} | YC&AC Pulse`;
+  }
+
+  async function saveAgeBand() {
+    if (!state.isCoach || !state.player || state.ageStatus === "saving") return;
+    const selected = $("age-band-select").value;
+    if (selected && !AGE_BANDS.includes(selected)) return;
+    state.ageStatus = "saving";
+    renderHero();
+    try {
+      const rows = await YCACData.update("players", { age_band: selected || null }, `id=eq.${state.player.id}`);
+      if (!Array.isArray(rows) || rows.length !== 1) throw new Error(`age-band save affected ${Array.isArray(rows) ? rows.length : "?"} row(s)`);
+      state.player.age_band = selected || null;
+      state.ageStatus = "saved";
+    } catch (error) {
+      console.error(error);
+      state.ageStatus = "fail";
+    }
+    renderHero();
   }
 
   async function uploadPhoto(event) {

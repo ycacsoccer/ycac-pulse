@@ -7,7 +7,7 @@
 const players = [
   { id: "p-ada", display_name: "Ada Sato", primary_position: "GK", shirt_number: 1, photo_path: null, active: true, secondary_positions: [] },
   { id: "p-ben", display_name: "Ben Miller", primary_position: "CB", shirt_number: 4, photo_path: null, active: true, secondary_positions: ["RB", "LB"] },
-  { id: "p-chr", display_name: "Chris Ito", primary_position: "CM", shirt_number: 8, photo_path: null, active: true, secondary_positions: ["DM"] },
+  { id: "p-chr", display_name: "Chris Ito", primary_position: "CM", shirt_number: 8, age_band: "30s", photo_path: null, active: true, secondary_positions: ["DM"] },
   { id: "p-dan", display_name: "Dana Park", primary_position: "LW", shirt_number: 7, photo_path: null, active: true, secondary_positions: ["ST"] },
   { id: "p-evn", display_name: "Evan Cole", primary_position: "ST", shirt_number: 9, photo_path: null, active: true, secondary_positions: ["LW"] },
   // inactive: must not appear in the grid or the squad chips
