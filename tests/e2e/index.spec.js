@@ -6,6 +6,7 @@
 const { test, expect } = require("@playwright/test");
 const { mockSupabase, watchErrors, publicOnly, fitsViewport } = require("./mocks");
 const { expected } = require("../fixtures/public-data");
+const standingsData = require("../../standings.js");
 
 let api;
 let errors;
@@ -79,6 +80,31 @@ test("wave 24: assists, goal-timing histogram and trajectory curve render", asyn
   expect(errors).toEqual([]);
 });
 
+test("wave 25: TML standings render in published order with the club row highlighted", async ({ page }) => {
+  const rows = page.locator("#standings-body tr");
+  await expect(rows).toHaveCount(standingsData.rows.length);
+  await expect(rows.first()).toContainText(standingsData.rows[0].team); // leader on top
+  const usIndex = standingsData.rows.findIndex((row) => row.us);
+  const clubRow = rows.nth(usIndex);
+  await expect(clubRow).toHaveClass(/is-us/);
+  await expect(clubRow).toContainText(standingsData.rows[usIndex].team);
+  await expect(page.locator("#standings-body tr.is-us")).toHaveCount(1); // exactly one highlight
+  // GD is derived (gf − ga), never stored — assert the rendered cell maths out
+  const club = standingsData.rows[usIndex];
+  await expect(clubRow.locator("td").nth(8)).toHaveText(String(club.gf - club.ga));
+  await expect(clubRow.locator("td").nth(9)).toHaveText(String(club.pts));
+  await expect(page.locator("#standings-updated")).not.toHaveText(/^$/);
+  await expect(page.locator('.masthead nav a[href="#standings"]')).toHaveCount(1); // nav jumps to the table
+  // the highlight is a real computed background, not just a class name
+  const colors = await page.evaluate((index) => {
+    const all = document.querySelectorAll("#standings-body tr");
+    const cell = (row) => getComputedStyle(all[row].querySelector("td")).backgroundColor;
+    return [cell(index), cell(index === 0 ? 1 : 0)];
+  }, usIndex);
+  expect(colors[0]).not.toBe(colors[1]);
+  expect(errors).toEqual([]);
+});
+
 test("wave 23: fixture text stays readable on the navy card (CSS-leak regression)", async ({ page }) => {
   const fixture = page.locator("#fixtures .fixture").first();
   await expect(fixture).toBeVisible();
@@ -97,7 +123,10 @@ test("wave 23: fixture text stays readable on the navy card (CSS-leak regression
 test("wave 21: attendance is not a surface anywhere on the page", async ({ page }) => {
   await expect(page.locator(".attendance-panel")).toHaveCount(0);
   await expect(page.locator("#attendance-search")).toHaveCount(0);
-  await expect(page.locator("table")).toHaveCount(0); // no tables at all on the index
+  // The only <table> on the index is the wave-25 standings (they are genuinely
+  // tabular); the attendance tables stay gone for good.
+  await expect(page.locator("table")).toHaveCount(1);
+  await expect(page.locator("table.standings-table")).toHaveCount(1);
   await expect(page.locator("body")).not.toContainText(/attendance/i);
 });
 

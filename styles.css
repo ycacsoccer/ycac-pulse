@@ -558,3 +558,19 @@ svg.timing-svg, svg.trajectory-svg { display: block; width: 100%; height: auto; 
 @media (max-width: 760px) {
   .sb-form { padding: .8rem 1rem; }
 }
+
+/* ---- Wave 25: TML Division 3 standings, club row highlighted ---- */
+.b-standings { grid-column: 1 / -1; scroll-margin-top: 104px; }
+.standings-updated { color: var(--muted); font-size: .67rem; }
+.standings-scroll { overflow-x: auto; }
+.standings-table { width: 100%; min-width: 640px; border-collapse: collapse; font-family: 'DM Sans', Arial, sans-serif; }
+.standings-table th { padding: .6rem .7rem; color: var(--muted); font-size: .62rem; font-weight: 700; letter-spacing: .08em; text-align: right; text-transform: uppercase; border-bottom: 2px solid var(--navy); }
+.standings-table th.st-pos, .standings-table th.st-team { text-align: left; }
+.standings-table td { padding: .62rem .7rem; color: var(--navy); font-size: .82rem; font-weight: 600; text-align: right; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.standings-table td.st-pos { width: 3rem; color: var(--muted); font-weight: 700; text-align: left; }
+.standings-table td.st-team { font-weight: 700; text-align: left; }
+.standings-table td.st-pts { font-family: 'Libre Baskerville', Georgia, serif; font-size: .95rem; font-weight: 700; }
+.standings-table tbody tr:last-child td { border-bottom: 0; }
+.standings-table tr.is-us td { background: #f7f0df; }
+.standings-table tr.is-us td.st-pos { box-shadow: inset 3px 0 0 var(--gold); color: var(--navy); }
+.standings-table tr.is-us td.st-team { color: #7a5f16; }

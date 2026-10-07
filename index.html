@@ -64,7 +64,7 @@
       <div class="brand"><span>YC&amp;AC</span> Pulse<small data-i18n="officialWebsite">Official Soccer Top Team · Est. 1868</small></div>
       <nav aria-label="Primary navigation">
         <a href="#season" data-i18n="navSeason">Season</a>
-        <a href="https://www.footyjapancompetitions.com/standings" target="_blank" rel="noreferrer" data-i18n="navStandings">Standings</a>
+        <a href="#standings" data-i18n="navStandings">Standings</a>
         <a href="https://band.us/@ycacpulse" target="_blank" rel="noreferrer" data-i18n="navSchedule">Schedule</a>
         <a href="https://www.instagram.com/ycacpulse/" target="_blank" rel="noreferrer">Instagram</a>
         <a href="players.html" data-i18n="navPlayers">Players</a>
@@ -135,6 +135,30 @@
           </details>
         </section>
 
+        <!-- wave 25: TML Division 3 standings — the club row is highlighted -->
+        <section id="standings" class="panel b-standings">
+          <div class="section-heading"><div><p class="eyebrow" data-i18n="lensTml">TML Division 3</p><h2 data-i18n="standingsTitle">Standings</h2></div><small id="standings-updated" class="standings-updated"></small></div>
+          <div class="standings-scroll">
+            <table class="standings-table">
+              <thead>
+                <tr>
+                  <th scope="col" class="st-pos" data-i18n="standingsPos">Pos</th>
+                  <th scope="col" class="st-team" data-i18n="standingsTeam">Team</th>
+                  <th scope="col" data-i18n="standingsP">P</th>
+                  <th scope="col" data-i18n="standingsW">W</th>
+                  <th scope="col" data-i18n="standingsD">D</th>
+                  <th scope="col" data-i18n="standingsL">L</th>
+                  <th scope="col" data-i18n="standingsGF">GF</th>
+                  <th scope="col" data-i18n="standingsGA">GA</th>
+                  <th scope="col" data-i18n="standingsGD">GD</th>
+                  <th scope="col" class="st-pts" data-i18n="standingsPts">Pts</th>
+                </tr>
+              </thead>
+              <tbody id="standings-body"></tbody>
+            </table>
+          </div>
+        </section>
+
         <article class="panel performance-panel b-perf-tml">
           <div class="section-heading"><div><p class="eyebrow">TML Division 3</p><h2 data-i18n="perfTrend">Goals per match</h2></div><div class="chart-key" id="perf-tml-key"></div></div>
           <div id="perf-tml-trend" class="chart-block"></div>
@@ -194,6 +218,7 @@
     <script src="data.js"></script>
     <script src="stats.js"></script>
     <script src="charts.js"></script>
+    <script src="standings.js"></script>
     <script src="auth.js"></script>
     <script src="app.js"></script>
   </body>

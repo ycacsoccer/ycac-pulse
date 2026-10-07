@@ -44,6 +44,8 @@ global.YCACData = window.YCACData;
 global.YCACStats = require("./stats.js");
 require("./charts.js");
 global.YCACCharts = window.YCACCharts;
+require("./standings.js");
+global.YCACStandings = window.YCACStandings;
 require("./app.js");
 
 const el = (id) => elements.get(id) || { innerHTML: "", textContent: "" };
@@ -117,6 +119,15 @@ const check = (ok, label, detail = "") => {
   check(timing.includes("<svg") || timing.includes("No data"), "goal-timing histogram renders (or empty state)");
   const trajectory = el("trajectory-chart").innerHTML;
   check(trajectory.includes("<svg") && /class="tr-val"[^>]*>[+-]?\d+</.test(trajectory), "season trajectory rendered with a signed end value");
+
+  // wave 25 — standings: every shipped row renders in order, exactly one club
+  // row is highlighted, and the "table as of" label is set.
+  const standings = require("./standings.js");
+  const standingsRows = (el("standings-body").innerHTML.match(/<tr /g) || []).length;
+  check(standingsRows === standings.rows.length, "standings rows rendered", `${standingsRows}/${standings.rows.length}`);
+  check((el("standings-body").innerHTML.match(/is-us/g) || []).length === 1, "exactly one highlighted club row");
+  check(el("standings-body").innerHTML.includes(standings.rows[0].team), "table leader rendered", standings.rows[0].team);
+  check(el("standings-updated").textContent.length > 0, "standings 'table as of' label set", el("standings-updated").textContent);
 
   console.log("");
   if (failures.length) { console.log(`${failures.length} FAILURE(S): ${failures.join(" | ")}`); process.exit(1); }

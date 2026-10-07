@@ -8,7 +8,9 @@
    no longer presents attendance as a purpose. Wave 23: matchday-first hero
    (#matchday cards) + one segmented stat band (#season) driven by activeLens.
    Wave 24: data modules — form guide + streak in the band, assists beside
-   the scorers, goal-timing histogram + season trajectory in the bento. */
+   the scorers, goal-timing histogram + season trajectory in the bento.
+   Wave 25: TML Division 3 standings (#standings) from the shipped standings.js,
+   club row highlighted. */
 const t = (key, vars) => YCACI18n.t(key, vars);
 const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
 let dashboardData;
@@ -165,6 +167,19 @@ function render(data) {
   const season = YCACStats.computeSeason({ players: data.players, matches: data.matches, appearances: data.appearances, goals: data.goals });
   const core = YCACStats.ranked(season.tiers.core);
   document.querySelector("#squad-chips").innerHTML = core.map((entry) => `<a class="squad-chip" href="player.html?id=${encodeURIComponent(entry.id)}">${photoCell(entry)}<span class="sc-name">${esc(entry.display_name)}</span><small>${esc(entry.primary_position || "")}</small></a>`).join("") || document.querySelector("#empty-state").innerHTML;
+  // Wave 25: TML Division 3 standings — hand-maintained league table, club row
+  // highlighted, GD rendered from gf − ga so it can never drift from the data.
+  const standingsBox = document.querySelector("#standings");
+  if (standingsBox) {
+    const table = window.YCACStandings;
+    const rows = (table && table.rows) || [];
+    standingsBox.hidden = !rows.length;
+    document.querySelector("#standings-body").innerHTML = rows.map((row, index) => {
+      const gd = Number(row.gf) - Number(row.ga);
+      return `<tr class="${row.us ? "is-us" : ""}"><td class="st-pos">${index + 1}</td><td class="st-team">${esc(row.team)}</td><td>${row.p}</td><td>${row.w}</td><td>${row.d}</td><td>${row.l}</td><td>${row.gf}</td><td>${row.ga}</td><td>${gd}</td><td class="st-pts">${row.pts}</td></tr>`;
+    }).join("");
+    document.querySelector("#standings-updated").textContent = table && table.updated ? t("standingsAsOf", { date: formatDate(table.updated) }) : "";
+  }
 }
 
 YCACI18n.apply(document);

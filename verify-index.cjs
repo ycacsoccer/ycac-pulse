@@ -131,6 +131,16 @@ async function main() {
     "form guide + streak wired app.js → index.html");
   check(["perf-tml-assists", "perf-friendly-assists", "trajectory-chart", "timing-chart"].every((id) => app.includes(`#${id}`) && page.includes(`id="${id}"`)),
     "assist / goal-timing / trajectory containers wired app.js → index.html");
+  // wave 25 — standings: the shipped data module feeds a single on-page table,
+  // the club row is flagged once, and the nav anchors to it.
+  check(page.includes('<script src="standings.js">') && app.includes("#standings-body") && page.includes('id="standings-body"'),
+    "standings panel wired (standings.js → app.js → index.html)");
+  const standings = require("./standings.js");
+  check(standings.rows.filter((row) => row.us).length === 1, "exactly one club row flagged us",
+    standings.rows.find((row) => row.us)?.team || "none");
+  check(page.includes('href="#standings"'), "nav Standings link jumps to the on-page table");
+  check((page.match(/<table/g) || []).length === 1 && page.includes('class="standings-table"'),
+    "the only <table> in index.html is the standings", `${(page.match(/<table/g) || []).length} table`);
   // wave 23 — the two cascade leaks stay fixed: coach .fixture-card child rules
   // scoped away from the public navy card, and the match-page gold score scoped.
   const styles = fs.readFileSync(path.join(__dirname, "styles.css"), "utf8");
