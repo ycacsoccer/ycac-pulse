@@ -76,7 +76,7 @@ const expected = {
   gridCards: 5,                 // active players only (Fumi is inactive)
   injuryCards: 1,
   tmlKpiTiles: 3,               // wave 21: attendance tile is gone
-  heroTiles: 3,                 // wave 21: attendance tile is gone
+  heroCompetitionCards: 2,     // wave 26: TML + Friendly summaries
   chris: { tmlGoals: 2, fndGoals: 1, played: 6, absent: 1 },  // 7 finals − 6 apps (missed f2)
   evan: { played: 2, absent: 5 },                            // the most-absent player
 };

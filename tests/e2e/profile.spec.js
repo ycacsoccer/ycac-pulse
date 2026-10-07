@@ -1,5 +1,5 @@
 /* Player profile (player.html?id=…) — mocked Supabase.
-   Hero tiles + stats table (wave 21: no attendance row), the full-match
+   Wave-26 TML/Friendly hero summaries + stats table, the full-match
    timeline with absences labelled, goal rows badged by the match's
    competition (wave 19), and the public view of the pitch diagram. */
 const { test, expect } = require("@playwright/test");
@@ -17,12 +17,15 @@ test.describe("profile — Chris Ito (scored in both competitions)", () => {
     await expect(page.locator("#profile-hero")).toContainText("Chris Ito");
   });
 
-  test("wave 21: three hero tiles and no attendance row in the stats table", async ({ page }) => {
-    await expect(page.locator("#profile-hero .ptile")).toHaveCount(expected.heroTiles);
-    await expect(page.locator("#profile-hero")).toContainText("Goals / game");
-    await expect(page.locator("#profile-hero")).not.toContainText("Attendance");
+  test("wave 26: hero and table split league/friendly with appearance rate", async ({ page }) => {
+    await expect(page.locator("#profile-hero .profile-competition")).toHaveCount(expected.heroCompetitionCards);
+    await expect(page.locator("#profile-hero")).toContainText("TML Division 3");
+    await expect(page.locator("#profile-hero")).toContainText("Friendlies");
+    await expect(page.locator("#profile-hero")).toContainText("Appearance rate");
+    await expect(page.locator("#profile-hero")).toContainText("Goals");
+    await expect(page.locator("#profile-hero")).toContainText("Assists");
     await expect(page.locator("#profile-stats")).toContainText("Goals / game");
-    await expect(page.locator("#profile-stats")).not.toContainText("Attendance");
+    await expect(page.locator("#profile-stats")).toContainText("Appearance rate");
   });
 
   test("timeline has one row per final match with absences labelled", async ({ page }) => {

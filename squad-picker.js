@@ -92,7 +92,7 @@ document.querySelector("#copy-squad").addEventListener("click", async () => { if
 document.querySelector("#save-squad").addEventListener("click", saveSquad);
 document.querySelector("#save-image").addEventListener("click", saveReliableSquadImage);
 (async () => {
-  const session = await YCACAuth.requireTeam(); // redirects to login.html?next=… when signed out
+  const session = await YCACAuth.requireCoach(); // wave 26: one private access level
   if (!session) return;
   const saveButton = document.querySelector("#save-squad");
   saveButton.hidden = true; // saving writes coach-owned rows — revealed below for coach sessions
@@ -109,7 +109,7 @@ document.querySelector("#save-image").addEventListener("click", saveReliableSqua
     players = playerRows.filter((player) => player.active !== false).sort((a, b) => YCACStats.POSITION_ORDER[YCACStats.positionGroup(a.primary_position)] - YCACStats.POSITION_ORDER[YCACStats.positionGroup(b.primary_position)] || a.display_name.localeCompare(b.display_name));
     season = YCACStats.computeSeason(data);
     seasonIndex = new Map(season.players.map((entry) => [entry.id, entry]));
-    if (await YCACAuth.isCoach()) saveButton.hidden = false;
+    saveButton.hidden = false;
     populateEvents();
     changeEvent();
   } catch (error) {

@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="YC&AC Pulse match review: result, lineup, scorers, signups and the coach's reflection." />
-    <meta name="robots" content="noindex, nofollow" />
+    <meta name="description" content="YC&AC Pulse fixture and result details: match information, lineup, scorers and assists." />
+    <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#112950" />
     <link rel="icon" href="https://ycac.jp/wp-content/uploads/2025/10/YCAC-Logo-Icon.png" type="image/png" />
     <title>YC&AC Pulse | Match review</title>
@@ -22,7 +22,7 @@
     <main class="coach-main match-main">
       <section id="match-hero" class="match-hero" aria-live="polite"></section>
 
-      <section class="panel match-panel">
+      <section id="lineup-panel" class="panel match-panel">
         <div class="section-heading"><div><h2 data-i18n="matchLineup">Lineup</h2></div></div>
         <div id="match-lineup"></div>
       </section>
@@ -32,12 +32,12 @@
         <div id="match-goals"></div>
       </section>
 
-      <section class="panel match-panel">
+      <section id="signups-panel" class="panel match-panel" hidden>
         <div class="section-heading"><div><h2 data-i18n="coachSignups">Signups</h2></div></div>
         <div id="match-signups"></div>
       </section>
 
-      <section class="panel match-panel">
+      <section id="notes-panel" class="panel match-panel" hidden>
         <div class="section-heading"><div><h2 data-i18n="matchReview">Coach's review</h2></div></div>
         <div id="match-notes"></div>
       </section>

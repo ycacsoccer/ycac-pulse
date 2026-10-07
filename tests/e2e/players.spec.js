@@ -1,6 +1,6 @@
 /* Player grid (players.html) — mocked Supabase.
-   Wave 18's position sections + selection-group wording, and wave 21's
-   removal of the TML/FND appearance-% cells from the cards. */
+   Position sections + selection-group wording, and wave 26's compact
+   TML/Friendly split (apps, appearance rate, goals, assists). */
 const { test, expect } = require("@playwright/test");
 const { mockSupabase, watchErrors, publicOnly, fitsViewport } = require("./mocks");
 const { expected } = require("../fixtures/public-data");
@@ -23,17 +23,15 @@ test("renders one card per active player, grouped into position sections", async
   await expect(page.locator("#players-grid")).toContainText("Attackers");
 });
 
-test("wave 21: cards carry season totals, never appearance percentages", async ({ page }) => {
+test("wave 26: every card splits TML and Friendly apps/rate/goals/assists", async ({ page }) => {
   await expect(page.locator(".pc-tot")).toHaveCount(expected.gridCards);
-  await expect(page.locator(".pcq")).toHaveCount(0);
-  const body = await page.locator("#players-grid").innerText();
-  expect(body).not.toMatch(/\b\d+%/); // no bare percentages on a card
-});
-
-test("wave 23: goal totals singularise — '1 goal', never '1 goals'", async ({ page }) => {
-  const body = await page.locator("#players-grid").innerText();
-  expect(body).not.toMatch(/\b1 goals\b/);
-  expect(body).toMatch(/\b1 goal\b/); // Ben + Dana carry a single goal each
+  await expect(page.locator(".pc-split")).toHaveCount(expected.gridCards * 2);
+  await expect(page.locator(".pc-split .comp-chip.tml")).toHaveCount(expected.gridCards);
+  await expect(page.locator(".pc-split .comp-chip.friendly")).toHaveCount(expected.gridCards);
+  const first = page.locator(".player-card").first();
+  await expect(first.locator(".pc-split")).toHaveCount(2);
+  await expect(first).toContainText(/\d+%/);
+  await expect(first).toContainText(/\d+ G · \d+ A/);
 });
 
 test("selection-group filter chips use appearance-frequency wording", async ({ page }) => {

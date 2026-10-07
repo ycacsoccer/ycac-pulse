@@ -1,8 +1,8 @@
 // Render check for the player pages (verify-profile-render.cjs):
 //   node verify-profile-render.cjs
 // Executes players.js (grid) and player.js (profile) under a minimal DOM stub
-// against live ANON data. Asserts the wave-21 cards carry season apps + goals
-// (no appearance percentages), the profile shows hero stat tiles, the timeline
+// against live ANON data. Asserts wave-26 cards + hero split TML/Friendly
+// apps, appearance rate, goals and assists; the timeline
 // has a row for EVERY final match — absences labelled (the picked player is
 // the one who has missed the most matches while still having played) — and
 // (wave 20) drives the coach position editor: Edit → tap pitch slots →
@@ -102,16 +102,16 @@ const get = async (path) => {
   }
   check(unknownIds.length === 0, "every getElementById id exists in players.html/player.html", unknownIds.join(", ") || "none unknown");
 
-  // --- 3. player grid: cards with season totals (wave 21: no %-cells) -------
+  // --- 3. player grid: wave-26 competition split ----------------------------
   const grid = el("players-grid").innerHTML;
   const cardCount = (grid.match(/class="player-card"/g) || []).length;
   check(cardCount >= 30, "player grid renders cards", `${cardCount} cards`);
-  const tmlCells = (grid.match(/class="pcq tml"/g) || []).length;
-  const fndCells = (grid.match(/class="pcq fnd"/g) || []).length;
-  check(tmlCells === 0 && fndCells === 0 && !grid.includes("pc-quick"),
-    "cards carry no appearance-% cells (wave 21)", `${tmlCells} TML / ${fndCells} FND of ${cardCount}`);
-  check(grid.includes("pc-tot") && /\d+\/\d+ /.test(grid),
-    "cards show season apps + goals totals", (grid.match(/class="pc-tot">[^<]*/) || ["no totals"])[0]);
+  const splits = (grid.match(/class="pc-split"/g) || []).length;
+  check(splits === cardCount * 2 && (grid.match(/comp-chip tml/g) || []).length === cardCount
+    && (grid.match(/comp-chip friendly/g) || []).length === cardCount,
+  "every card splits TML + Friendly", `${splits} rows across ${cardCount} cards`);
+  check(grid.includes("Appearance rate") && /\d+%/.test(grid) && grid.includes(" G · ") && grid.includes(" A</span>"),
+    "card rows carry apps, appearance rate, goals and assists");
 
   // --- 3b. wave 18: grouped into position sections, selection wording --------
   const sections = (grid.match(/position-section-head/g) || []).length;
@@ -123,19 +123,20 @@ const get = async (path) => {
   check(tierChips.includes("Plays often") && tierChips.includes("Not yet played") && tierChips.includes("Plays occasionally"),
     "selection-group filter chips named by appearance frequency", tierChips.replace(/<[^>]+>/g, " ").trim().slice(0, 70));
 
-  // --- 4. profile: hero tiles, stats rows, full timeline --------------------
+  // --- 4. profile: competition summaries, stats rows, full timeline --------
   const hero = el("profile-hero").innerHTML;
-  const tiles = (hero.match(/class="ptile"/g) || []).length;
-  check(tiles === 3 && hero.includes("Goals / game") && hero.includes(`pt-of">/${finals.length}<`) && !/attendance/i.test(hero),
-    "hero stat tiles: apps, goals, goals per game (no attendance tile)", `${tiles} tiles`);
+  const summaries = (hero.match(/class="profile-competition /g) || []).length;
+  check(summaries === 2 && hero.includes("TML Division 3") && hero.includes("Friendlies")
+    && hero.includes("Appearance rate") && hero.includes("Goals") && hero.includes("Assists"),
+  "hero splits TML + Friendly apps/rate/goals/assists", `${summaries} summaries`);
 
   // wave 20: visitors see the diagram only — no pitch-tap editor controls
   check(!el("profile-positions").innerHTML.includes("data-pos-action") && !el("profile-positions").innerHTML.includes("data-pos-mode"),
     "public profile: diagram without editor controls");
 
   const stats = el("profile-stats").innerHTML;
-  check(stats.includes("Goals / game") && !/attendance/i.test(stats),
-    "stats table: goals-per-game row, no attendance row");
+  check(stats.includes("Goals / game") && stats.includes("Appearance rate") && stats.includes(">TML<") && stats.includes(">Friendly<") && stats.includes(">All<"),
+    "stats table: TML/Friendly/All with appearance rate + goals per game");
 
   const timeline = el("profile-timeline").innerHTML;
   const rows = (timeline.match(/class="timeline-entry/g) || []).length;
@@ -280,5 +281,5 @@ const get = async (path) => {
     console.log(`${failures.length} FAILURE(S): ${failures.join(" | ")}`);
     process.exit(1);
   }
-  console.log("Player pages rendered end-to-end: cards, hero tiles, stats rows, full timeline.");
+  console.log("Player pages rendered end-to-end: competition-split cards + hero, stats rows, full timeline.");
 })().catch((error) => { console.error(`ERROR ${error.message}`); process.exit(1); });

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Sign in to YC&AC Pulse team pages." />
+    <meta name="description" content="Coach access to YC&AC Pulse management tools." />
     <meta name="robots" content="noindex, nofollow" />
     <meta name="theme-color" content="#112950" />
     <link rel="icon" href="https://ycac.jp/wp-content/uploads/2025/10/YCAC-Logo-Icon.png" type="image/png" />
@@ -20,27 +20,16 @@
 
     <main class="login-main">
       <section class="login-panel" aria-labelledby="login-heading">
-        <p class="eyebrow" data-i18n="loginTeamTitle">Players &amp; team</p>
-        <h1 id="login-heading" data-i18n="loginHeading">Sign in</h1>
-        <p id="login-need-coach" class="login-notice" hidden data-i18n="loginNeedCoach">This page needs a coach account. Sign in below with the coach login.</p>
+        <p class="eyebrow" data-i18n="coachEyebrow">Private team tool</p>
+        <h1 id="login-heading" data-i18n="loginHeading">Coach access</h1>
+        <p id="login-need-coach" class="login-notice" hidden data-i18n="loginNeedCoach">This account does not have coach access.</p>
 
         <!-- signed out -->
         <div id="login-signed-out">
-          <div class="login-cards">
-            <article class="login-card">
-              <h2 data-i18n="loginTeamTitle">Players &amp; team</h2>
-              <p data-i18n="loginTeamCopy">For players and team staff — enter the shared team password.</p>
-              <form id="team-form">
-                <label class="login-field">
-                  <span data-i18n="loginTeamLabel">Team password</span>
-                  <input id="team-password" type="password" autocomplete="current-password" required data-i18n-placeholder="loginTeamLabel" placeholder="Team password" />
-                </label>
-                <button class="primary-button" type="submit" data-i18n="authLogin">Log in</button>
-              </form>
-            </article>
+          <div class="login-cards single">
             <article class="login-card">
               <h2 data-i18n="loginCoachTitle">Coach</h2>
-              <p data-i18n="loginCoachCopy">For coaches and managers — enter the coach password.</p>
+              <p data-i18n="loginCoachCopy">Manage fixtures, players, signups, squads and team content.</p>
               <form id="coach-form">
                 <label class="login-field">
                   <span data-i18n="loginPassword">Password</span>

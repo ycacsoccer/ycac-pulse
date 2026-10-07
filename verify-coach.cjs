@@ -1,6 +1,6 @@
 // Data-path check for the coach dashboard (coach.html + coach.js):
 //   node verify-coach.cjs
-// Signs in an ephemeral team user, runs the dashboard's exact queries (same
+// Signs in an ephemeral rostered coach, runs the dashboard's exact queries (same
 // strings coach.js uses), feeds them through stats.js, and asserts the inputs
 // behind the board, the coverage matrix and the flags. User is deleted after.
 const fs = require("fs");
@@ -61,6 +61,9 @@ const QUERIES = {
 async function main() {
   if (!secret || !publishable) throw new Error("missing credentials (.env / config.js)");
   console.log(`Verifying coach dashboard data path against ${env.SUPABASE_URL}\n`);
+  const coachSource = fs.readFileSync(path.join(__dirname, "coach.js"), "utf8");
+  check(coachSource.includes("YCACAuth.requireCoach") && !coachSource.includes("YCACAuth.requireTeam"),
+    "coach dashboard uses the single coach gate");
 
   let userId = null;
   try {
@@ -70,18 +73,21 @@ async function main() {
     await call(`${BASE}/matches?id=eq.e2e-fixture`, { method: "DELETE", headers: adminHeaders });
     await call(`${BASE}/matches`, { method: "POST", headers: adminHeaders, body: [{ id: "e2e-fixture", date: "2099-12-01", competition: "Friendly Match", opponent: "E2E Probe FC" }] });
 
-    // slate: remove leftovers, then create the ephemeral team user
+    // slate: remove leftovers, then create + roster the ephemeral coach
+    await call(`${BASE}/coach_roster?email=eq.${E2E_EMAIL}`, { method: "DELETE", headers: adminHeaders });
     const existing = await call(`${AUTH}/admin/users`, { headers: adminHeaders });
     for (const user of existing.users || []) {
       if (user.email === E2E_EMAIL) await call(`${AUTH}/admin/users/${user.id}`, { method: "DELETE", headers: adminHeaders });
     }
     const created = await call(`${AUTH}/admin/users`, { method: "POST", headers: adminHeaders, body: { email: E2E_EMAIL, password: E2E_PASSWORD, email_confirm: true } });
     userId = created.id;
-    check(Boolean(userId), "ephemeral team user created", E2E_EMAIL);
+    check(Boolean(userId), "ephemeral coach user created", E2E_EMAIL);
+    await call(`${BASE}/coach_roster`, { method: "POST", headers: adminHeaders, body: [{ email: E2E_EMAIL }] });
+    check(true, "ephemeral user added to coach_roster");
 
     const grant = await call(`${AUTH}/token?grant_type=password`, { method: "POST", headers: anonHeaders, body: { email: E2E_EMAIL, password: E2E_PASSWORD } });
     const token = grant.access_token;
-    check(Boolean(token), "password grant (team session)");
+    check(Boolean(token), "password grant (coach session)");
 
     // --- 1. RLS: this page needs the session --------------------------------
     const anonCount = await fetch(`${BASE}/signups?select=match_id`, { headers: { ...anonHeaders, Prefer: "count=exact" } })
@@ -96,8 +102,8 @@ async function main() {
     check(Array.isArray(matches) && matches.length >= 10, "matches query", `${matches.length} rows`);
     check(Array.isArray(appearances) && appearances.length >= 100, "appearances query", `${appearances.length} rows`);
     check(Array.isArray(goals) && goals.length >= 30, "goals query", `${goals.length} rows`);
-    check(Array.isArray(signups) && signups.length > 0, "signups query (team table)", `${signups.length} rows`);
-    check(Array.isArray(coachNotes) && coachNotes.length === 0, "coach_notes hidden from team session", `${coachNotes.length} rows`);
+    check(Array.isArray(signups) && signups.length > 0, "signups query (private table)", `${signups.length} rows`);
+    check(Array.isArray(coachNotes), "coach_notes query runs for coach session", `${coachNotes.length} rows`);
 
     // --- 3. the engine, exactly as coach.js calls it -------------------------
     const overrides = Object.fromEntries(coachNotes.filter((note) => note.squad_status).map((note) => [note.player_id, { squad_status: note.squad_status }]));
@@ -155,6 +161,7 @@ async function main() {
     check(Number.isInteger(duplicates.length + missingPhotos.length + friendlyOnly.length + declinedButPlayed.length), "flag inputs computed without errors");
   } finally {
     await call(`${BASE}/matches?id=eq.e2e-fixture`, { method: "DELETE", headers: adminHeaders }).catch(() => {});
+    await call(`${BASE}/coach_roster?email=eq.${E2E_EMAIL}`, { method: "DELETE", headers: adminHeaders }).catch(() => {});
     if (userId) await call(`${AUTH}/admin/users/${userId}`, { method: "DELETE", headers: adminHeaders }).catch(() => {});
     const users = await call(`${AUTH}/admin/users`, { headers: adminHeaders }).catch(() => null);
     const leftover = users?.users?.some((user) => user.email === E2E_EMAIL);

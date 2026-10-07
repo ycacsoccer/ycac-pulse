@@ -154,8 +154,11 @@ async function main() {
     const source = fs.readFileSync(path.join(__dirname, "match.js"), "utf8");
     check(source.includes("[a-z0-9_-]") && source.includes("URLSearchParams"), "match.js validates ?id= and reads the query string");
     const page = fs.readFileSync(path.join(__dirname, "match.html"), "utf8");
-    check(page.includes("requireTeam") || source.includes("requireTeam"), "match.js gates the page behind requireTeam()");
-    check(page.includes('name="robots" content="noindex'), "match.html is noindexed (team-only page)");
+    check(!source.includes("requireTeam") && source.includes("state.isCoach ? YCACData.select(\"signups\"")
+      && source.includes("Promise.resolve([])"),
+    "match page is public; signups + notes load only for a coach session");
+    check(page.includes('name="robots" content="index, follow"') && page.includes('id="signups-panel"') && page.includes('id="notes-panel"'),
+      "match.html is public/indexable with private panels hidden by default");
   } finally {
     await call(`${BASE}/matches?id=eq.e2e-fixture`, { method: "DELETE", headers: adminHeaders }).catch(() => {});
     if (state.noteProbe) {
@@ -181,7 +184,7 @@ async function main() {
     console.log(`${failures.length} FAILURE(S): ${failures.join(" | ")}`);
     process.exit(1);
   }
-  console.log("Match review verified: queries, embeds, lineup split, signups, notes access, gating.");
+  console.log("Match review verified: public result/lineup/goals; coach-only signups + notes.");
 }
 
 main().catch((error) => { console.error(`ERROR ${error.message}`); process.exit(1); });

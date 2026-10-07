@@ -1,8 +1,7 @@
-/* YC&AC Pulse — match & squad review (Phase 8, requirements 4 + 6).
-   Team-login page behind requireTeam(): ?id=<match> shows the result hero,
-   the lineup with photos (starters / substitutes), scorers & assists, that
-   fixture's signups, and the coach's reflection / coaching points edited in
-   admin.html (match_notes — team-readable, coach-writable via RLS). */
+/* YC&AC Pulse — public match page + private coach detail.
+   Everyone can open ?id=<match> for fixture/result, lineup, scorers & assists.
+   A signed-in coach additionally sees that fixture's signups and private
+   reflection / coaching points. Wave 26 removed the old player/team gate. */
 (() => {
   const t = (key, vars) => (window.YCACI18n ? YCACI18n.t(key, vars) : key);
   const $ = (id) => document.getElementById(id);
@@ -12,7 +11,7 @@
 
   const state = {
     mode: "loading", // loading | ok | missing | error
-    match: null, apps: [], goals: [], signups: [], notes: [],
+    match: null, apps: [], goals: [], signups: [], notes: [], isCoach: false,
     playersById: new Map(),
   };
 
@@ -61,8 +60,11 @@
   }
 
   function renderLineup() {
+    const panel = $("lineup-panel");
     const target = $("match-lineup");
-    if (state.mode !== "ok") { target.innerHTML = ""; return; }
+    if (state.mode !== "ok") { panel.hidden = true; target.innerHTML = ""; return; }
+    if (!state.apps.length && !isFinal(state.match)) { panel.hidden = true; return; }
+    panel.hidden = false;
     if (!state.apps.length) { target.innerHTML = empty("matchNoLineup"); return; }
     const byShirt = (a, b) =>
       (a.players?.shirt_number ?? 99) - (b.players?.shirt_number ?? 99)
@@ -101,8 +103,10 @@
   }
 
   function renderSignups() {
+    const panel = $("signups-panel");
     const target = $("match-signups");
-    if (state.mode !== "ok") { target.innerHTML = ""; return; }
+    panel.hidden = state.mode !== "ok" || !state.isCoach;
+    if (panel.hidden) { target.innerHTML = ""; return; }
     if (!state.signups.length) { target.innerHTML = empty("matchNoSignups"); return; }
     const groups = SIGNUP_STATES
       .map((status) => ({ status, rows: state.signups.filter((signup) => signup.status === status) }))
@@ -123,8 +127,10 @@
   }
 
   function renderNotes() {
+    const panel = $("notes-panel");
     const target = $("match-notes");
-    if (state.mode !== "ok") { target.innerHTML = ""; return; }
+    panel.hidden = state.mode !== "ok" || !state.isCoach;
+    if (panel.hidden) { target.innerHTML = ""; return; }
     const note = state.notes[0];
     const blocks = note
       ? [["noteReflection", note.reflection], ["noteCoachingPoints", note.coaching_points], ["noteSquadReview", note.squad_review]]
@@ -154,20 +160,19 @@
   // ---- boot -----------------------------------------------------------------
 
   (async () => {
-    const session = await YCACAuth.requireTeam(); // redirects to login.html?next=…
-    if (!session) return;
     if (window.YCACI18n) YCACI18n.onChange(() => renderAll()); // re-render in the new language
 
     const id = new URLSearchParams(location.search).get("id") || "";
     if (!VALID_ID.test(id)) { showMissing(); return; }
 
     try {
+      state.isCoach = Boolean(YCACAuth.session && await YCACAuth.isCoach());
       const [matches, apps, goals, signups, notes, players] = await Promise.all([
         YCACData.select("matches", `select=*&id=eq.${id}`),
         YCACData.select("appearances", `select=*,players(id,display_name,shirt_number,photo_path,primary_position)&match_id=eq.${id}`),
         YCACData.select("goals", `select=*&match_id=eq.${id}`),
-        YCACData.select("signups", `select=*,players(id,display_name,shirt_number,photo_path)&match_id=eq.${id}`),
-        YCACData.select("match_notes", `select=*&match_id=eq.${id}`),
+        state.isCoach ? YCACData.select("signups", `select=*,players(id,display_name,shirt_number,photo_path)&match_id=eq.${id}`) : Promise.resolve([]),
+        state.isCoach ? YCACData.select("match_notes", `select=*&match_id=eq.${id}`) : Promise.resolve([]),
         YCACData.select("players", "select=*"),
       ]);
       if (!matches.length) { showMissing(); return; }

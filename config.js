@@ -5,8 +5,7 @@
 window.YCAC_CONFIG = {
   supabaseUrl: "https://dnqmnwnijfzzhcjquxoj.supabase.co", // e.g. "https://abcdefghij.supabase.co"  →  Project Settings > API > Project URL
   supabaseAnonKey: "sb_publishable__vr04Cgo6Fe5l1cbuz8usQ_PNRG1Ee6", //                                        →  Project Settings > API > anon public
-  teamEmail: "ycacsoccer@gmail.com", // shared team account used by the team-password gate,
-  //                 e.g. "team@ycac.jp"  →  Authentication > Users > Add user
+  teamEmail: "ycacsoccer@gmail.com", // legacy read-only team account (no login UI since wave 26),
   coachEmail: "likaiyeung@gmail.com", // coach account the coach card signs in — password only,
   //                 the address is built into the page so nobody types an email
 };

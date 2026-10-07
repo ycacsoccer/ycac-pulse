@@ -88,7 +88,7 @@ async function main() {
   check(!picker.includes("docs.google.com") && !picker.includes("script.google.com") && !picker.includes("spreadsheets"), "gviz + Apps Script endpoints are gone");
   check(!picker.includes("getSheet") && !picker.includes("squadSaveEndpoint"), "sheet loader + save endpoint references are gone");
   check(picker.includes("YCACData.select") && picker.includes('"saved_squads"') && picker.includes('"signups"'), "picker reads Supabase (6 selects)");
-  check(picker.includes("YCACAuth.requireTeam") && picker.includes("YCACAuth.isCoach"), "team-gated boot + coach-only save button");
+  check(picker.includes("YCACAuth.requireCoach") && !picker.includes("YCACAuth.requireTeam"), "single coach gate (view + save)");
   check(picker.includes("photoCell") && picker.includes("photo_path"), "roster cards carry photos");
   check(picker.includes("YCACStats.computeSeason") && picker.includes("tierRank"), "core-weighted suggest via stats.js");
   check(page.includes('<script src="stats.js">') && page.includes("noindex"), "squad-picker.html loads stats.js + is noindexed");

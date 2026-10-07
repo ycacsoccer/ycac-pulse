@@ -1,6 +1,6 @@
 # YC&AC Pulse — Coach & Management Revamp Plan
 
-v12 · Oct 2026 · Status: **all 25 phases complete — `npm run verify` green (syntax, 34 unit tests, 14 verifiers, 29 E2E)**
+v13 · Oct 2026 · Status: **all 26 phases complete — `npm run verify` green (syntax, 34 unit tests, 14 verifiers, 30 E2E)**
 
 > **v2:** data source moved off Google Sheets to Supabase.
 > **v3:** ten numbered requirements captured from the coach/management side; login model,
@@ -31,6 +31,9 @@ v12 · Oct 2026 · Status: **all 25 phases complete — `npm run verify` green (
 > from a hand-maintained `standings.js` (our results are in Supabase, the league's cross-fixtures
 > are not); the index's old "zero tables" guard — a proxy for the removed attendance tables — is
 > retargeted to "exactly one table: the standings".
+> **v13:** player information + access simplification (wave 26): player cards and profile summaries
+> are competition-first (TML / Friendly apps, appearance rate, goals, assists); ordinary pages and
+> match reviews are public, while one coach login covers dashboard, admin, picker and team content.
 
 ---
 
@@ -55,14 +58,15 @@ endpoint, and no field for photos.
 | 5 | **Team player profile** | `players.html` grid | ✅ done (Phase 6) |
 | 6 | **Coach reflection & feedback per match** | `match_notes` table → edited in admin (Phase 7), shown on `match.html` (Phase 8) | ✅ done |
 | 7 | **Team guideline & coach instruction** | `team_content` table → edited in admin (Phase 7), shown on `team.html` (Phase 9) | ✅ done |
-| 8 | **Simple password login for team-only pages** | shared **team password** (one Supabase team account) for read-only pages; **coach login** for admin/writes | ✅ done (Phase 4) |
+| 8 | **Simple password login for private tools** | one password-only **coach login**; normal player-facing pages are public | ✅ simplified (Phase 4 → wave 26) |
 | 9 | **Player profile** — info, history, stats, profile pic | `player.html?id=` (Phase 6) | ✅ done |
 | 10 | **Coach dashboard** — all player statistics | `coach.html` (Phase 5) | ✅ done |
 
 **Decisions recorded this session:**
-- Login = *team password + coach login*, both **password-only forms** (no email fields): players
-  type one shared team password (opens squad, signups, match review, guidelines); admin actions
-  need the coach password (both account addresses are built into `config.js`).
+- Login = one **password-only coach form** (no email field). The season, players, profiles and public
+  match detail need no account; dashboard, admin, squad picker and team content require the coach.
+- The former shared team account remains only as a backwards-compatible read-only RLS role; the site
+  has no player/team login button or form.
 - Signups are **entered by you in the admin tool** (player self-service may come later — the schema
   leaves room for it).
 - Team guideline / coach instruction content is **editable in the admin tool**, not in code.
@@ -93,12 +97,11 @@ empty `minutes` · duplicate Signups/EventSignups merged into one table.
 ```
 ┌───────────────────────────────────────────────────────────┐
 │ Static site (GitHub Pages)                                │
-│ public:  index · players · player · squad-picker          │
-│ team:    coach · match · team   (team password)           │
-│ admin:   admin              (coach login)                 │
+│ public:  index · players · player · match                 │
+│ coach:   coach · admin · squad-picker · team              │
 │ shared:  stats.js · i18n.js · auth.js · config.js         │
 └──────────────┬────────────────────────────────────────────┘
-               │ anon key (public reads) · team session · coach session
+               │ anon key (public reads) · coach session
 ┌──────────────▼────────────────────────────────────────────┐
 │ Supabase — Postgres + RLS · Storage (photos) · Auth       │
 └────────────────────────────────────────────────────────────┘
@@ -108,7 +111,7 @@ empty `minutes` · duplicate Signups/EventSignups merged into one table.
 ### 4.1 Schema
 
 Public (anon `SELECT`): `players`, `matches`, `appearances`, `goals`.
-Team-only (authenticated `SELECT`): `signups`, `saved_squads`, `match_notes`, `team_content`.
+Private (authenticated `SELECT`; coach-only in the UI): `signups`, `saved_squads`, `match_notes`, `team_content`.
 Coach-only (write): everything, gated by `is_coach()` — membership held in a `coach_roster` table.
 Never readable/writable by anon: `coach_notes`, `coach_roster`.
 
@@ -124,19 +127,15 @@ Never readable/writable by anon: `coach_notes`, `coach_roster`.
 
 All in `supabase/migrations/0001_init.sql` (nothing applied yet, so it stays a single migration).
 
-### 4.2 Login design (requirement 8)
+### 4.2 Login design (requirement 8; simplified in wave 26)
 
-- **Team password** = one shared Supabase Auth account (`config.teamEmail`). A player opens a
-  restricted page, types the team password once → `signInWithPassword` → session persists in the
-  browser. No accounts to manage; rotate by changing that one password.
-- **Coach login** = one coach account (`config.coachEmail`), also password-only — the form never
-  asks for an address; the page signs in the configured account. `is_coach()` gates every write
-  policy. Admin and coach dashboard actions are impossible for team sessions even if the UI were
-  bypassed.
-- Pages call `requireTeam()` / `requireCoach()` from `auth.js`, which redirects to a login panel
-  (translated, requirement 1) when there is no session.
-- Honest limitation: the team password is shared, so it identifies *the team*, not a person.
-  Player self-service signups would need per-player accounts later.
+- **Coach login** = one coach account (`config.coachEmail`), password-only — the form never asks for
+  an address; the page signs in the configured account and verifies `is_coach()`.
+- Private pages call `requireCoach()` from `auth.js`; season/player/profile/public match pages never
+  redirect. On match pages, signups and coach notes are fetched only after a verified coach session.
+- The former `config.teamEmail` / `requireTeam()` path remains only as backwards-compatible plumbing
+  for the existing RLS setup; no current page or login form exposes it.
+- Player self-service signups would still require per-player accounts later.
 
 ### 4.3 Shared code
 
@@ -160,7 +159,7 @@ Thresholds live in `stats.js`; coach can override per player in `coach_notes`.
 
 ## 5. Screens
 
-1. **`coach.html` — Coach Dashboard** (team login) — req 10
+1. **`coach.html` — Coach Dashboard** (coach login) — req 10
    Stable-squad board by tier with photos · TML/Friendly/All lens (TML default) · TML squad
    snapshot + next fixture with signups · position coverage matrix · flags (missing photos,
    duplicate numbers, friendly-only players, declined-but-started).
@@ -193,7 +192,7 @@ Thresholds live in `stats.js`; coach can override per player in `coach_notes`.
 | **1** | Migration `migrate-from-sheets.cjs` (dry-run ✅) | ✅ **done** — imported & verified (`verify-import.cjs` 21/21) |
 | **2** | `stats.js` + `verify-stats.cjs` | ✅ done |
 | **3** | `i18n.js` + language selector, retrofit `index` + `squad-picker` | ❌ — **done** (161 keys × 3 languages, `verify-i18n.cjs` ✅) |
-| **4** | `data.js` + `auth.js` (team password, coach login, RLS roles) | ✅ **done** — `login.html`, masthead auth slots; `verify-auth.cjs` 22/22 |
+| **4** | `data.js` + `auth.js` (original RLS roles; UI simplified to coach-only in wave 26) | ✅ **done** — one coach `login.html`, masthead auth slots; `verify-auth.cjs` |
 | **5** | Coach dashboard `coach.html` | ✅ **done** — tier board + lens, fixture signups, coverage, flags; `verify-coach.cjs` 21/21 |
 | **6** | Profiles `players.html` / `player.html` + photo upload | ✅ **done** — grid + detail + coach photo upload; `verify-profiles.cjs` 21/21 |
 | **7** | Admin `admin.html` (players, matchday, signups, notes, content, backup) | ✅ **done** — CRUD + lineup/goals entry + content + backup; `verify-admin.cjs` 38/38 |
@@ -219,13 +218,14 @@ Thresholds live in `stats.js`; coach can override per player in `coach_notes`.
 | **22** | **Test automation + deploy gate** — one entry point (`npm run verify`) that funnels four gates: syntax → unit → verifiers → Playwright E2E; the commit is gated by Husky, the deploy by GitHub Actions, and what actually went live by a smoke suite | ✅ **done** — `scripts/check-syntax.js` (`node --check` on every git-tracked `.js`/`.cjs`, JSON parse), `tests/unit/*.test.cjs` (**27 `node --test` tests**: tier/reliability/coverage rules + season split in `stats.js`, diverging-chart geometry + `kpis()` in `charts.js`, key parity/interpolation/wave-21 removals in `i18n.js` — the long-standing "no frontend unit tests" gap), `scripts/run-verifiers.js` splitting the 14 suites into `--group=anon` (CI: i18n, stats, index, render, profile-render) and `--group=live` (local, `.env`: the 9 that create ephemeral users and write rows), Playwright `tests/e2e/**` — **22 tests** over index/grid/profile with **every Supabase call mocked** (`page.route` → `tests/fixtures/public-data.js`: no credentials, no network, deterministic), including public-tables-only, language switch, and no horizontal overflow at 320/390/1440; `.husky/pre-commit` → `verify:fast`; `.github/workflows/pages.yml` → verify → `build:site` (whitelist → `_site/` + `build-info.json`) → `deploy-pages` → `test:smoke` (commit propagation, live pages, login gating), Pages switched from branch to **Actions** deploy so a red run blocks publishing; two real bugs found and fixed along the way — `i18n.setLanguage()` crashing outside a browser, and the fixture card overflowing at 320px — **`npm run verify` + `npm run verify:live` green** |
 | **23** | **Presentation & layout rework (wave 23)** — the public pages get a modern, professional presentation without changing what data exists: a matchday-first hero (next fixture with sign-ups, else the last result with a W/D/L badge, static hero-note fallback), one **segmented stat band** replacing the two stacked scorelines (record · goals for · against · **goal difference** · **win rate** · clean sheets, switchable TML / Friendly / All without a reload), a **bento grid** (fixtures + results lead, performance next, stable squad, injuries de-emphasised to the last cell), W/D/L **result badges + competition chips** on every result row, **denser left-aligned player cards**, and typography/a11y polish (tabular numerals, zebra + right-aligned + sticky profile stats table, `:focus-visible`, reduced-motion) | ✅ **done** — three real cascade bugs fixed first: coach `.fixture-card` child selectors leaking onto the public navy fixture (date/opponent/kickoff were navy-on-navy — invisible once live data has a fixture), the bare `.match-score` gold rule from the match page leaking onto index results (draws/losses gold-on-white), and "1 goals" in `players.js`/`app.js`; `app.js` gains `statSnapshot`/`paintBand`/`renderMatchday` (`#matchday`, `#season-*`, `[data-seg]`), `setStats` + the `tml-`/`friendly-` scoreline ids are gone; 6 new keys ×3 (**333 total**: `goalDiff`, `goalOne`, `statGoalOne`, `matchRecordedOne`, `mdNextMatch`, `mdLastResult`); `verify-index` gains matchday/band/bento wiring + both leak-scoping checks, `verify-render` re-aimed at `#season-record` (+ band cells, matchday), E2E re-aimed and extended to **26 tests** (segment switch 2–1–1/1–1–1/3–2–2, matchday hero shows Titans FC, fixture computed-colour regression, no "1 goals") — **all 14 verifiers green** |
 | **24** | **Data wave (wave 24)** — four new data modules built only from tables the site already reads: a **form guide + current streak** inside the segmented stat band (last-five W/D/L pills, oldest → newest, plus a "Won 1 in a row"-style readout that repaints with the active lens), **assists / goal contributions** as gold bars beside the scorers in both performance panels, a **goal-timing histogram** (seven 15-minute buckets from `goals.minute`, stoppage time in a 90+ column), and a **season trajectory curve** (cumulative goal difference against a zero baseline with a signed end value) in two new bento cells | ✅ **done** — `charts.js` gains the pure `timingBucket`/`timingSVG`/`trajectorySVG` functions (+3 unit tests → **30 total**), `app.js` adds `lensMatches`/`matchOutcome` and repaints `#season-form`/`#season-streak` inside `paintBand()`, assist groups fall back to the empty state (live goals carry no `minute`/`assist_id` yet — the admin's existing per-goal fields fill them as data is entered); new containers `#season-form`, `#season-streak`, `#perf-tml-assists`, `#perf-friendly-assists`, `#trajectory-chart`, `#timing-chart` + the `.b-trajectory`/`.b-timing` bento cells; 9 new keys ×3 (**342 total**: `formLabel`, `streakWon`, `streakUnbeaten`, `streakLost`, `topAssists`, `assistOne`, `timingTitle`, `trajectoryTitle`, `cumulativeGd`); `verify-index` gains wiring checks + live ground truth (trajectory ends on the season's cumulative GD, the histogram counts every datable goal exactly once), `verify-render` gains form/streak/assist/timing/trajectory checks, E2E extended to **28 tests** (form guide + streak per lens, assists 5/2, seven buckets, trajectory ends +2) — **all 14 verifiers green** |
-| **25** | **Standings (wave 25)** — the TML Division 3 table itself on the dashboard: all ten clubs with P/W/D/L/GF/GA/GD/Pts in a new full-width bento cell directly under the fixtures/results row (that row answers "how did we do", this one "where does that leave us"), with **YC&AC Pulse highlighted** in its published 4th place; the source is a hand-maintained `standings.js` data module because our own results live in Supabase but the league's cross-fixtures that produce the table do not — GD is derived from gf − ga at render time so it can never drift, and the nav's Standings link now jumps to the on-page table (the hero keeps the official external link) | ✅ **done** — a real semantic `<table>` (the E2E "zero tables on index" guard was a proxy for the removed attendance tables; it's retargeted to "exactly one table — the standings", the attendance assertions unchanged), `.is-us` row as a pale-gold band with a gold rule + dark-gold team name (AA contrast), inner `overflow-x` scroll so 320/390 stay overflow-free, `scroll-margin-top` clears the sticky masthead on anchor jumps; `standings.js` dual-exports for browser + `node --test`; 12 new keys ×3 (**354 total**: `standingsTitle`, `standingsPos`/`Team`, the eight column headers localised — 勝/分/敗/勝点 in JA, 胜/平/负/积分 in ZH — and `standingsAsOf`), 4 new unit tests (P = W+D+L, 3-1-0 points, published order non-increasing by (pts, GD), exactly one `us` row) → **34 total**, `verify-index` gains wiring/one-flag/one-table checks, `verify-render` gains row-count/highlight/date checks, E2E extended to **29 tests** (data-driven row count + leader, `.is-us` with a computed-background difference, derived GD + points cells, nav anchor) — **all 14 verifiers green** |
+| **25** | **Standings (wave 25)** — the TML Division 3 table itself on the dashboard: all ten clubs with P/W/D/L/GF/GA/GD/Pts in a new full-width bento cell directly under the fixtures/results row (that row answers "how did we do", this one "where does that leave us"), with **YC&AC Pulse highlighted** in its published 4th place; the source is a hand-maintained `standings.js` data module because our own results live in Supabase but the league's cross-fixtures that produce the table do not — GD is derived from gf − ga at render time so it can never drift, and the nav's Standings link now jumps to the on-page table (the panel heading links to the official table) | ✅ **done** — a real semantic `<table>` (the E2E "zero tables on index" guard was a proxy for the removed attendance tables; it's retargeted to "exactly one table — the standings", the attendance assertions unchanged), `.is-us` row as a pale-gold band with a gold rule + dark-gold team name (AA contrast), inner `overflow-x` scroll so 320/390 stay overflow-free, `scroll-margin-top` clears the sticky masthead on anchor jumps; `standings.js` dual-exports for browser + `node --test`; 12 new keys ×3 (**354 total**: `standingsTitle`, `standingsPos`/`Team`, the eight column headers localised — 勝/分/敗/勝点 in JA, 胜/平/负/积分 in ZH — and `standingsAsOf`), 4 new unit tests (P = W+D+L, 3-1-0 points, published order non-increasing by (pts, GD), exactly one `us` row) → **34 total**, `verify-index` gains wiring/one-flag/one-table checks, `verify-render` gains row-count/highlight/date checks, E2E extended to **29 tests** (data-driven row count + leader, `.is-us` with a computed-background difference, derived GD + points cells, nav anchor) — **all 14 verifiers green** |
+| **26** | **Player information + access simplification (wave 26)** — make the site easier to read and operate: player cards and the profile hero become **competition-first**, with separate TML and Friendly lines/cards for appearances, **appearance rate**, goals and assists; the detailed profile table retains TML / Friendly / All and adds appearance rate; statistics move ahead of the position diagram. The public shell loses private-tool clutter (four nav choices: Fixtures, Standings, Players, Schedule; two hero actions), fixture/result links open a useful **public match page**, and one coach login replaces the player/team + coach choice | ✅ **done** — `players.js` renders two compact `.pc-split` rows per card with localised accessible labels; `player.js` renders two professional competition summaries and a no-scroll 320px detailed table; public match pages fetch only public matches/appearances/goals/players, while signups and coach notes are conditional on a verified coach session and their panels stay hidden otherwise; coach dashboard, admin, squad picker and team content all use `requireCoach()` (coach dashboard supplies the three clear tool actions); login is one password-only coach card, old team credentials remain only as a backwards-compatible read-only RLS layer with no UI; 5 new keys and 4 dead team-login keys removed ×3 (**355 total**), verifiers retargeted to the new public/private contract (including an actual rostered-coach dashboard verifier), E2E extended to **30 tests** with coach-only login and public-match coverage — **all 14 verifiers green** |
 
 Note: the injuries wave needs one manual step — no SQL-execution path exists for the service key,
 so `0002_injuries.sql` gets pasted into the Supabase SQL Editor once (README workflow).
 
 Phases ship independently. Phase 3 needs no Supabase and can start immediately; phases 4–11 need
-the project to exist. **All phases are now done** (0–25, including the post-launch revamp waves 13–21, the test-automation phase 22, the presentation/data waves 23–24 and the standings wave 25); the `verify-*.cjs` suite (14 scripts) plus `npm run verify` (syntax, 34 unit tests, 29 E2E) guard each area.
+the project to exist. **All phases are now done** (0–26, including the post-launch revamp waves 13–21, the test-automation phase 22, presentation/data waves 23–24, standings wave 25 and player/access simplification wave 26); the `verify-*.cjs` suite (14 scripts) plus `npm run verify` (syntax, 34 unit tests, 30 E2E) guard each area.
 
 ---
 
@@ -234,7 +234,7 @@ the project to exist. **All phases are now done** (0–25, including the post-la
 | Risk | Mitigation |
 |---|---|
 | Anon key is public | anon = `SELECT` on 4 public tables only; team tables need a session; writes need `is_coach()` |
-| Shared team password identifies a person? | It doesn't — accepted trade-off of "simple password"; per-player accounts only if self-service signups return |
+| Player identity / self-service signups | no player login for now; coach records signups, per-player accounts only if self-service returns |
 | Free-tier data loss | admin JSON backup button; versioned migrations; `pg_dump` capable backend |
 | 3 TML matches = coarse tiers | raw counts shown beside %; thresholds in `stats.js` |
 | Coach-authored content not translated | by design — interface only; document on `team.html` |

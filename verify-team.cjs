@@ -113,7 +113,7 @@ async function main() {
     // --- 7. static contract ------------------------------------------------
     const page = fs.readFileSync(path.join(__dirname, "team.html"), "utf8");
     const source = fs.readFileSync(path.join(__dirname, "team.js"), "utf8");
-    check(source.includes("requireTeam"), "team.js gates the page behind requireTeam()");
+    check(source.includes("requireCoach") && !source.includes("requireTeam"), "team.js uses the single coach gate");
     check(page.includes('name="robots" content="noindex'), "team.html is noindexed (team-only page)");
     check(page.includes("data-i18n-title=\"teamTitle\"") && source.includes('"contentGuidelines"'), "page + slug labels flow through i18n keys");
   } finally {

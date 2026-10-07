@@ -141,6 +141,13 @@ async function main() {
   check(page.includes('href="#standings"'), "nav Standings link jumps to the on-page table");
   check((page.match(/<table/g) || []).length === 1 && page.includes('class="standings-table"'),
     "the only <table> in index.html is the standings", `${(page.match(/<table/g) || []).length} table`);
+  // wave 26 — public shell: four useful links, no private-tool clutter.
+  const publicNav = page.match(/<nav aria-label="Primary navigation">([\s\S]*?)<\/nav>/)?.[1] || "";
+  check((publicNav.match(/<a /g) || []).length === 4 && publicNav.includes('href="#fixtures-section"')
+    && publicNav.includes('href="#standings"') && publicNav.includes('href="players.html"') && publicNav.includes("band.us"),
+  "public nav reduced to Fixtures / Standings / Players / Schedule", `${(publicNav.match(/<a /g) || []).length} links`);
+  check(!publicNav.includes("team.html") && !publicNav.includes("squad-picker.html"),
+    "private Team + Squad Picker links removed from the public nav");
   // wave 23 — the two cascade leaks stay fixed: coach .fixture-card child rules
   // scoped away from the public navy card, and the match-page gold score scoped.
   const styles = fs.readFileSync(path.join(__dirname, "styles.css"), "utf8");

@@ -80,13 +80,15 @@ async function main() {
   if (!secret || !publishable) throw new Error("missing credentials (.env / config.js)");
   console.log(`Verifying auth contract against ${env.SUPABASE_URL}\n`);
 
-  // --- static contract: password-only login forms ---------------------------
+  // --- static contract: one password-only coach login -----------------------
   const loginPage = fs.readFileSync(path.join(__dirname, "login.html"), "utf8");
   const loginSource = fs.readFileSync(path.join(__dirname, "login.js"), "utf8");
   check(!/type="email"/.test(loginPage), "login form asks for passwords only (no email fields)");
-  check(loginPage.includes('id="team-password"') && loginPage.includes('id="coach-password"'), "both password fields present (team + coach cards)");
-  check(loginSource.includes("config.teamEmail") && loginSource.includes("config.coachEmail"), "cards sign in with the configured accounts (email built into the page)");
-  check(Boolean(config.teamEmail) && Boolean(config.coachEmail), "config sets teamEmail + coachEmail", `${config.teamEmail} · ${config.coachEmail}`);
+  check(!loginPage.includes('id="team-password"') && !loginPage.includes('id="team-form"') && loginPage.includes('id="coach-password"'),
+    "one password field: coach only (no player/team login card)");
+  check(!loginSource.includes("config.teamEmail") && loginSource.includes("config.coachEmail"),
+    "login UI signs in only the configured coach account");
+  check(Boolean(config.coachEmail), "config sets coachEmail", config.coachEmail);
 
   const state = { rosterAdded: false, users: [] };
   let rosterTotal = 0;
@@ -185,7 +187,7 @@ async function main() {
     console.log(`${failures.length} FAILURE(S): ${failures.join(" | ")}`);
     process.exit(1);
   }
-  console.log("Auth contract verified: team read-only, coach writes, refresh, logout — all good.");
+  console.log("Auth contract verified: public-by-default UI, one coach login; legacy team RLS remains read-only.");
 }
 
 main().catch(async (error) => {

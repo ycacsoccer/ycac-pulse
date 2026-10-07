@@ -1,9 +1,7 @@
-/* YC&AC Pulse — login page (Phase 4).
-   Two cards, both password-only (no email fields): players/team (shared team
-   password → config.teamEmail) and coach (coach password → config.coachEmail).
-   When arrived via requireTeam/requireCoach the `next`
-   parameter carries the page that wanted a session; log in and Continue goes
-   there. `need=coach` shows the coach-required notice. */
+/* YC&AC Pulse — coach login (wave 26 simplification).
+   Public pages need no account. This one password-only form signs into the
+   configured coach account; `next` returns to the private tool that requested
+   access, otherwise Continue opens the coach dashboard. */
 (() => {
   const config = window.YCAC_CONFIG || {};
   const params = new URLSearchParams(location.search);
@@ -24,13 +22,9 @@
 
   async function afterSignIn() {
     const coach = await YCACAuth.isCoach();
-    if (params.get("need") === "coach" && !coach) {
-      render(coach); // wrong account for this page — stay and explain
-      return;
-    }
+    if (!coach) { render(false); return; }
     const next = safeNext();
-    if (next) location.replace(next);
-    else render(coach);
+    location.replace(next || "coach.html");
   }
 
   async function render(forcedCoach) {
@@ -41,26 +35,14 @@
     let coach = forcedCoach;
     if (session && coach === undefined) coach = await YCACAuth.isCoach();
 
-    // The notice shows when we're where a coach account is required but don't have one.
-    $("login-need-coach").hidden = !(params.get("need") === "coach" && (!session || !coach));
+    $("login-need-coach").hidden = !session || Boolean(coach);
 
     if (!session) return;
     $("login-account").textContent = session.user?.email || "";
-    $("login-role").textContent = coach ? t("loginRoleCoach") : t("loginRoleTeam");
-    $("login-continue").setAttribute("href", safeNext() || "./");
+    $("login-role").textContent = coach ? t("loginRoleCoach") : t("loginNeedCoach");
+    $("login-continue").hidden = !coach;
+    $("login-continue").setAttribute("href", safeNext() || "coach.html");
   }
-
-  $("team-form").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    $("login-error").hidden = true;
-    try {
-      await YCACAuth.signIn(config.teamEmail, $("team-password").value);
-      await afterSignIn();
-    } catch (error) {
-      $("team-password").value = "";
-      showError();
-    }
-  });
 
   $("coach-form").addEventListener("submit", async (event) => {
     event.preventDefault();

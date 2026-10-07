@@ -1,7 +1,7 @@
 /* YC&AC Pulse — player profile (Phase 6, requirements 9 + photo).
-   Public page: hero with quick stat tiles (apps, goals, goals/game — wave 21
-   dropped the attendance tile), info, positions diagram, stats split
-   TML/Friendly/All (goals per game rows), a PERFORMANCE TIMELINE of every
+   Public page: TML/Friendly hero summaries (apps, appearance rate, goals,
+   assists), info, detailed TML/Friendly/All stats, positions, and a
+   PERFORMANCE TIMELINE of every
    final match — absences labelled — and goals. Coaches get an "Update photo"
    control and a pitch-tap position editor (tap a slot to set the BEST
    position or toggle CAN-PLAY ones) — storage/table RLS enforce is_coach()
@@ -72,16 +72,22 @@
       entry.reliability != null ? [t("statReliability"), String(entry.reliability)] : "",
     ].filter(Boolean);
 
-    // wave 17 — eye-catch quick stats in the hero: apps, goals and goals per
-    // game (wave 21: the attendance tile is gone — appearance records stay
-    // in the timeline and the stats table).
-    const all = entry.competitions.all;
-    const totalFinals = state.matches.filter(YCACStats.isFinal).length;
-    const tiles = [
-      [`${all.played}<span class="pt-of">/${totalFinals}</span>`, t("statApps")],
-      [String(all.goals), t("statGoals")],
-      [rate(all.played ? all.goals / all.played : null), t("kpiGoalsPerGame")],
-    ];
+    // Wave 26 — the player summary follows the way the team is actually used:
+    // TML first, friendlies second. Keep "All" in the detailed table only.
+    const competitionCard = (name, label, chip) => {
+      const comp = entry.competitions[name];
+      const total = state.entry.competitions[name] && state.matches.filter((match) => YCACStats.isFinal(match)
+        && (name === "tml" ? match.competition === "TML Division 3" : match.competition === "Friendly Match")).length;
+      const pct = comp.appearance_pct == null ? "–" : `${comp.appearance_pct}%`;
+      return `<article class="profile-competition ${name}">
+        <div class="profile-competition-head"><span class="comp-chip ${chip}">${esc(label)}</span><strong>${comp.played}<span>/${total}</span></strong><small>${esc(t("statApps"))}</small></div>
+        <div class="profile-competition-stats">
+          <span><small>${esc(t("statAppearanceRate"))}</small><strong>${pct}</strong></span>
+          <span><small>${esc(t("statGoals"))}</small><strong>${comp.goals}</strong></span>
+          <span><small>${esc(t("statAssists"))}</small><strong>${comp.assists}</strong></span>
+        </div>
+      </article>`;
+    };
 
     $("profile-hero").innerHTML = `
       ${photo}
@@ -93,7 +99,10 @@
           ${facts.map(([label, value]) => `<span><small>${esc(label)}</small>${value}</span>`).join("")}
           <span><small>${esc(t("filterTier"))}</small><span class="tier-badge chip-${entry.tier}">${TIER_EMOJI[entry.tier]} ${esc(t(TIER_KEYS[entry.tier]))}</span></span>
         </div>
-        <div class="profile-tiles">${tiles.map(([value, label]) => `<span class="ptile"><strong>${value}</strong><small>${esc(label)}</small></span>`).join("")}</div>
+        <div class="profile-competition-grid">
+          ${competitionCard("tml", t("lensTml"), "tml")}
+          ${competitionCard("friendly", t("lensFriendly"), "friendly")}
+        </div>
         ${state.injury ? `<p class="profile-injury"><span class="injured-badge">${esc(t("injuredBadge"))}</span> ${esc(state.injury.detail)}<small>${esc(t("injurySince"))} ${esc(formatDate(state.injury.since_date))}${state.injury.expected_return ? ` · ${esc(t("injuryReturn"))} ${esc(state.injury.expected_return)}` : ""}</small></p>` : ""}
         <div class="profile-upload">
           ${state.isCoach ? `<button id="photo-upload" class="quiet-button" type="button">${esc(t("uploadPhoto"))}</button>` : ""}
@@ -116,6 +125,7 @@
     const cells = (values) => values.map((value) => `<td>${value ?? "–"}</td>`).join("");
     const rows = [
       [t("statApps"), lens.map((name) => entry.competitions[name].played)],
+      [t("statAppearanceRate"), lens.map((name) => entry.competitions[name].appearance_pct == null ? "–" : `${entry.competitions[name].appearance_pct}%`)],
       [t("statStarts"), lens.map((name) => entry.competitions[name].starts)],
       [t("statSubs"), lens.map((name) => entry.competitions[name].subs)],
       [t("statGoals"), lens.map((name) => entry.competitions[name].goals)],
@@ -125,7 +135,7 @@
     if (entry.position_group === "GK") rows.push([t("statCleanSheets"), lens.map((name) => entry.competitions[name].clean_sheets)]);
 
     $("profile-stats").innerHTML = `
-      <thead><tr><th></th><th>${esc(t("lensTml"))}</th><th>${esc(t("lensFriendly"))}</th><th>${esc(t("lensAll"))}</th></tr></thead>
+      <thead><tr><th></th><th title="${esc(t("lensTml"))}">TML</th><th title="${esc(t("lensFriendly"))}">${esc(t("vizFriendly"))}</th><th title="${esc(t("lensAll"))}">${esc(t("filterAll"))}</th></tr></thead>
       <tbody>${rows.map(([label, values]) => `<tr><th>${esc(label)}</th>${cells(values)}</tr>`).join("")}</tbody>`;
   }
 

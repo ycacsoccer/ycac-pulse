@@ -1,5 +1,5 @@
 /* YC&AC Pulse — coach dashboard (Phase 5, requirement 10).
-   Team-login page: shows the stable-squad board by tier, the next fixture with
+   Coach-login page: shows the stable-squad board by tier, the next fixture with
    signups, position coverage, and review flags — all live from Supabase.
 
    Lens (TML / Friendly / All) switches the participation numbers on the board;
@@ -223,7 +223,7 @@
   }
 
   (async () => {
-    const session = await YCACAuth.requireTeam();
+    const session = await YCACAuth.requireCoach();
     if (!session) return; // redirecting to login.html?next=coach.html
     $("lens").value = state.lens;
     $("lens").addEventListener("change", (event) => { state.lens = event.target.value; renderBoard(); });

@@ -63,13 +63,10 @@
       <a class="club-mark" href="./" aria-label="YC&AC Pulse home"><img src="https://ycac.jp/wp-content/uploads/2025/10/YCAC-Logo-Icon.png" alt="YC&AC" /></a>
       <div class="brand"><span>YC&amp;AC</span> Pulse<small data-i18n="officialWebsite">Official Soccer Top Team · Est. 1868</small></div>
       <nav aria-label="Primary navigation">
-        <a href="#season" data-i18n="navSeason">Season</a>
+        <a href="#fixtures-section" data-i18n="navFixtures">Fixtures</a>
         <a href="#standings" data-i18n="navStandings">Standings</a>
-        <a href="https://band.us/@ycacpulse" target="_blank" rel="noreferrer" data-i18n="navSchedule">Schedule</a>
-        <a href="https://www.instagram.com/ycacpulse/" target="_blank" rel="noreferrer">Instagram</a>
         <a href="players.html" data-i18n="navPlayers">Players</a>
-        <a href="team.html" data-i18n="navTeam">Team</a>
-        <a id="squad-picker-link" href="squad-picker.html" data-i18n="squadPicker">Squad Picker</a>
+        <a href="https://band.us/@ycacpulse" target="_blank" rel="noreferrer" data-i18n="navSchedule">Schedule</a>
       </nav>
       <span data-auth-slot></span>
       <label class="lang-switch"><select id="lang-select" data-lang-select aria-label="Language"></select></label>
@@ -83,8 +80,7 @@
           <p data-i18n="intro">YC&amp;AC's official Top Team. Follow our season, join team events, and stay connected with the squad.</p>
           <div class="hero-actions">
             <a class="schedule-link" href="https://band.us/@ycacpulse" target="_blank" rel="noreferrer"><span data-i18n="scheduleLink">Team Scheduling &amp; Event Sign Up</span><span aria-hidden="true">↗</span></a>
-            <a class="club-link" href="https://www.footyjapancompetitions.com/standings" target="_blank" rel="noreferrer" data-i18n="standingsLink">TML Division 3 Standings</a>
-            <a class="club-link" href="https://ycac.jp" target="_blank" rel="noreferrer" data-i18n="clubLink">YC&amp;AC Club Website</a>
+            <a class="club-link" href="players.html" data-i18n="navPlayers">Players</a>
           </div>
         </div>
         <aside class="matchday" id="matchday" aria-label="Matchday">
@@ -121,7 +117,7 @@
       <!-- wave 23: one 12-column bento board — fixtures + results lead,
            performance next, stable squad, injuries dropped to the last cell. -->
       <div class="bento">
-        <section class="panel b-fixtures">
+        <section id="fixtures-section" class="panel b-fixtures">
           <div class="section-heading"><div><p class="eyebrow" data-i18n="upcoming">Upcoming</p><h2 data-i18n="fixtures">Next Matches</h2></div></div>
           <div id="fixtures" class="fixtures"></div>
         </section>
@@ -137,7 +133,7 @@
 
         <!-- wave 25: TML Division 3 standings — the club row is highlighted -->
         <section id="standings" class="panel b-standings">
-          <div class="section-heading"><div><p class="eyebrow" data-i18n="lensTml">TML Division 3</p><h2 data-i18n="standingsTitle">Standings</h2></div><small id="standings-updated" class="standings-updated"></small></div>
+          <div class="section-heading"><div><p class="eyebrow" data-i18n="lensTml">TML Division 3</p><h2 data-i18n="standingsTitle">Standings</h2><small id="standings-updated" class="standings-updated"></small></div><a class="quiet-button small" href="https://www.footyjapancompetitions.com/standings" target="_blank" rel="noreferrer" data-i18n="standingsOfficial">Official table ↗</a></div>
           <div class="standings-scroll">
             <table class="standings-table">
               <thead>

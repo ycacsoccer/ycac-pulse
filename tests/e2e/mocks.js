@@ -48,10 +48,13 @@ async function mockSupabase(page) {
     log.requestedTables.push(table);
     let rows = clone(fixtures[table]);
 
-    const playerId = url.searchParams.get("player_id");
-    if (playerId && playerId.startsWith("eq.")) {
-      const wanted = playerId.slice(3);
-      rows = rows.filter((row) => row.player_id === wanted);
+    // Common PostgREST equality filters used across public pages.
+    for (const field of ["id", "match_id", "player_id"]) {
+      const filter = url.searchParams.get(field);
+      if (filter && filter.startsWith("eq.")) {
+        const wanted = filter.slice(3);
+        rows = rows.filter((row) => String(row[field]) === wanted);
+      }
     }
     const or = url.searchParams.get("or");
     if (or) rows = applyOr(rows, or);
@@ -64,6 +67,9 @@ async function mockSupabase(page) {
     const select = url.searchParams.get("select") || "";
     if (select.includes("matches(")) {
       rows = rows.map((row) => ({ ...row, matches: fixtures.matches.find((match) => match.id === row.match_id) ?? null }));
+    }
+    if (select.includes("players(")) {
+      rows = rows.map((row) => ({ ...row, players: fixtures.players.find((player) => player.id === row.player_id) ?? null }));
     }
 
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(rows) });

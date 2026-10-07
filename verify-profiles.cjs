@@ -140,15 +140,16 @@ async function main() {
     check((deduped.match(/>RB</g) || []).length === 1 && (deduped.match(/>LB</g) || []).length === 1,
       "best position excluded from capable dots");
 
-    // --- 1c. player cards + performance timeline (wave 17, revised in 21) -----
+    // --- 1c. player cards + performance timeline (wave 26 competition split) --
     const gridJs = fs.readFileSync(path.join(__dirname, "players.js"), "utf8");
-    check(gridJs.includes("pc-tot") && !gridJs.includes("pc-quick") && !gridJs.includes("appearance_pct"),
-      "player cards show season totals only (wave 21: no appearance-% cells)");
+    check(gridJs.includes("pc-split") && gridJs.includes("competitions.tml") && gridJs.includes("competitions.friendly") && gridJs.includes("appearance_pct"),
+      "player cards split TML/Friendly apps, appearance rate, goals and assists");
     const profileJs = fs.readFileSync(path.join(__dirname, "player.js"), "utf8");
     check(page.includes('id="profile-timeline"') && profileJs.includes("statusAbsent") && profileJs.includes("timeline-entry"),
       "profile timeline wired (every final match, absences labelled)");
-    check(profileJs.includes("profile-tiles") && profileJs.includes("kpiGoalsPerGame") && !profileJs.includes('t("attendance")'),
-      "profile hero stat tiles (apps, goals, goals/game — no attendance tile)");
+    check(profileJs.includes("profile-competition-grid") && profileJs.includes('competitionCard("tml"')
+      && profileJs.includes('competitionCard("friendly"') && profileJs.includes("statAppearanceRate"),
+    "profile hero splits TML/Friendly and detailed stats include appearance rate");
 
     // --- 1d. wave 18 — position sections + selection-group wording ------------
     const gridPage = fs.readFileSync(path.join(__dirname, "players.html"), "utf8");

@@ -53,20 +53,30 @@ test("players grid and a real profile render from live data", async ({ page }) =
   await page.goto("./players.html");
   await expect(page.locator(".player-card").first()).toBeVisible();
   expect(await page.locator(".player-card").count()).toBeGreaterThan(3);
-  await expect(page.locator(".pcq")).toHaveCount(0); // wave 21: no appearance-% cells
-  await expect(page.locator(".pc-tot").first()).toBeVisible();
+  await expect(page.locator(".player-card").first().locator(".pc-split")).toHaveCount(2);
+  await expect(page.locator(".player-card").first()).toContainText(/\d+%/);
 
   await page.locator(".player-card").first().click();
   await expect(page).toHaveURL(/player\.html\?id=/);
-  await expect(page.locator("#profile-hero .ptile")).toHaveCount(3); // wave 21: attendance tile gone
+  await expect(page.locator("#profile-hero .profile-competition")).toHaveCount(2); // wave 26: TML + Friendly summaries
   await expect(page.locator("#profile-timeline .timeline-entry").first()).toBeVisible();
   await expect(page.locator("#profile-positions svg")).toHaveCount(1);
   expect(errors).toEqual([]);
 });
 
-test("team-only pages still bounce anonymous visitors to the login gate", async ({ page }) => {
+test("private coach tools bounce anonymous visitors to the single login gate", async ({ page }) => {
   await page.goto("./team.html");
   await expect(page).toHaveURL(/login\.html/);
+  await expect(page.locator("#coach-form")).toHaveCount(1);
+  await expect(page.locator("#team-form")).toHaveCount(0);
+});
+
+test("a live fixture detail is public while coach panels stay private", async ({ page }) => {
+  await page.goto("./match.html?id=m006");
+  await expect(page).toHaveURL(/match\.html\?id=m006/);
+  await expect(page.locator("#match-hero")).toContainText("Corinthians Harbour FC");
+  await expect(page.locator("#signups-panel")).toBeHidden();
+  await expect(page.locator("#notes-panel")).toBeHidden();
 });
 
 for (const width of [390, 1440]) {

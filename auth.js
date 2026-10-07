@@ -1,14 +1,12 @@
-/* YC&AC Pulse — auth (Phase 4).
-   Two login kinds, both plain Supabase accounts:
-   - TEAM   : one shared account (config.teamEmail) — players type the team
-              password once; session persists in localStorage. Read-only:
-              RLS blocks every write for sessions that aren't rostered.
-   - COACH  : your own account; recognised by the is_coach() RPC (coach_roster).
-              Only rostered accounts can write anything.
+/* YC&AC Pulse — auth (Phase 4; simplified in wave 26).
+   The site is public by default. The only login shown in the UI is COACH:
+   a rostered Supabase account recognised by is_coach() (coach_roster), with
+   access to the dashboard, admin, squad picker and private team content.
+   The old read-only team account can remain in Supabase for backwards
+   compatibility, but no page or login control asks players to use it.
 
    Page API:
-     await YCACAuth.requireTeam()    → redirects to login.html?next=… if signed out
-     await YCACAuth.requireCoach()   → additionally requires a rostered (coach) account
+      await YCACAuth.requireCoach()   → redirects unless a rostered coach is signed in
      YCACAuth.mountAuthUI()          → fills every [data-auth-slot] with log in / out
      YCACAuth.onChange(fn)           → re-render when the session changes        */
 
@@ -108,20 +106,21 @@ const YCACAuth = (() => {
     return value;
   }
 
-  const loginUrl = (need) => {
+  const loginUrl = () => {
     const next = encodeURIComponent(`${location.pathname.split("/").pop()}${location.search}`);
-    return `login.html?next=${next}${need ? "&need=coach" : ""}`;
+    return `login.html?next=${next}`;
   };
 
+  // Compatibility alias for any old cached page: there is now one private
+  // access level, so a former "team" gate is a coach gate too.
   async function requireTeam() {
-    if (!session) location.replace(loginUrl());
-    return session;
+    return requireCoach();
   }
 
   async function requireCoach() {
-    if (!session) { location.replace(loginUrl("coach")); return null; }
+    if (!session) { location.replace(loginUrl()); return null; }
     if (await isCoach()) return session;
-    location.replace(loginUrl("coach")); // signed in as team, page needs a coach
+    location.replace(loginUrl());
     return null;
   }
 
@@ -134,11 +133,10 @@ const YCACAuth = (() => {
     (root || document).querySelectorAll("[data-auth-slot]").forEach((slot) => {
       slot.classList.add("auth-slot");
       if (session) {
-        const email = String(session.user?.email || "").replace(/[<>&"]/g, "");
-        slot.innerHTML = `<span class="auth-who">${email}</span><button class="auth-action" type="button" data-auth-signout>${t("authLogout")}</button>`;
+        slot.innerHTML = `<a class="auth-action" href="coach.html">${t("authCoachDashboard")}</a><button class="auth-action" type="button" data-auth-signout>${t("authLogout")}</button>`;
         slot.querySelector("[data-auth-signout]").addEventListener("click", () => signOut());
       } else {
-        slot.innerHTML = `<a class="auth-action" href="login.html">${t("authLogin")}</a>`;
+        slot.innerHTML = `<a class="auth-action" href="login.html">${t("authCoachLogin")}</a>`;
       }
     });
   }

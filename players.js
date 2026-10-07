@@ -1,6 +1,7 @@
 /* YC&AC Pulse — player grid (Phase 6, requirement 5).
    Public page: player CARDS (wave 17) — photo, shirt/position, tier + injury
-   badge, season apps + goals — filtered by position group / tier / name.
+   badge, TML/Friendly apps + appearance rate + goals + assists — filtered by
+   position group / tier / name.
    Tiers come from stats.js (TML-first rules); no session needed. */
 (() => {
   const t = (key, vars) => (window.YCACI18n ? YCACI18n.t(key, vars) : key);
@@ -48,9 +49,14 @@
       return;
     }
     // wave 17 — cards carry the key facts: shirt/position, selection group
-    // (+ injury), season apps + goals (wave 21: appearance-% cells removed).
+    // (+ injury); wave 21 dropped appearance-% cells; wave 26 splits the totals
+    // into two rows so the league record reads first, friendly underneath.
     const card = (entry) => {
-      const all = entry.competitions.all;
+      const line = (comp, total) => {
+        const pct = comp.appearance_pct == null ? "–" : `${comp.appearance_pct}%`;
+        const spoken = `${comp.played}/${total} ${t("statApps")}; ${pct} ${t("statAppearanceRate")}; ${comp.goals} ${t("statGoals")}; ${comp.assists} ${t("statAssists")}`;
+        return `<span class="pcs-data" aria-label="${esc(spoken)}"><span><strong>${comp.played}/${total}</strong> ${esc(t("statApps").toLowerCase())}</span><span><strong>${pct}</strong></span><span><strong>${comp.goals}</strong> G · <strong>${comp.assists}</strong> A</span></span>`;
+      };
       return `<a class="player-card" href="player.html?id=${encodeURIComponent(entry.id)}">
         ${photoMarkup(entry)}
         <strong class="pc-name">${esc(entry.display_name)}</strong>
@@ -59,7 +65,10 @@
           <span class="tier-badge chip-${entry.tier}">${TIER_EMOJI[entry.tier]} ${esc(t(TIER_KEYS[entry.tier]))}</span>
           ${state.injured.has(entry.id) ? `<span class="injured-badge">${esc(t("injuredBadge"))}</span>` : ""}
         </span>
-        <span class="pc-tot">${all.played}/${state.season.buckets.all.length} ${esc(t("statApps").toLowerCase())} · ${all.goals} ${all.goals === 1 ? esc(t("statGoalOne")) : esc(t("statGoals").toLowerCase())}</span>
+        <span class="pc-tot">
+          <span class="pc-split"><span class="comp-chip tml">TML</span>${line(entry.competitions.tml, state.season.buckets.tml.length)}</span>
+          <span class="pc-split"><span class="comp-chip friendly">${esc(t("vizFriendly"))}</span>${line(entry.competitions.friendly, state.season.buckets.friendly.length)}</span>
+        </span>
       </a>`;
     };
     // wave 18 — one section per position group (formation order), skipping empty ones.
