@@ -49,6 +49,12 @@ async function mockSupabase(page, options = {}) {
     if (options.coach && table === "coach_notes") {
       return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
     }
+    if (options.coach && table === "match_notes") {
+      return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    }
+    if (options.coach && table === "saved_squads") {
+      return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    }
     if (tail.startsWith("rpc/") || !PUBLIC_TABLES.has(table)) {
       log.denied.push(tail);
       return route.fulfill({ status: 401, contentType: "application/json", body: DENY_BODY });

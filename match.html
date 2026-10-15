@@ -22,6 +22,25 @@
     <main class="coach-main match-main">
       <section id="match-hero" class="match-hero" aria-live="polite"></section>
 
+      <section id="squad-panel" class="panel match-panel" hidden>
+        <div class="section-heading">
+          <div><h2 data-i18n="matchSquad">Match squad</h2></div>
+          <div class="squad-controls">
+            <label class="squad-formation"><span data-i18n="pickerFormation">Formation</span>
+              <select id="squad-formation" aria-label="Formation">
+                <option value="433">4-3-3</option>
+                <option value="4231" selected>4-2-3-1</option>
+                <option value="442">4-4-2</option>
+                <option value="352">3-5-2</option>
+              </select>
+            </label>
+            <button id="squad-save" class="primary-button small" type="button" data-i18n="matchSquadSave">Save squad</button>
+          </div>
+        </div>
+        <p id="squad-status" class="squad-status" aria-live="polite"></p>
+        <div id="match-squad"></div>
+      </section>
+
       <section id="lineup-panel" class="panel match-panel">
         <div class="section-heading"><div><h2 data-i18n="matchLineup">Lineup</h2></div></div>
         <div id="match-lineup"></div>
@@ -47,6 +66,7 @@
     <script src="config.js"></script>
     <script src="i18n.js"></script>
     <script src="data.js"></script>
+    <script src="stats.js"></script>
     <script src="auth.js"></script>
     <script src="match.js"></script>
   </body>
