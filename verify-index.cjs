@@ -146,8 +146,8 @@ async function main() {
   check((publicNav.match(/<a /g) || []).length === 4 && publicNav.includes('href="#fixtures-section"')
     && publicNav.includes('href="#standings"') && publicNav.includes('href="players.html"') && publicNav.includes("band.us"),
   "public nav reduced to Fixtures / Standings / Players / Schedule", `${(publicNav.match(/<a /g) || []).length} links`);
-  check(!publicNav.includes("team.html") && !publicNav.includes("squad-picker.html"),
-    "private Team + Squad Picker links removed from the public nav");
+  check(!publicNav.includes("team.html") && !publicNav.includes("coach.html") && !publicNav.includes("admin.html"),
+    "private Team / Coach / Admin links stay out of the public nav");
   // wave 28 — age groups are a public, colour-coded squad view.
   check(page.includes('<script src="agebands.js">') && page.includes('id="age-distribution"')
     && app.includes("YCACAgeBands.distribution") && app.includes("#age-distribution"),

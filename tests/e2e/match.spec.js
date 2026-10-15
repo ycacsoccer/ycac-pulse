@@ -1,6 +1,7 @@
-/* Match page — the coach-only squad picker on upcoming fixtures (wave 29).
-   Public visitors must never see the panel or ask for saved_squads (RLS);
-   a coach can add/remove players in the match squad and save it. */
+/* Match page — the coach-only squad picker + signup editor on upcoming
+   fixtures (waves 29–31). Public visitors must never see either panel or ask
+   for saved_squads/signups (RLS); a coach picks players on the pitch, saves
+   the squad, and edits this fixture's signups — both reading the same state. */
 const { test, expect } = require("@playwright/test");
 const { mockSupabase, watchErrors, publicOnly } = require("./mocks");
 
@@ -24,7 +25,7 @@ test("public visitor never sees the squad picker on an upcoming fixture", async 
   expect(errors).toEqual([]);
 });
 
-test("coach sees the squad picker on an upcoming fixture and can add + save players", async ({ page }) => {
+test("coach gets the full picker on an upcoming fixture: pitch, bench, save", async ({ page }) => {
   await coachSession({ page });
   const api = await mockSupabase(page, { coach: true });
   const errors = watchErrors(page);
@@ -34,35 +35,44 @@ test("coach sees the squad picker on an upcoming fixture and can add + save play
   const panel = page.locator("#squad-panel");
   await expect(panel).toBeVisible();
   await expect(panel).toContainText("Match squad");
+  await expect(panel.locator("#squad-pitch")).toBeVisible();
+  await expect(panel.locator("#squad-bench .pk-bench-slot")).toHaveCount(9);
   await expect(page.locator("#squad-status")).toContainText("Add players");
 
-  // every active fixture player is offered (Fumi is inactive, not in the page data)
-  const addCards = page.locator(".squad-add");
-  await expect(addCards).toHaveCount(5);
+  // every active fixture player is offered in the roster (Fumi is inactive)
+  const cards = page.locator(".pk-card");
+  await expect(cards).toHaveCount(5);
 
-  // add Ada as a starter → chip appears, status confirms, save enables
+  // add Ada → she lands on the pitch (GK slot), status confirms, save enables
   await page.locator('[data-squad-add="p-ada"]').click();
-  await expect(page.locator('#match-squad .match-group').first()).toContainText("Ada Sato");
+  await expect(page.locator("#squad-pitch .pk-slot.assigned")).toContainText("Ada Sato");
   await expect(page.locator("#squad-status")).toContainText("Ada Sato added");
   const save = page.locator("#squad-save");
   await expect(save).toBeEnabled();
 
-  // add three more: XI fills first, then the bench
+  // add three more: each fills their position slot on the pitch
   await page.locator('[data-squad-add="p-ben"]').click();
   await page.locator('[data-squad-add="p-chr"]').click();
   await page.locator('[data-squad-add="p-dan"]').click();
   await expect(page.locator("#squad-status")).toContainText("Dana Park added");
+  await expect(page.locator("#squad-pitch .pk-slot.assigned")).toHaveCount(4);
 
-  // remove one again
-  await page.locator('[data-squad-remove="p-dan"]').click();
+  // remove again by clicking the assigned pitch slot
+  const danSlot = page.locator("#squad-pitch .pk-slot.assigned", { hasText: "Dana Park" });
+  await danSlot.click();
   await expect(page.locator("#squad-status")).toContainText("Dana Park removed");
-  await expect(page.locator('[data-squad-add="p-dan"]')).toBeVisible();
+  await expect(page.locator("#squad-pitch .pk-slot.assigned")).toHaveCount(3);
+
+  // bench fills from the players outside the XI (2 left of the 5)
+  await page.locator("#squad-refresh-bench").click();
+  await expect(page.locator("#squad-bench-count")).toHaveText("2");
+  await expect(page.locator("#squad-bench .pk-bench-slot.assigned")).toHaveCount(2);
 
   // save → retire previous save (PATCH) + insert the new group (POST)
   await save.click();
   await expect(page.locator("#squad-status")).toContainText("saved");
   expect(api.rest.some((entry) => entry.startsWith("saved_squads?match_id=eq.x1&active=eq.true"))).toBe(true);
-  expect(api.rest.some((entry) => entry === "saved_squads" || entry.startsWith("saved_squads?"))).toBe(true);
+  expect(api.rest.some((entry) => entry === "saved_squads")).toBe(true);
   await expect(save).toBeDisabled(); // nothing changed since the save
   expect(errors).toEqual([]);
 });
@@ -74,28 +84,61 @@ test("squad picker flags attendance: attending first, declined/unavailable badge
   await page.goto("/match.html?id=x1");
   await expect(page.locator("#squad-panel")).toBeVisible();
 
-  // add cards carry the signup status (fixture: ada/ben/dan confirmed, chr declined, evn unavailable)
+  // roster cards carry the signup status (fixture: ada/ben/dan confirmed, chr declined, evn unavailable)
   await expect(page.locator('[data-squad-add="p-ada"] .sa-status')).toHaveText(/Confirmed/i);
   await expect(page.locator('[data-squad-add="p-ada"] .sa-status')).toHaveClass(/ss-confirmed/);
   await expect(page.locator('[data-squad-add="p-chr"] .sa-status')).toHaveText(/Declined/i);
   await expect(page.locator('[data-squad-add="p-evn"] .sa-status')).toHaveText(/Unavailable/i);
 
   // attending players sort to the front, unavailable to the back
-  const addCards = page.locator(".squad-add");
-  await expect(addCards).toHaveCount(5);
-  await expect(addCards.first()).toContainText("Ada Sato");
-  await expect(addCards.last()).toContainText("Evan Cole");
+  const cards = page.locator(".pk-card");
+  await expect(cards).toHaveCount(5);
+  await expect(cards.first()).toContainText("Ada Sato");
+  await expect(cards.last()).toContainText("Evan Cole");
 
-  // a declined player already in the squad is flagged on the chip for removal
+  // a declined player picked into the XI keeps his flag on the card — then remove him
   await page.locator('[data-squad-add="p-chr"]').click();
-  const chrChip = page.locator("#match-squad .squad-chip", { hasText: "Chris Ito" });
-  await expect(chrChip.locator(".sa-status")).toHaveText(/Declined/i);
-  await chrChip.locator(".sc-remove").click();
+  await expect(page.locator("#squad-pitch .pk-slot.assigned", { hasText: "Chris Ito" })).toBeVisible();
+  await expect(page.locator('[data-squad-add="p-chr"] .sa-status')).toHaveText(/Declined/i);
+  await page.locator("#squad-pitch .pk-slot.assigned", { hasText: "Chris Ito" }).click();
   await expect(page.locator("#squad-status")).toContainText("Chris Ito removed");
   expect(errors).toEqual([]);
 });
 
-test("match page for a played match hides the squad picker even for a coach", async ({ page }) => {
+test("coach edits signups on the match page and the picker stays aligned", async ({ page }) => {
+  await coachSession({ page });
+  const api = await mockSupabase(page, { coach: true });
+  const errors = watchErrors(page);
+  await page.goto("/match.html?id=x1");
+  const panel = page.locator("#signups-panel");
+  await expect(panel).toBeVisible();
+  await expect(panel.locator(".signup-group")).toHaveCount(3); // confirmed / declined / unavailable
+
+  // 1. move Chris from declined → confirmed (PATCH)
+  await page.locator('[data-signup-status="p-chr"]').selectOption("confirmed");
+  await expect(panel.locator(".sg-confirmed")).toContainText("Chris Ito");
+  expect(api.rest.some((entry) => entry.startsWith("signups?match_id=eq.x1&player_id=eq.p-chr"))).toBe(true);
+  // the squad picker's roster badge follows the same state
+  await expect(page.locator('[data-squad-add="p-chr"] .sa-status')).toHaveText(/Confirmed/i);
+
+  // 2. remove Evan's signup (DELETE) → he shows as no-response and returns to the add list
+  await page.locator('[data-signup-drop="p-evn"]').click();
+  await expect(panel.locator(".sg-unavailable")).toHaveCount(0);
+  expect(api.rest.some((entry) => entry.startsWith("signups?match_id=eq.x1&player_id=eq.p-evn"))).toBe(true);
+  await expect(page.locator('[data-squad-add="p-evn"] .sa-status')).toHaveText(/No response/i);
+  await expect(page.locator("#signup-player option[value='p-evn']")).toHaveCount(1);
+
+  // 3. add him back as confirmed (POST) — no active player is left to add afterwards
+  await page.locator("#signup-player").selectOption("p-evn");
+  await page.locator("#signup-add button[type=submit]").click();
+  await expect(panel.locator(".sg-confirmed")).toContainText("Evan Cole");
+  expect(api.rest.some((entry) => entry === "signups")).toBe(true);
+  await expect(page.locator('[data-squad-add="p-evn"] .sa-status')).toHaveText(/Confirmed/i);
+  await expect(page.locator("#signup-add button[type=submit]")).toBeDisabled();
+  expect(errors).toEqual([]);
+});
+
+test("match page for a played match hides the squad picker and signup editing", async ({ page }) => {
   await coachSession({ page });
   const errors = watchErrors(page);
   await mockSupabase(page, { coach: true });
@@ -103,6 +146,7 @@ test("match page for a played match hides the squad picker even for a coach", as
   await expect(page.locator("#match-hero")).toContainText("Rovers AFC");
   await expect(page.locator("#squad-panel")).toBeHidden();
   await expect(page.locator("#lineup-panel")).toBeVisible();
+  await expect(page.locator("#signup-add")).toHaveCount(0); // signups are read-only once played
   expect(errors).toEqual([]);
 });
 

@@ -351,32 +351,62 @@ a.history-row { color: inherit; text-decoration: none; }
 a.history-row:hover { background: var(--gold-pale); }
 .fixture-opponent a { color: inherit; text-decoration: none; }
 .fixture-opponent a:hover { color: var(--gold); }
-/* match-page squad picker (coach, upcoming fixtures) */
-.squad-controls { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
+/* match-page squad picker (coach, upcoming fixtures) — the integrated
+   pitch/bench/roster tool from the retired squad-picker.html */
+.squad-controls { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
 .squad-formation { display: flex; align-items: center; gap: .45rem; color: var(--muted); font-size: .68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 .squad-formation select { min-height: 34px; padding: .25rem .5rem; color: var(--navy); background: #fff; border: 1px solid var(--line); border-radius: 0; font: 700 .78rem 'DM Sans', Arial, sans-serif; }
 .squad-status { margin: .9rem 0 0; color: var(--muted); font-size: .78rem; }
-.squad-chips { display: flex; flex-wrap: wrap; gap: .5rem; }
-.squad-chip { display: inline-flex; align-items: center; gap: .5rem; padding: .25rem .3rem .25rem .5rem; background: #fff; border: 1px solid var(--line); }
-.sc-name { color: var(--navy); font-size: .82rem; font-weight: 700; }
-.sc-num { color: var(--muted); font-size: .68rem; font-weight: 700; }
-.sc-remove { width: 26px; height: 26px; margin-left: .2rem; padding: 0; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 0; cursor: pointer; font-size: .95rem; line-height: 1; }
-.sc-remove:hover { color: #fff; background: #9d1c1c; border-color: #9d1c1c; }
-.squad-add-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: .3rem .9rem; }
-.squad-add { display: flex; align-items: center; gap: .6rem; padding: .4rem .5rem; color: var(--ink); background: transparent; border: 1px solid transparent; border-radius: 0; cursor: pointer; text-align: left; }
-.squad-add:hover { background: var(--gold-pale); border-color: var(--line); }
-.squad-add:disabled { opacity: .45; cursor: not-allowed; }
-.squad-add:disabled:hover { background: transparent; border-color: transparent; }
-.sa-name { flex: 1; min-width: 0; color: var(--navy); font-size: .85rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sa-pos { color: var(--muted); font-size: .68rem; font-weight: 700; letter-spacing: .05em; }
-.sa-plus { color: var(--gold); font-size: 1rem; font-weight: 700; }
-/* signup-status badges in the squad picker: attending first, non-attending flagged */
+.pk-layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(280px, .75fr); gap: 1.25rem; margin-top: 1rem; }
+.pk-pitch { position: relative; display: grid; grid-template-rows: repeat(4, 1fr); min-height: 520px; padding: 1.1rem .9rem; overflow: hidden; border: 4px solid #d8ead8; background: repeating-linear-gradient(90deg, #367c54 0 12.5%, #3b865a 12.5% 25%); }
+.pk-pitch::before { position: absolute; inset: 0; border-top: 1px solid rgba(255,255,255,.75); border-bottom: 1px solid rgba(255,255,255,.75); content: ''; pointer-events: none; }
+.pk-pitch::after { position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(255,255,255,.75); content: ''; }
+.pk-row { position: relative; z-index: 1; display: flex; justify-content: space-around; align-items: center; gap: .45rem; }
+.pk-slot { display: grid; place-items: center; width: clamp(56px, 9vw, 72px); aspect-ratio: 1; padding: .3rem; color: #fff; border: 2px solid rgba(255,255,255,.85); border-radius: 50%; background: rgba(8,26,53,.55); box-shadow: 0 4px 12px rgba(4,14,28,.22); cursor: pointer; }
+.pk-slot:hover, .pk-slot.active { outline: 3px solid var(--gold); outline-offset: 3px; }
+.pk-slot.assigned { color: var(--navy); background: var(--gold-pale); border-color: var(--gold); }
+.pk-role { font-size: .57rem; font-weight: 700; letter-spacing: .1em; }
+.pk-name { max-width: 100%; overflow: hidden; font-size: .64rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.pk-num { color: var(--blue); font-size: .6rem; font-weight: 700; }
+.pk-bench-heading { display: flex; justify-content: space-between; align-items: baseline; margin: 1.1rem 0 .6rem; color: var(--muted); font-size: .62rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.pk-bench { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+.pk-bench-slot { display: grid; grid-template-columns: 1.4rem 1fr; gap: .35rem; align-items: center; min-height: 42px; padding: .45rem; color: var(--muted); border: 1px dashed #b8c5d3; border-radius: 0; background: #fafbfd; cursor: pointer; text-align: left; }
+.pk-bench-slot:hover, .pk-bench-slot.active { border-color: var(--gold); background: var(--gold-pale); }
+.pk-bench-slot.assigned { color: var(--navy); border-style: solid; border-color: var(--navy); background: #fff; }
+.pk-bench-index { color: var(--gold); font-weight: 700; }
+.pk-bench-name { overflow: hidden; font-size: .7rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.pk-roster-panel { min-width: 0; }
+.pk-roster-heading { display: flex; justify-content: space-between; gap: .8rem; align-items: baseline; margin-bottom: .6rem; color: var(--muted); font-size: .62rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.pk-roster-heading input { width: min(165px, 45vw); padding: .45rem .6rem; border: 1px solid var(--line); border-radius: 0; font-size: .72rem; text-transform: none; letter-spacing: normal; }
+.pk-group h4 { margin: .9rem 0 .4rem; color: var(--muted); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; }
+.pk-group:first-child h4 { margin-top: 0; }
+.pk-list { display: grid; gap: .35rem; }
+.pk-card { display: grid; grid-template-columns: 26px 1.7rem minmax(0, 1fr) auto auto; gap: .5rem; align-items: center; width: 100%; padding: .45rem .5rem; color: var(--navy); border: 1px solid var(--line); border-radius: 0; background: #fff; cursor: pointer; text-align: left; }
+.pk-card:hover { border-color: var(--gold); background: #fdfaf4; }
+.pk-card.xi { color: #fff; border-color: var(--navy); background: var(--navy); }
+.pk-card.xi .pk-card-num { color: var(--gold); }
+.pk-card.xi .pk-card-pos, .pk-card.xi .sa-status { color: #d8e2f2; border-color: rgba(255,255,255,.4); }
+.pk-card.sub { border-color: var(--gold); background: #fdf7e9; }
+.pk-card .monogram, .pk-card .avatar { flex: none; width: 26px; height: 26px; font-size: .52rem; }
+.pk-card-num { color: var(--gold); font-size: .7rem; font-weight: 700; }
+.pk-card-name { overflow: hidden; font-size: .78rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.pk-card-pos { color: var(--muted); font-size: .6rem; font-weight: 700; }
+.pk-sheet { margin-top: 1.1rem; }
+.pk-sheet .eyebrow { display: block; margin-bottom: .35rem; }
+#squad-sheet { margin: 0; color: var(--navy); font-size: .85rem; line-height: 1.7; }
+/* signup-status badges: attending first, non-attending flagged */
 .sa-status { flex: none; padding: .1rem .35rem; color: var(--muted); border: 1px solid var(--line); font-size: .58rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
 .ss-confirmed { color: #2f9e63; border-color: #2f9e63; }
 .ss-waitlist { color: var(--gold); border-color: var(--gold); }
 .ss-declined, .ss-unavailable { color: #c44545; border-color: #e2b6b6; }
 .ss-none { border-style: dashed; }
-.squad-add-list .empty, .squad-chips .empty { margin: 0; padding: .4rem .5rem; }
+/* editable signups (coach, upcoming fixtures) */
+.signup-add { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-bottom: .6rem; }
+.signup-add select, .sc-status { min-height: 34px; padding: .35rem .5rem; color: var(--navy); background: #fff; border: 1px solid var(--line); border-radius: 0; font-size: .7rem; font-weight: 700; }
+#signup-player { min-width: 12rem; }
+.sc-drop { width: 26px; height: 26px; padding: 0; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 0; cursor: pointer; font-size: .95rem; line-height: 1; }
+.sc-drop:hover { color: #fff; background: #9d1c1c; border-color: #9d1c1c; }
+.signup-notice { margin: 0 0 .8rem; color: var(--muted); font-size: .75rem; }
 
 /* ---- match forecast (upcoming fixtures, wave 30) ---- */
 .fc-intro { margin: .25rem 0 0; color: var(--muted); font-size: .78rem; }
@@ -422,8 +452,12 @@ table.fc-compare { width: 100%; border-collapse: collapse; font-size: .84rem; }
 .fc-watch strong { color: var(--gold); font-variant-numeric: tabular-nums; }
 .fc-note { margin: 0; padding: .6rem .75rem; background: var(--gold-pale); border-left: 3px solid var(--gold); color: var(--ink); font-size: .8rem; }
 @media (max-width: 640px) {
-  .match-players, .squad-add-list { grid-template-columns: 1fr; }
+  .match-players { grid-template-columns: 1fr; }
   .fc-date { min-width: 5.2rem; }
+  .pk-layout { grid-template-columns: 1fr; }
+  .pk-pitch { min-height: 480px; }
+  .pk-slot { width: 56px; }
+  .pk-name { font-size: .58rem; }
 }
 
 /* ---- team page (Phase 9) ---- */

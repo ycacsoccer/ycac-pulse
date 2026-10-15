@@ -32,6 +32,9 @@ function applyOr(rows, expression) {
 
 async function mockSupabase(page, options = {}) {
   const log = { rest: [], requestedTables: [], denied: [], hosts: new Set() };
+  // Coach pages can edit signups (add / change status / remove) — keep a
+  // mutable in-memory copy so writes stick for later reads in the same test.
+  const coachState = { signups: clone(signupsFixture) };
 
   await page.route("**/rest/v1/**", async (route) => {
     const url = new URL(route.request().url());
@@ -43,11 +46,40 @@ async function mockSupabase(page, options = {}) {
     if (options.coach && tail === "rpc/is_coach") {
       return route.fulfill({ status: 200, contentType: "application/json", body: "true" });
     }
-    if (options.coach && table === "signups") { // team table — fixture rows, filtered by match
-      let rows = clone(signupsFixture);
-      const filter = url.searchParams.get("match_id");
-      if (filter && filter.startsWith("eq.")) rows = rows.filter((row) => String(row.match_id) === filter.slice(3));
-      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(rows) });
+    if (options.coach && table === "signups") { // team table — coach-editable on the match page
+      const method = route.request().method();
+      const slice = () => coachState.signups.filter((row) => ["match_id", "player_id"].every((field) => {
+        const filter = url.searchParams.get(field);
+        return !filter || !filter.startsWith("eq.") || String(row[field]) === filter.slice(3);
+      }));
+      const json = (status, body) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
+      if (method === "POST") {
+        const body = route.request().postDataJSON() || [];
+        const rows = Array.isArray(body) ? body : [body];
+        rows.forEach((row) => {
+          const existing = coachState.signups.find((signup) => signup.match_id === row.match_id && signup.player_id === row.player_id);
+          if (existing) Object.assign(existing, row);
+          else coachState.signups.push(row);
+        });
+        return json(201, rows);
+      }
+      if (method === "PATCH") {
+        const patch = route.request().postDataJSON() || {};
+        const targets = slice();
+        targets.forEach((row) => Object.assign(row, patch));
+        return json(200, targets);
+      }
+      if (method === "DELETE") {
+        const targets = slice();
+        coachState.signups = coachState.signups.filter((row) => !targets.includes(row));
+        return json(200, targets);
+      }
+      let rows = slice();
+      const select = url.searchParams.get("select") || "";
+      if (select.includes("players(")) {
+        rows = rows.map((row) => ({ ...row, players: fixtures.players.find((player) => player.id === row.player_id) ?? null }));
+      }
+      return json(200, rows);
     }
     if (options.coach && table === "coach_notes") {
       return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });

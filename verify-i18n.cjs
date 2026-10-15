@@ -1,8 +1,8 @@
 // Verifies i18n coverage: node verify-i18n.cjs
 // 1. en/ja/zh dictionaries have identical key sets
 // 2. {placeholder} interpolation matches across languages
-// 3. every key used by a page (data-i18n* / t("...") / ui.*) exists in ALL languages
-// 4. no hardcoded CJK left in app/squad-picker pages (must flow through i18n.js)
+// 3. every key used by a page (data-i18n* / t("...")) exists in ALL languages
+// 4. no hardcoded CJK left in app pages (must flow through i18n.js)
 const fs = require("fs");
 const path = require("path");
 
@@ -49,10 +49,10 @@ const collect = (regex, source, where) => {
   while ((match = regex.exec(source))) usedKeys.set(match[1], where);
 };
 
-for (const file of ["index.html", "squad-picker.html", "login.html", "coach.html", "players.html", "player.html", "admin.html", "match.html", "team.html"]) {
+for (const file of ["index.html", "login.html", "coach.html", "players.html", "player.html", "admin.html", "match.html", "team.html"]) {
   collect(/data-i18n(?:-title|-html|-placeholder|-aria)?="([^"]+)"/g, read(file), file);
 }
-for (const file of ["app.js", "squad-picker.js", "login.js", "auth.js", "coach.js", "players.js", "player.js", "admin.js", "match.js", "team.js"]) {
+for (const file of ["app.js", "login.js", "auth.js", "coach.js", "players.js", "player.js", "admin.js", "match.js", "team.js"]) {
   collect(/\bt\("([^"]+)"/g, read(file), file);
   // KEYS tables store key names as values ("tierCore": …) — collect those too
   collect(/"((?:coach|lens|tier|signup|flag|stat|shirt|foot|admin|content|note|players)[A-Z][A-Za-z0-9]*)"/g, read(file), file);
@@ -69,18 +69,9 @@ for (const [key, where] of usedKeys) {
 }
 note(missingCount === 0, `all ${usedKeys.size} used keys exist in ${languages.join("/")}`);
 
-// ui.* short-name references in squad-picker must exist in the picker view
-const pickerSource = read("squad-picker.js");
-const uiNames = new Set();
-const uiRegex = /(?<!\.)\bui\.([a-zA-Z]+)/g; // not YCACI18n.ui.xx
-let uiMatch;
-while ((uiMatch = uiRegex.exec(pickerSource))) uiNames.add(uiMatch[1]);
-const missingUi = [...uiNames].filter((name) => i18n.ui.en[name] === undefined);
-note(missingUi.length === 0, `all ${uiNames.size} ui.* picker names resolve`, missingUi.join(","));
-
 // --- 4. no hardcoded CJK in pages -------------------------------------------
 const cjk = /[\u3040-\u30ff\u3400-\u9fff]/;
-for (const file of ["app.js", "squad-picker.js", "login.js", "auth.js", "data.js", "coach.js", "players.js", "player.js", "admin.js", "match.js", "team.js", "index.html", "squad-picker.html", "login.html", "coach.html", "players.html", "player.html", "admin.html", "match.html", "team.html"]) {
+for (const file of ["app.js", "login.js", "auth.js", "data.js", "coach.js", "players.js", "player.js", "admin.js", "match.js", "team.js", "index.html", "login.html", "coach.html", "players.html", "player.html", "admin.html", "match.html", "team.html"]) {
   const source = read(file);
   const line = source.split("\n").findIndex((text) => cjk.test(text));
   note(line === -1, `no hardcoded Japanese/Chinese in ${file}`, line === -1 ? "" : `first hit line ${line + 1}`);
@@ -102,7 +93,6 @@ const checkIds = (jsFile, htmlFile) => {
   note(missing.length === 0, `all ${refs.size} #ids referenced in ${jsFile} exist`, missing.join(","));
 };
 checkIds("app.js", "index.html");
-checkIds("squad-picker.js", "squad-picker.html");
 checkIds("login.js", "login.html");
 checkIds("coach.js", "coach.html");
 checkIds("players.js", "players.html");

@@ -44,11 +44,36 @@
                 <option value="352">3-5-2</option>
               </select>
             </label>
-            <button id="squad-save" class="primary-button small" type="button" data-i18n="matchSquadSave">Save squad</button>
+            <button id="squad-suggest" class="quiet-button small" type="button" data-i18n="pickerSuggest">Suggest squad</button>
+            <button id="squad-refresh-bench" class="quiet-button small" type="button" data-i18n="pickerRefreshBench">Refresh bench</button>
+            <button id="squad-clear" class="quiet-button small" type="button" data-i18n="pickerClear">Clear squad</button>
+            <button id="squad-copy" class="quiet-button small" type="button" data-i18n="pickerCopy">Copy lineup</button>
+            <button id="squad-save" class="primary-button small" type="button" data-i18n="pickerSaveSquad">Save squad</button>
+            <button id="squad-image" class="primary-button small" type="button" data-i18n="pickerImage">Save squad image</button>
           </div>
         </div>
         <p id="squad-status" class="squad-status" aria-live="polite"></p>
-        <div id="match-squad"></div>
+        <div class="pk-layout">
+          <div class="pk-pitch-panel">
+            <div id="squad-pitch" class="pk-pitch" aria-label="Starting XI pitch"></div>
+            <div class="pk-bench-heading">
+              <span data-i18n="pickerBench">Matchday bench</span>
+              <strong><span id="squad-bench-count">0</span> <span data-i18n="pickerSubs">/ 9 substitutes</span></strong>
+            </div>
+            <div id="squad-bench" class="pk-bench" aria-label="Substitute slots"></div>
+          </div>
+          <aside class="pk-roster-panel">
+            <div class="pk-roster-heading">
+              <span data-i18n="pickerAvailable">Available squad</span>
+              <input id="squad-search" type="search" data-i18n-placeholder="pickerSearch" data-i18n-aria="pickerSearch" />
+            </div>
+            <div id="squad-roster"></div>
+          </aside>
+        </div>
+        <div class="pk-sheet">
+          <span class="eyebrow" data-i18n="pickerSheet">Team sheet</span>
+          <p id="squad-sheet"></p>
+        </div>
       </section>
 
       <section id="lineup-panel" class="panel match-panel">

@@ -1,10 +1,11 @@
-// Data-path + static check for the squad picker (squad-picker.html/js/css):
+// Data-path + static check for the squad picker, now integrated into match.html
+// (the standalone squad-picker.html was retired):
 //   node verify-picker.cjs
-// Drives the exact calls the page makes:
-//   anon blocked → team session runs the 6 picker queries → team writes denied
+// Drives the exact calls the match page makes for a coach:
+//   anon blocked → team session runs the picker queries → team writes denied
 //   → core-weighted suggest inputs via stats.js → coach save flow against a
 //   probe fixture (deactivate-then-insert, loadSavedLineup semantics) →
-//   everything removed afterwards.
+//   coach signups editing (add / change status / remove) → cleanup.
 // Ephemeral users only (e2e-picker-*@ycac-pulse.test), deleted even on failure.
 const fs = require("fs");
 const path = require("path");
@@ -81,18 +82,19 @@ async function main() {
   console.log(`Verifying squad picker against ${env.SUPABASE_URL}\n`);
 
   // --- 0. static contract (no network) ---------------------------------------
-  const picker = fs.readFileSync(path.join(__dirname, "squad-picker.js"), "utf8");
-  const page = fs.readFileSync(path.join(__dirname, "squad-picker.html"), "utf8");
-  const css = fs.readFileSync(path.join(__dirname, "squad-picker.css"), "utf8");
+  const picker = fs.readFileSync(path.join(__dirname, "match.js"), "utf8");
+  const page = fs.readFileSync(path.join(__dirname, "match.html"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "styles.css"), "utf8");
   const i18n = fs.readFileSync(path.join(__dirname, "i18n.js"), "utf8");
   check(!picker.includes("docs.google.com") && !picker.includes("script.google.com") && !picker.includes("spreadsheets"), "gviz + Apps Script endpoints are gone");
   check(!picker.includes("getSheet") && !picker.includes("squadSaveEndpoint"), "sheet loader + save endpoint references are gone");
-  check(picker.includes("YCACData.select") && picker.includes('"saved_squads"') && picker.includes('"signups"'), "picker reads Supabase (6 selects)");
-  check(picker.includes("YCACAuth.requireCoach") && !picker.includes("YCACAuth.requireTeam"), "single coach gate (view + save)");
+  check(picker.includes("YCACData.select") && picker.includes('"saved_squads"') && picker.includes('"signups"'), "the match page reads Supabase (picker + signups)");
+  check(picker.includes("YCACAuth.isCoach") && !picker.includes("YCACAuth.requireTeam"), "single coach gate (view + save)");
   check(picker.includes("photoCell") && picker.includes("photo_path"), "roster cards carry photos");
   check(picker.includes("YCACStats.computeSeason") && picker.includes("tierRank"), "core-weighted suggest via stats.js");
-  check(page.includes('<script src="stats.js">') && page.includes("noindex"), "squad-picker.html loads stats.js + is noindexed");
-  check(css.includes(".player-card .monogram") && css.includes("grid-template-columns: 2rem 1.6rem"), "photo column styles present");
+  check(page.includes('<script src="stats.js">') && page.includes('id="squad-pitch"'), "match.html loads stats.js + hosts the pitch");
+  check(!fs.existsSync(path.join(__dirname, "squad-picker.html")), "standalone squad-picker page is retired");
+  check(css.includes(".pk-card") && css.includes(".pk-pitch"), "pitch/bench/roster styles live in styles.css");
   check((i18n.match(/pickerStatusCleared:/g) || []).length === 3, "pickerStatusCleared translated ×3", `${(i18n.match(/pickerStatusCleared:/g) || []).length}/3`);
   check(!i18n.includes("pickerSubmitted") && !i18n.split("\n").filter((line) => line.includes("pickerSaveSuccess")).some((line) => line.includes("Google Sheets")), "sheet-era save strings removed");
 
@@ -207,6 +209,20 @@ async function main() {
     const activeGroups = await call(`${BASE}/saved_squads?match_id=eq.${PROBE_MATCH}&active=eq.true`, { headers: bearerHeaders(teamToken) });
     const groupIds = [...new Set(activeGroups.data.map((r) => r.saved_squad_id))];
     check(groupIds.length === 1 && groupIds[0] === `${PROBE_SQUAD}-2`, "exactly one active group → loadSavedLineup picks the latest save", `${activeGroups.data.length} row(s) in ${groupIds.join(",")}`);
+
+    // --- 6b. coach signups editing (match page: add / change / remove) ----------
+    const signupAdd = await call(`${BASE}/signups`, { method: "POST", headers: { ...bearerHeaders(coachToken), Prefer: "return=representation" }, body: [
+      { match_id: PROBE_MATCH, player_id: probePlayerA.id, status: "confirmed", entered_by: COACH_EMAIL },
+    ] });
+    check(signupAdd.ok && signupAdd.data?.length === 1 && signupAdd.data[0].status === "confirmed", "coach adds a confirmed signup", `status ${signupAdd.status}`);
+    const signupPatch = await call(`${BASE}/signups?match_id=eq.${PROBE_MATCH}&player_id=eq.${probePlayerA.id}`, { method: "PATCH", headers: { ...bearerHeaders(coachToken), Prefer: "return=representation" }, body: { status: "waitlist", responded_at: new Date().toISOString() } });
+    check(signupPatch.ok && signupPatch.data?.[0]?.status === "waitlist", "coach moves a signup to another status");
+    // the team session may edit signups on the match page too? No — policy is coach-only:
+    const teamSignupPatch = await call(`${BASE}/signups?match_id=eq.${PROBE_MATCH}&player_id=eq.${probePlayerA.id}`, { method: "PATCH", headers: { ...bearerHeaders(teamToken), Prefer: "return=representation" }, body: { status: "confirmed" } });
+    const teamSignupRead = await call(`${BASE}/signups?match_id=eq.${PROBE_MATCH}`, { headers: bearerHeaders(teamToken) });
+    check(teamSignupPatch.ok && teamSignupPatch.data?.length === 0 && teamSignupRead.data?.[0]?.status === "waitlist", "team signup edit is a no-op (read-only for the team)", `status ${teamSignupPatch.status}`);
+    const signupDelete = await call(`${BASE}/signups?match_id=eq.${PROBE_MATCH}&player_id=eq.${probePlayerA.id}`, { method: "DELETE", headers: { ...bearerHeaders(coachToken), Prefer: "return=representation" } });
+    check(signupDelete.ok && signupDelete.data?.length === 1, "coach removes a signup");
   } finally {
     await cleanup(state);
   }
@@ -227,7 +243,7 @@ async function main() {
     console.log(`${failures.length} FAILURE(S): ${failures.join(" | ")}`);
     process.exit(1);
   }
-  console.log("Squad picker verified: gated queries, coach-only save, core-weighted suggest, static contract.");
+  console.log("Squad picker verified: gated queries, coach-only squad save, coach signups editing, core-weighted suggest, static contract.");
 }
 
 main().catch(async (error) => {

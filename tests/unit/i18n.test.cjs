@@ -96,10 +96,14 @@ test("formatDate renders a date for the current language", () => {
   assert.equal(i18n.formatDate(null), "");
 });
 
-test("squad-picker ui.* short names resolve in every language", () => {
+test("the integrated squad picker + signup editor keys resolve in every language", () => {
+  const required = [
+    "pickerFormation", "pickerSuggest", "pickerRefreshBench", "pickerClear", "pickerCopy",
+    "pickerSaveSquad", "pickerImage", "pickerBench", "pickerAvailable", "pickerSheet",
+    "signupAdd", "signupAddPlayer", "signupStatus", "signupAdded", "signupUpdated",
+    "signupRemoved", "signupSaveFail",
+  ];
   for (const lang of languages) {
-    for (const name of ["team", "back", "title", "suggest", "sheet"]) {
-      assert.ok(i18n.ui[lang][name], `missing ui.${lang}.${name}`);
-    }
+    for (const key of required) assert.ok(i18n.dictionaries[lang][key], `missing ${lang}.${key}`);
   }
 });

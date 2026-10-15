@@ -18,7 +18,7 @@ const OUT = path.join(ROOT, "_site");
 
 // Page/shell files first, then the runtime code every page loads.
 const INCLUDE = [
-  /\/?[^/]*\.html$/,          // every page: index, players, player, coach, admin, match, team, squad-picker, login
+  /\/?[^/]*\.html$/,          // every page: index, players, player, coach, admin, match, team, login
   /\.css$/,
   /\.(js|cjs)$/,              // runtime scripts + the verify-*.cjs? no: see ALLOW below
   /\.svg$/,
