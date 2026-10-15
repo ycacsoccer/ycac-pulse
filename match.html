@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="YC&AC Pulse fixture and result details: match information, lineup, scorers and assists." />
+    <meta name="description" content="YC&AC Pulse fixture and result details: match information, pre-match forecast, lineup, scorers and assists." />
     <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#112950" />
     <link rel="icon" href="https://ycac.jp/wp-content/uploads/2025/10/YCAC-Logo-Icon.png" type="image/png" />
@@ -21,6 +21,16 @@
 
     <main class="coach-main match-main">
       <section id="match-hero" class="match-hero" aria-live="polite"></section>
+
+      <section id="forecast-panel" class="panel match-panel" hidden>
+        <div class="section-heading">
+          <div>
+            <h2 data-i18n="matchForecast">Match forecast</h2>
+            <p class="fc-intro" data-i18n="matchForecastIntro">League position, recent form and head-to-head before kickoff.</p>
+          </div>
+        </div>
+        <div id="match-forecast"></div>
+      </section>
 
       <section id="squad-panel" class="panel match-panel" hidden>
         <div class="section-heading">
@@ -67,6 +77,8 @@
     <script src="i18n.js"></script>
     <script src="data.js"></script>
     <script src="stats.js"></script>
+    <script src="standings.js"></script>
+    <script src="forecast.js"></script>
     <script src="auth.js"></script>
     <script src="match.js"></script>
   </body>

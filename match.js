@@ -15,7 +15,7 @@
 
   const state = {
     mode: "loading", // loading | ok | missing | error
-    match: null, apps: [], goals: [], signups: [], notes: [], savedSquad: [], isCoach: false,
+    match: null, allMatches: [], apps: [], goals: [], allGoals: [], signups: [], notes: [], savedSquad: [], isCoach: false,
     playersById: new Map(),
   };
 
@@ -107,6 +107,107 @@
         <a class="mg-scorer" href="player.html?id=${encodeURIComponent(goal.scorer_id)}">${esc(playerName(goal.scorer_id))}</a>
         ${goal.assist_id ? `<span class="mg-assist">· ${esc(t("matchAssist"))} <a href="player.html?id=${encodeURIComponent(goal.assist_id)}">${esc(playerName(goal.assist_id))}</a></span>` : ""}
       </div>`).join("");
+  }
+
+  // Wave 30 — public pre-match forecast for upcoming fixtures: league position,
+  // head-to-head, form, season rates and a Poisson probability card.
+  function renderForecast() {
+    const panel = $("forecast-panel");
+    const target = $("match-forecast");
+    const visible = state.mode === "ok" && !isFinal(state.match);
+    panel.hidden = !visible;
+    if (!visible) { target.innerHTML = ""; return; }
+    if (!window.YCACForecast) { panel.hidden = true; return; }
+    const f = YCACForecast.build({
+      match: state.match,
+      finals: state.allMatches.filter(isFinal),
+      standingsRows: (window.YCACStandings && YCACStandings.rows) || [],
+      goals: state.allGoals,
+    });
+
+    const letter = (outcome) => (outcome === "win" ? t("vizWin") : outcome === "draw" ? t("vizDraw") : t("vizLoss"));
+    const recordLine = (record) => `${record.w}${t("vizWin")} ${record.d}${t("vizDraw")} ${record.l}${t("vizLoss")} · ${record.gf}–${record.ga}`;
+    const blocks = [];
+
+    if (f.probs) {
+      const pct = (value) => `${Math.round(value * 100)}%`;
+      const edgeLabel = f.edge === "us" ? t("matchForecastEdgeUs")
+        : f.edge === "them" ? t("matchForecastEdgeThem", { opponent: state.match.opponent })
+        : t("matchForecastEven");
+      const seg = (cls, value) => `<i class="fc-seg fc-seg-${cls}" style="width:${(value * 100).toFixed(1)}%"></i>`;
+      blocks.push(`<div class="fc-verdict">
+        <span class="fc-edge fc-edge-${f.edge}">${esc(edgeLabel)}</span>
+        <span class="fc-metric"><span>${esc(t("matchForecastXg"))}</span><strong>${f.lambdas.us.toFixed(1)} – ${f.lambdas.them.toFixed(1)}</strong></span>
+        <span class="fc-metric"><span>${esc(t("matchForecastProjected"))}</span><strong>${f.probs.projected.us}–${f.probs.projected.them}</strong></span>
+      </div>
+      <div class="fc-bar" aria-hidden="true">${seg("us", f.probs.win)}${seg("draw", f.probs.draw)}${seg("them", f.probs.loss)}</div>
+      <div class="fc-legend">
+        <span><i class="lg-us"></i>${esc(t("matchForecastWin"))} <strong>${pct(f.probs.win)}</strong></span>
+        <span><i class="lg-draw"></i>${esc(t("matchForecastDraw"))} <strong>${pct(f.probs.draw)}</strong></span>
+        <span><i class="lg-them"></i>${esc(t("matchForecastLoss"))} <strong>${pct(f.probs.loss)}</strong></span>
+      </div>`);
+    } else {
+      blocks.push(`<p class="fc-note">${esc(t("matchForecastNoData"))}</p>`);
+    }
+
+    if (f.table) {
+      const us = f.table.us, them = f.table.them;
+      const gd = (row) => Number(row.gf) - Number(row.ga);
+      const better = (a, b, lowerWins) => (a === b ? null : (a < b) === Boolean(lowerWins) ? "us" : "them");
+      const rows = [
+        [String(us.pos), String(them.pos), t("position"), better(us.pos, them.pos, true)],
+        [`${us.row.w}–${us.row.d}–${us.row.l}`, `${them.row.w}–${them.row.d}–${them.row.l}`, t("record"), null],
+        [us.row.pts, them.row.pts, t("matchForecastPoints"), better(Number(us.row.pts), Number(them.row.pts))],
+        [us.row.gf, them.row.gf, t("goalsFor"), better(Number(us.row.gf), Number(them.row.gf))],
+        [us.row.ga, them.row.ga, t("goalsAgainst"), better(Number(us.row.ga), Number(them.row.ga), true)],
+        [gd(us.row), gd(them.row), t("goalDiff"), better(gd(us.row), gd(them.row))],
+      ];
+      blocks.push(`<div class="match-group"><h4>${esc(t("matchForecastTable"))} <small>${esc((window.YCACStandings && YCACStandings.competition) || "")}</small></h4>
+        <table class="fc-compare">
+          <thead><tr><th>YC&amp;AC</th><th aria-hidden="true"></th><th>${esc(state.match.opponent)}</th></tr></thead>
+          <tbody>${rows.map(([ours, theirs, label, side]) => `<tr><td class="${side === "us" ? "fc-better" : ""}">${ours}</td><th scope="row">${esc(label)}</th><td class="${side === "them" ? "fc-better" : ""}">${theirs}</td></tr>`).join("")}</tbody>
+        </table></div>`);
+    }
+
+    if (f.h2h.rows.length) {
+      blocks.push(`<div class="match-group"><h4>${esc(t("matchForecastHead"))} <small>${esc(t("matchForecastMeetings", { n: f.h2h.record.played }))} · ${esc(recordLine(f.h2h.record))}</small></h4>
+        <div class="fc-meetings">${f.h2h.rows.map((row) => {
+          const outcome = YCACForecast.outcomeOf(row);
+          return `<div class="fc-meeting"><span class="fc-date">${esc(formatDate(row.date))}</span><span class="fc-score">${row.ycac_goals}–${row.opponent_goals}</span><i class="form-pill ${outcome}">${esc(letter(outcome))}</i></div>`;
+        }).join("")}</div></div>`);
+    } else {
+      blocks.push(`<div class="match-group"><h4>${esc(t("matchForecastHead"))}</h4><p class="empty">${esc(t("matchForecastFirstMeeting"))}</p></div>`);
+    }
+
+    if (f.form.length) {
+      blocks.push(`<div class="match-group"><h4>${esc(t("matchForecastForm"))} <small>${esc(recordLine(f.stats))}</small></h4>
+        <div class="fc-form form-pills">${f.form.map((row) => `<i class="form-pill ${row.outcome}" title="${esc(`${row.gf}–${row.ga} ${t("versus")} ${row.opponent} · ${formatDate(row.date)}`)}">${esc(letter(row.outcome))}</i>`).join("")}</div></div>`);
+    }
+
+    const s = f.stats;
+    const cells = [
+      [`${s.w}–${s.d}–${s.l}`, t("record")],
+      [s.gfPerGame.toFixed(1), t("kpiGoalsPerGame")],
+      [s.gaPerGame.toFixed(1), t("kpiConcededPerGame")],
+      [s.cleanSheets, t("cleanSheets")],
+      [s.winPct == null ? "–" : `${s.winPct}%`, t("kpiWinRate")],
+    ];
+    blocks.push(`<div class="match-group"><h4>${esc(t("seasonStats"))} <small>${esc(state.match.competition)}</small></h4>
+      <div class="fc-stats">${cells.map(([value, label]) => `<div class="fc-stat"><strong>${value}</strong><span>${esc(label)}</span></div>`).join("")}</div></div>`);
+
+    const link = (playerId) => `<a href="player.html?id=${encodeURIComponent(playerId)}">${esc(playerName(playerId))}</a>`;
+    const watch = [];
+    if (f.topScorer) watch.push(`${link(f.topScorer.playerId)} <strong>${f.topScorer.count}</strong> ${esc(t("statGoals"))}`);
+    if (f.h2hScorer && (!f.topScorer || f.h2hScorer.playerId !== f.topScorer.playerId)) {
+      watch.push(`${esc(t("matchForecastVsThem", { opponent: state.match.opponent }))}: ${link(f.h2hScorer.playerId)} <strong>${f.h2hScorer.count}</strong>`);
+    }
+    if (watch.length) blocks.push(`<div class="match-group"><h4>${esc(t("matchForecastWatch"))}</h4><p class="fc-watch">${watch.join(" · ")}</p></div>`);
+
+    if (f.table && window.YCACStandings && YCACStandings.updated) {
+      blocks.push(`<p class="standings-updated">${esc(t("standingsAsOf", { date: formatDate(YCACStandings.updated) }))}</p>`);
+    }
+
+    target.innerHTML = blocks.join("");
   }
 
   function renderSignups() {
@@ -277,6 +378,7 @@
     renderHero();
     document.querySelectorAll(".match-panel").forEach((panel) => { panel.hidden = state.mode !== "ok"; });
     if (state.mode !== "ok") { $("goals-panel").hidden = true; return; }
+    renderForecast();
     renderSquad();
     renderLineup();
     renderGoals();
@@ -313,16 +415,21 @@
     try {
       state.isCoach = Boolean(YCACAuth.session && await YCACAuth.isCoach());
       const [matches, apps, goals, signups, notes, players, savedSquad] = await Promise.all([
-        YCACData.select("matches", `select=*&id=eq.${id}`),
+        YCACData.select("matches", "select=*"), // all fixtures: the forecast needs history + standings context
         YCACData.select("appearances", `select=*,players(id,display_name,shirt_number,photo_path,primary_position)&match_id=eq.${id}`),
-        YCACData.select("goals", `select=*&match_id=eq.${id}`),
+        YCACData.select("goals", "select=*"), // all goals: form scorers + head-to-head scorers
         state.isCoach ? YCACData.select("signups", `select=*,players(id,display_name,shirt_number,photo_path)&match_id=eq.${id}`) : Promise.resolve([]),
         state.isCoach ? YCACData.select("match_notes", `select=*&match_id=eq.${id}`) : Promise.resolve([]),
         YCACData.select("players", "select=*"),
         state.isCoach ? YCACData.select("saved_squads", `select=*&match_id=eq.${id}&order=saved_at`) : Promise.resolve([]),
       ]);
-      if (!matches.length) { showMissing(); return; }
-      state.match = matches[0];
+      const match = matches.find((row) => row.id === id);
+      if (!match) { showMissing(); return; }
+      state.match = match;
+      state.allMatches = matches;
+      state.apps = apps;
+      state.goals = goals.filter((row) => row.match_id === id);
+      state.allGoals = goals;
       state.apps = apps;
       state.goals = goals;
       state.signups = signups;

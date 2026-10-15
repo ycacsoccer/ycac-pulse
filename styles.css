@@ -377,8 +377,53 @@ a.history-row:hover { background: var(--gold-pale); }
 .ss-declined, .ss-unavailable { color: #c44545; border-color: #e2b6b6; }
 .ss-none { border-style: dashed; }
 .squad-add-list .empty, .squad-chips .empty { margin: 0; padding: .4rem .5rem; }
+
+/* ---- match forecast (upcoming fixtures, wave 30) ---- */
+.fc-intro { margin: .25rem 0 0; color: var(--muted); font-size: .78rem; }
+.fc-verdict { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1.1rem; margin-bottom: .7rem; }
+.fc-edge { display: inline-block; padding: .32rem .6rem; border: 1px solid; font-size: .68rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+.fc-edge-us { color: #fff; background: var(--navy); border-color: var(--navy); }
+.fc-edge-them { color: #9d1c1c; border-color: #e2b6b6; }
+.fc-edge-even { color: var(--muted); border-color: var(--line); }
+.fc-metric { display: flex; flex-direction: column; gap: .05rem; }
+.fc-metric span { color: var(--muted); font-size: .6rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+.fc-metric strong { color: var(--navy); font-size: 1.08rem; font-variant-numeric: tabular-nums; }
+.fc-bar { display: flex; height: 10px; margin: .1rem 0 .45rem; overflow: hidden; }
+.fc-seg { display: block; height: 100%; }
+.fc-seg-us { background: var(--navy); }
+.fc-seg-draw { background: #9aa3b2; }
+.fc-seg-them { background: #c44545; }
+.fc-legend { display: flex; flex-wrap: wrap; gap: .35rem 1.1rem; margin-bottom: 1.1rem; color: var(--ink); font-size: .74rem; }
+.fc-legend i { display: inline-block; width: .6rem; height: .6rem; margin-right: .35rem; vertical-align: baseline; }
+.fc-legend .lg-us { background: var(--navy); }
+.fc-legend .lg-draw { background: #9aa3b2; }
+.fc-legend .lg-them { background: #c44545; }
+.fc-legend strong { color: var(--navy); font-variant-numeric: tabular-nums; }
+table.fc-compare { width: 100%; border-collapse: collapse; font-size: .84rem; }
+.fc-compare th, .fc-compare td { padding: .42rem .5rem; border-bottom: 1px solid var(--line); text-align: center; font-variant-numeric: tabular-nums; }
+.fc-compare thead th { color: var(--muted); font-size: .64rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.fc-compare tbody th { width: 42%; color: var(--muted); font-size: .66rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.fc-compare tbody tr:last-child th, .fc-compare tbody tr:last-child td { border-bottom: 0; }
+.fc-better { color: var(--navy); font-weight: 700; }
+.fc-h2h-record { margin: 0 0 .4rem; color: var(--navy); font-size: .8rem; font-weight: 700; }
+.fc-meetings { display: grid; }
+.fc-meeting { display: flex; align-items: center; gap: .8rem; padding: .34rem .2rem; border-bottom: 1px solid var(--line); font-size: .82rem; }
+.fc-meeting:last-child { border-bottom: 0; }
+.fc-date { min-width: 6.2rem; color: var(--muted); font-size: .72rem; }
+.fc-score { color: var(--navy); font-weight: 700; font-variant-numeric: tabular-nums; }
+.fc-form { display: inline-flex; gap: .3rem; }
+.fc-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: .5rem; }
+.fc-stat { padding: .5rem .6rem; background: #fff; border: 1px solid var(--line); }
+.fc-stat strong { display: block; color: var(--navy); font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+.fc-stat span { color: var(--muted); font-size: .6rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.fc-watch { margin: .1rem 0 0; color: var(--ink); font-size: .82rem; }
+.fc-watch a { color: var(--navy); font-weight: 700; text-decoration: none; }
+.fc-watch a:hover { text-decoration: underline; }
+.fc-watch strong { color: var(--gold); font-variant-numeric: tabular-nums; }
+.fc-note { margin: 0; padding: .6rem .75rem; background: var(--gold-pale); border-left: 3px solid var(--gold); color: var(--ink); font-size: .8rem; }
 @media (max-width: 640px) {
   .match-players, .squad-add-list { grid-template-columns: 1fr; }
+  .fc-date { min-width: 5.2rem; }
 }
 
 /* ---- team page (Phase 9) ---- */

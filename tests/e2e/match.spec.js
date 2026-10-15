@@ -105,3 +105,33 @@ test("match page for a played match hides the squad picker even for a coach", as
   await expect(page.locator("#lineup-panel")).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test("upcoming fixture shows the public match forecast with form and season numbers", async ({ page }) => {
+  const api = await mockSupabase(page);
+  const errors = watchErrors(page);
+  await page.goto("/match.html?id=x1");
+  await expect(page.locator("#forecast-panel")).toBeVisible();
+  await expect(page.locator("#forecast-panel h2")).toContainText("Match forecast");
+
+  // Titans FC is not in the league table and there is no past meeting:
+  // an honest no-data note instead of a fabricated probability card
+  await expect(page.locator("#match-forecast .fc-note")).toHaveCount(1);
+  await expect(page.locator("#match-forecast .fc-verdict")).toHaveCount(0);
+  await expect(page.locator("#match-forecast .fc-meetings")).toHaveCount(0);
+
+  // TML form from the four league finals (W D L W → 2–1–1) + season snapshot
+  await expect(page.locator("#match-forecast .fc-form .form-pill")).toHaveCount(4);
+  await expect(page.locator("#match-forecast .fc-form .form-pill.win")).toHaveCount(2);
+  await expect(page.locator("#match-forecast .fc-stats")).toContainText("2–1–1");
+  await expect(page.locator("#match-forecast .fc-watch")).toContainText("Chris Ito"); // top TML scorer (2)
+  expect(publicOnly(api)).toBe(true); // forecast reads public tables only
+  expect(errors).toEqual([]);
+});
+
+test("forecast panel hides on a played match", async ({ page }) => {
+  const errors = watchErrors(page);
+  await mockSupabase(page);
+  await page.goto("/match.html?id=m1");
+  await expect(page.locator("#forecast-panel")).toBeHidden();
+  expect(errors).toEqual([]);
+});
