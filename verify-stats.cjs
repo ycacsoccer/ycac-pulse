@@ -1,9 +1,9 @@
 /* Verifies stats.js against the data in Supabase — the engine's regression
    snapshot (Phase 12 rewired this off gviz; the whole suite now reads one
    source of truth). The EXPECTED block is the import-time snapshot of
-   07 Oct 2026 (Oct 17 / Oct 31 fixtures added; played-match counts unchanged —
-   pending fixtures never enter the stats); if the database has
-   moved on (new results entered, roster edits), mismatches are reported
+   16 Oct 2026 (Shinnosuke added 14 Oct — 41 players, not yet used in a
+   match, so every per-player count and tier is unchanged); if the database
+   has moved on (new results entered, roster edits), mismatches are reported
    rather than silently accepted — bump the snapshot deliberately when that happens.
    Usage: node verify-stats.cjs */
 
@@ -26,8 +26,8 @@ async function grab(table) {
 }
 
 const EXPECTED = {
-  rows: { players: 40, matches: 13, appearances: 165, goals: 42 },
-  counts: { all: 11, tml: 4, friendly: 7, players: 40, used: 33 },
+  rows: { players: 41, matches: 13, appearances: 165, goals: 42 },
+  counts: { all: 11, tml: 4, friendly: 7, players: 41, used: 33 },
   players: {
     rick: { tml: "4/4", friendly: "7/7", all: "11/11", tier: "core", reliability: 100 },
     urabe: { tml: "4/4", friendly: "7/7", all: "11/11", tier: "core" },
@@ -116,7 +116,7 @@ async function main() {
   console.log(`  ${missingPhotos} players with no photo yet (coach uploads from the profile page)`);
   console.log(`  ${appearances.filter((app) => !app.minutes).length}/${appearances.length} appearances missing minutes`);
 
-  console.log(`\n${failed ? `${failed} CHECK(S) FAILED — data may have changed since the 06 Oct 2026 snapshot (bump EXPECTED deliberately)` : "All checks passed."}`);
+  console.log(`\n${failed ? `${failed} CHECK(S) FAILED — data may have changed since the 16 Oct 2026 snapshot (bump EXPECTED deliberately)` : "All checks passed."}`);
   process.exit(failed ? 1 : 0);
 }
 
