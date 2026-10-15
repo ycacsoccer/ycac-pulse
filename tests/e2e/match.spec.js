@@ -67,6 +67,34 @@ test("coach sees the squad picker on an upcoming fixture and can add + save play
   expect(errors).toEqual([]);
 });
 
+test("squad picker flags attendance: attending first, declined/unavailable badged", async ({ page }) => {
+  await coachSession({ page });
+  const errors = watchErrors(page);
+  await mockSupabase(page, { coach: true });
+  await page.goto("/match.html?id=x1");
+  await expect(page.locator("#squad-panel")).toBeVisible();
+
+  // add cards carry the signup status (fixture: ada/ben/dan confirmed, chr declined, evn unavailable)
+  await expect(page.locator('[data-squad-add="p-ada"] .sa-status')).toHaveText(/Confirmed/i);
+  await expect(page.locator('[data-squad-add="p-ada"] .sa-status')).toHaveClass(/ss-confirmed/);
+  await expect(page.locator('[data-squad-add="p-chr"] .sa-status')).toHaveText(/Declined/i);
+  await expect(page.locator('[data-squad-add="p-evn"] .sa-status')).toHaveText(/Unavailable/i);
+
+  // attending players sort to the front, unavailable to the back
+  const addCards = page.locator(".squad-add");
+  await expect(addCards).toHaveCount(5);
+  await expect(addCards.first()).toContainText("Ada Sato");
+  await expect(addCards.last()).toContainText("Evan Cole");
+
+  // a declined player already in the squad is flagged on the chip for removal
+  await page.locator('[data-squad-add="p-chr"]').click();
+  const chrChip = page.locator("#match-squad .squad-chip", { hasText: "Chris Ito" });
+  await expect(chrChip.locator(".sa-status")).toHaveText(/Declined/i);
+  await chrChip.locator(".sc-remove").click();
+  await expect(page.locator("#squad-status")).toContainText("Chris Ito removed");
+  expect(errors).toEqual([]);
+});
+
 test("match page for a played match hides the squad picker even for a coach", async ({ page }) => {
   await coachSession({ page });
   const errors = watchErrors(page);

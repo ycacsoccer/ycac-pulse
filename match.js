@@ -172,12 +172,24 @@
 
   function squadPlayer(id) { return state.playersById.get(id) || { id, display_name: id }; }
 
+  /* Signup-status badge for the squad picker. Add cards show every status so
+     attending players (confirmed/waitlist) stand out; squad chips only flag
+     declined/unavailable members — the ones worth removing. */
+  function signupBadge(playerId, { onlyProblems = false } = {}) {
+    if (!state.signups.length) return "";
+    const status = String(state.signups.find((signup) => signup.player_id === playerId)?.status || "");
+    if (onlyProblems && (status === "confirmed" || status === "waitlist" || !status)) return "";
+    const key = SIGNUP_KEYS[status] || "adminNoResponse";
+    return `<span class="sa-status ${status ? `ss-${status}` : "ss-none"}">${esc(t(key))}</span>`;
+  }
+
   function squadChip(id) {
     const p = squadPlayer(id);
     return `<span class="squad-chip">
       ${photoCell(p)}
       <span class="sc-name">${esc(p.display_name)}</span>
       <span class="sc-num">${p.shirt_number != null ? `#${p.shirt_number}` : ""}</span>
+      ${signupBadge(id, { onlyProblems: true })}
       <button class="sc-remove" type="button" data-squad-remove="${esc(id)}" aria-label="${esc(`${t("injuryRemove")} ${p.display_name}`)}">&times;</button>
     </span>`;
   }
@@ -239,14 +251,19 @@
     $("squad-formation").value = squad.formation;
     $("squad-save").disabled = squad.saving || !squad.dirty;
     const picked = new Set([...squad.starters, ...squad.subs]);
+    // Attending first: confirmed → waitlist → no response → declined → unavailable.
+    const signupByPlayer = new Map(state.signups.map((signup) => [signup.player_id, String(signup.status || "")]));
+    const SIGNUP_RANK = { confirmed: 0, waitlist: 1, declined: 3, unavailable: 4 };
+    const rankOf = (player) => (signupByPlayer.has(player.id) ? SIGNUP_RANK[signupByPlayer.get(player.id)] ?? 2 : 2);
     const available = [...state.playersById.values()]
       .filter((player) => player.active !== false && !picked.has(player.id))
-      .sort((a, b) => (window.YCACStats ? YCACStats.POSITION_ORDER[YCACStats.positionGroup(a.primary_position)] - YCACStats.POSITION_ORDER[YCACStats.positionGroup(b.primary_position)] : 0)
+      .sort((a, b) => rankOf(a) - rankOf(b)
+        || (window.YCACStats ? YCACStats.POSITION_ORDER[YCACStats.positionGroup(a.primary_position)] - YCACStats.POSITION_ORDER[YCACStats.positionGroup(b.primary_position)] : 0)
         || String(a.display_name).localeCompare(String(b.display_name)));
     const block = (labelKey, rows) => `<div class="match-group"><h4>${esc(t(labelKey))} <small>${rows.length}</small></h4>
       <div class="squad-chips">${rows.length ? rows.map(squadChip).join("") : `<p class="empty">${esc(t("matchSquadEmptySlot"))}</p>`}</div></div>`;
     const addCard = (player) => `<button class="squad-add" type="button" data-squad-add="${esc(player.id)}">
-      ${photoCell(player)}<span class="sa-name">${esc(player.display_name)}</span><span class="sa-pos">${esc(player.primary_position || "")}</span><span class="sa-plus" aria-hidden="true">+</span>
+      ${photoCell(player)}<span class="sa-name">${esc(player.display_name)}</span>${signupBadge(player.id)}<span class="sa-pos">${esc(player.primary_position || "")}</span><span class="sa-plus" aria-hidden="true">+</span>
     </button>`;
     target.innerHTML = block("matchStarters", squad.starters)
       + block("matchSubs", squad.subs)

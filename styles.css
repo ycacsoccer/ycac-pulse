@@ -370,6 +370,12 @@ a.history-row:hover { background: var(--gold-pale); }
 .sa-name { flex: 1; min-width: 0; color: var(--navy); font-size: .85rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sa-pos { color: var(--muted); font-size: .68rem; font-weight: 700; letter-spacing: .05em; }
 .sa-plus { color: var(--gold); font-size: 1rem; font-weight: 700; }
+/* signup-status badges in the squad picker: attending first, non-attending flagged */
+.sa-status { flex: none; padding: .1rem .35rem; color: var(--muted); border: 1px solid var(--line); font-size: .58rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+.ss-confirmed { color: #2f9e63; border-color: #2f9e63; }
+.ss-waitlist { color: var(--gold); border-color: var(--gold); }
+.ss-declined, .ss-unavailable { color: #c44545; border-color: #e2b6b6; }
+.ss-none { border-style: dashed; }
 .squad-add-list .empty, .squad-chips .empty { margin: 0; padding: .4rem .5rem; }
 @media (max-width: 640px) {
   .match-players, .squad-add-list { grid-template-columns: 1fr; }

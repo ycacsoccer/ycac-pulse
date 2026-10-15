@@ -8,7 +8,7 @@
    appearances, goals, injuries) — team tables, rpc, storage — is rejected with
    401 and recorded in `denied`, which the specs assert is empty: the public
    pages must never ask for data the anon role cannot read. */
-const { tables: fixtures } = require("../fixtures/public-data");
+const { tables: fixtures, signups: signupsFixture } = require("../fixtures/public-data");
 
 const PUBLIC_TABLES = new Set(Object.keys(fixtures));
 const DENY_BODY = JSON.stringify({ message: "E2E mock: request outside the public read set" });
@@ -43,8 +43,11 @@ async function mockSupabase(page, options = {}) {
     if (options.coach && tail === "rpc/is_coach") {
       return route.fulfill({ status: 200, contentType: "application/json", body: "true" });
     }
-    if (options.coach && table === "signups") {
-      return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    if (options.coach && table === "signups") { // team table — fixture rows, filtered by match
+      let rows = clone(signupsFixture);
+      const filter = url.searchParams.get("match_id");
+      if (filter && filter.startsWith("eq.")) rows = rows.filter((row) => String(row.match_id) === filter.slice(3));
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(rows) });
     }
     if (options.coach && table === "coach_notes") {
       return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });

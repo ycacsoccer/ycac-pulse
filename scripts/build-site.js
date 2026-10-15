@@ -4,6 +4,11 @@
 // (verifier scripts, plan docs, tests …); this keeps the public site to:
 // pages, stylesheets, runtime scripts, favicon.
 //
+// HTML gets cache-busting: local <script src>/<link href> gain ?v=<short sha>,
+// so every deploy changes the asset URLs. GitHub Pages serves subresources with
+// max-age=600 — without this, a reload within those 10 minutes pairs the fresh
+// HTML with yesterday's JS (a half-updated page: new markup, old renderer).
+//
 // .env never matches the whitelist by construction — it cannot be published.
 const fs = require("fs");
 const path = require("path");
@@ -53,7 +58,14 @@ const walk = (dir, prefix = "") => {
     if (EXCLUDE.some((pattern) => pattern.test(slashRel))) continue;
     const target = path.join(OUT, slashRel);
     fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.copyFileSync(path.join(dir, entry.name), target);
+    const source = path.join(dir, entry.name);
+    if (/\.html$/.test(entry.name)) {
+      const busted = fs.readFileSync(source, "utf8")
+        .replace(/(src|href)="([^"?]+\.(?:js|css))"/g, `$1="$2?v=${sha.slice(0, 7)}"`);
+      fs.writeFileSync(target, busted);
+    } else {
+      fs.copyFileSync(source, target);
+    }
   }
 };
 walk(ROOT);

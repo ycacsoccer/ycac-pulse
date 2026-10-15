@@ -63,6 +63,17 @@ const injuries = [
   { id: "i1", player_id: "p-evn", detail: "Hamstring strain", since_date: "2026-04-20", expected_return: "2026-06-15" },
 ];
 
+// Team-table fixture, served ONLY to coach-mode pages by tests/e2e/mocks.js.
+// Deliberately NOT part of `tables` (the public read set): an anon page must
+// never receive signups — mocks.js denies them with 401 and the specs assert it.
+const signups = [
+  { match_id: "x1", player_id: "p-ada", status: "confirmed" },
+  { match_id: "x1", player_id: "p-ben", status: "confirmed" },
+  { match_id: "x1", player_id: "p-dan", status: "confirmed" },
+  { match_id: "x1", player_id: "p-chr", status: "declined" },
+  { match_id: "x1", player_id: "p-evn", status: "unavailable" },
+];
+
 const tables = { players, matches, appearances, goals, injuries };
 
 /* Ground truth the specs assert against (rather than re-deriving in each test). */
@@ -82,4 +93,4 @@ const expected = {
   evan: { played: 2, absent: 5 },                            // the most-absent player
 };
 
-module.exports = { tables, players, matches, appearances, goals, injuries, expected };
+module.exports = { tables, players, matches, appearances, goals, injuries, signups, expected };
