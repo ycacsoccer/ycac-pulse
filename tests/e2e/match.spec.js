@@ -105,6 +105,42 @@ test("squad picker flags attendance: attending first, declined/unavailable badge
   expect(errors).toEqual([]);
 });
 
+test("squad roster filters by availability", async ({ page }) => {
+  await coachSession({ page });
+  const errors = watchErrors(page);
+  await mockSupabase(page, { coach: true });
+  await page.goto("/match.html?id=x1");
+  await expect(page.locator("#squad-panel")).toBeVisible();
+  const cards = page.locator(".pk-card");
+  await expect(cards).toHaveCount(5); // every active player under the default "All"
+
+  // declined → only Chris; unavailable → only Evan
+  await page.locator("#squad-availability").selectOption("declined");
+  await expect(cards).toHaveCount(1);
+  await expect(cards.first()).toContainText("Chris Ito");
+  await page.locator("#squad-availability").selectOption("unavailable");
+  await expect(cards).toHaveCount(1);
+  await expect(cards.first()).toContainText("Evan Cole");
+
+  // every fixture player answered → "no response" shows the honest empty state
+  await page.locator("#squad-availability").selectOption("none");
+  await expect(cards).toHaveCount(0);
+  await expect(page.locator("#squad-roster .empty")).toContainText("No players match");
+
+  // the availability filter stacks with the search box
+  await page.locator("#squad-availability").selectOption("confirmed");
+  await expect(cards).toHaveCount(3);
+  await page.locator("#squad-search").fill("ada");
+  await expect(cards).toHaveCount(1);
+  await expect(cards.first()).toContainText("Ada Sato");
+
+  // back to the full roster
+  await page.locator("#squad-availability").selectOption("");
+  await page.locator("#squad-search").fill("");
+  await expect(cards).toHaveCount(5);
+  expect(errors).toEqual([]);
+});
+
 test("coach edits signups on the match page and the picker stays aligned", async ({ page }) => {
   await coachSession({ page });
   const api = await mockSupabase(page, { coach: true });

@@ -30,7 +30,7 @@
   // pitch slots + a 9-slot bench + search/roster with signup badges.
   const squad = {
     formation: "4231", slots: [], subs: Array(MAX_SUBS).fill(null),
-    active: null, search: "", dirty: false, saving: false, status: null,
+    active: null, search: "", availability: "", dirty: false, saving: false, status: null,
   };
 
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
@@ -528,7 +528,17 @@
   function renderRoster() {
     const starting = new Set(squad.slots.map((slot) => slot.playerId).filter(Boolean));
     const bench = new Set(squad.subs.filter(Boolean));
-    const visible = rosterSorted().filter((player) => String(player.display_name).toLocaleLowerCase().includes(squad.search));
+    /* Search + availability are roster view filters only — Suggest and the
+       bench still weigh every active player, and picked XI/bench members stay
+       visible under any filter so the coach keeps the full picture. */
+    const matchesAvailability = (player) => {
+      if (!squad.availability) return true;
+      const status = signupStatusOf(player.id);
+      return squad.availability === "none" ? !status : status === squad.availability;
+    };
+    const visible = rosterSorted()
+      .filter((player) => String(player.display_name).toLocaleLowerCase().includes(squad.search))
+      .filter(matchesAvailability);
     const html = ["GK", "DF", "MF", "AT", "Other"].map((group) => {
       const members = visible.filter((player) => YCACStats.positionGroup(player.primary_position) === group);
       if (!members.length) return "";
@@ -545,7 +555,8 @@
           </button>`;
         }).join("")}</div></section>`;
     }).join("");
-    $("squad-roster").innerHTML = html || `<p class="empty">${esc(t("pickerStatusNoEligible"))}</p>`;
+    const emptyState = activePlayers().length ? t("playersNoMatch") : t("pickerStatusNoEligible");
+    $("squad-roster").innerHTML = html || `<p class="empty">${esc(emptyState)}</p>`;
   }
 
   function renderSheet() {
@@ -726,6 +737,7 @@
     if (add) assignPlayer(add.dataset.squadAdd);
   });
   $("squad-search").addEventListener("input", (event) => { squad.search = event.target.value.trim().toLocaleLowerCase(); renderRoster(); });
+  $("squad-availability").addEventListener("change", (event) => { squad.availability = event.target.value; renderRoster(); });
   $("squad-suggest").addEventListener("click", suggestSquad);
   $("squad-refresh-bench").addEventListener("click", () => { refreshBench(); squad.dirty = true; setSquadStatus("pickerStatusBenchRefreshed"); renderSquad(); });
   $("squad-clear").addEventListener("click", () => { resetFormation(); squad.dirty = true; setSquadStatus("pickerStatusCleared"); });

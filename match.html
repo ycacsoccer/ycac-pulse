@@ -65,6 +65,14 @@
           <aside class="pk-roster-panel">
             <div class="pk-roster-heading">
               <span data-i18n="pickerAvailable">Available squad</span>
+              <select id="squad-availability" data-i18n-aria="signupStatus">
+                <option value="" data-i18n="filterAll">All</option>
+                <option value="confirmed" data-i18n="signupConfirmed">Confirmed</option>
+                <option value="waitlist" data-i18n="signupWaitlist">Waitlist</option>
+                <option value="none" data-i18n="adminNoResponse">No response</option>
+                <option value="declined" data-i18n="signupDeclined">Declined</option>
+                <option value="unavailable" data-i18n="signupUnavailable">Unavailable</option>
+              </select>
               <input id="squad-search" type="search" data-i18n-placeholder="pickerSearch" data-i18n-aria="pickerSearch" />
             </div>
             <div id="squad-roster"></div>

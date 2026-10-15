@@ -376,7 +376,8 @@ a.history-row:hover { background: var(--gold-pale); }
 .pk-bench-index { color: var(--gold); font-weight: 700; }
 .pk-bench-name { overflow: hidden; font-size: .7rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .pk-roster-panel { min-width: 0; }
-.pk-roster-heading { display: flex; justify-content: space-between; gap: .8rem; align-items: baseline; margin-bottom: .6rem; color: var(--muted); font-size: .62rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.pk-roster-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem .8rem; align-items: baseline; margin-bottom: .6rem; color: var(--muted); font-size: .62rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.pk-roster-heading select { max-width: 100%; padding: .45rem .5rem; color: var(--navy); background: #fff; border: 1px solid var(--line); border-radius: 0; font: 700 .72rem 'DM Sans', Arial, sans-serif; }
 .pk-roster-heading input { width: min(165px, 45vw); padding: .45rem .6rem; border: 1px solid var(--line); border-radius: 0; font-size: .72rem; text-transform: none; letter-spacing: normal; }
 .pk-group h4 { margin: .9rem 0 .4rem; color: var(--muted); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; }
 .pk-group:first-child h4 { margin-top: 0; }
