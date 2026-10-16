@@ -105,6 +105,20 @@ test("wave 25: TML standings render in published order with the club row highlig
   expect(errors).toEqual([]);
 });
 
+test("wave 34: published league top scorers render under the table", async ({ page }) => {
+  const scorers = standingsData.topScorers || [];
+  const list = page.locator("#standings-scorers");
+  await expect(list).toBeVisible(); // the shipped data file carries the D3 list
+  await expect(list.locator("h3")).toHaveText("League top scorers");
+  const items = list.locator("li");
+  await expect(items).toHaveCount(scorers.length);
+  await expect(items.first()).toContainText(scorers[0].name);
+  await expect(items.first().locator(".ss-club")).toHaveText(scorers[0].club);
+  await expect(items.first().locator(".ss-goals")).toHaveText(String(scorers[0].goals));
+  await expect(page.locator("table")).toHaveCount(1); // the list stays an <ol>, never a second table
+  expect(errors).toEqual([]);
+});
+
 test("wave 23: fixture text stays readable on the navy card (CSS-leak regression)", async ({ page }) => {
   const fixture = page.locator("#fixtures .fixture").first();
   await expect(fixture).toBeVisible();

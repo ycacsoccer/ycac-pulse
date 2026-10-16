@@ -30,8 +30,13 @@ test("the full picker on an upcoming fixture: pitch, bench, save", async ({ page
   await expect(panel.locator("#squad-bench .pk-bench-slot")).toHaveCount(9);
   await expect(page.locator("#squad-status")).toContainText("Add players");
 
-  // every active fixture player is offered in the roster (Fumi is inactive)
+  // wave 34: the roster opens on the Confirmed filter — ada/ben/dan only
   const cards = page.locator(".pk-card");
+  await expect(page.locator("#squad-availability")).toHaveValue("confirmed");
+  await expect(cards).toHaveCount(3);
+
+  // every active fixture player is offered under All (Fumi is inactive)
+  await page.locator("#squad-availability").selectOption("");
   await expect(cards).toHaveCount(5);
 
   // add Ada → she lands on the pitch (GK slot), status confirms, save enables
@@ -74,6 +79,12 @@ test("squad picker flags attendance: attending first, declined/unavailable badge
   await page.goto("/match.html?id=x1");
   await expect(page.locator("#squad-panel")).toBeVisible();
 
+  // the roster opens on the Confirmed filter; declined/unavailable cards only
+  // appear once the filter is opened to All
+  await expect(page.locator("#squad-availability")).toHaveValue("confirmed");
+  await expect(page.locator(".pk-card")).toHaveCount(3);
+  await page.locator("#squad-availability").selectOption("");
+
   // roster cards carry the signup status (fixture: ada/ben/dan confirmed, chr declined, evn unavailable)
   await expect(page.locator('[data-squad-add="p-ada"] .sa-status')).toHaveText(/Confirmed/i);
   await expect(page.locator('[data-squad-add="p-ada"] .sa-status')).toHaveClass(/ss-confirmed/);
@@ -101,7 +112,10 @@ test("squad roster filters by availability", async ({ page }) => {
   await page.goto("/match.html?id=x1");
   await expect(page.locator("#squad-panel")).toBeVisible();
   const cards = page.locator(".pk-card");
-  await expect(cards).toHaveCount(5); // every active player under the default "All"
+  await expect(page.locator("#squad-availability")).toHaveValue("confirmed"); // wave 34 default
+  await expect(cards).toHaveCount(3); // the confirmed players, filter untouched
+  await page.locator("#squad-availability").selectOption("");
+  await expect(cards).toHaveCount(5); // the full roster under All
 
   // declined → only Chris; unavailable → only Evan
   await page.locator("#squad-availability").selectOption("declined");
@@ -137,6 +151,9 @@ test("a visitor edits signups on the match page and the picker stays aligned", a
   const panel = page.locator("#signups-panel");
   await expect(panel).toBeVisible();
   await expect(panel.locator(".signup-group")).toHaveCount(3); // confirmed / declined / unavailable
+  // this test watches every roster badge (incl. no-response), so open the
+  // default Confirmed filter to All — badge state, not filtering, is under test
+  await page.locator("#squad-availability").selectOption("");
 
   // 1. move Chris from declined → confirmed (PATCH)
   await page.locator('[data-signup-status="p-chr"]').selectOption("confirmed");

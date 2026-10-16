@@ -1,7 +1,8 @@
 // Unit tests for standings.js — the shipped TML Division 3 league table
 //   node --test tests/unit
-// The table is hand-maintained (cross-fixtures are not in our database), so
-// these guard the arithmetic and published order a human editor can get wrong.
+// The table ships generated (`npm run update:standings` parses the published
+// page and re-validates everything below before writing), so these guard the
+// arithmetic and published order a parser bug or emergency hand-edit can break.
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const standings = require("../../standings.js");
@@ -40,4 +41,13 @@ test("wave 25: exactly one club row is flagged and it is ours", () => {
   const us = standings.rows.filter((row) => row.us);
   assert.equal(us.length, 1, "one and only one highlighted row");
   assert.match(us[0].team, /YCAC/i, "the flagged row is YC&AC Pulse");
+});
+
+test("wave 34: the published D3 top scorers ship with the table", () => {
+  assert.ok(Array.isArray(standings.topScorers), "topScorers is an array");
+  assert.ok(standings.topScorers.length >= 1, "the D3 list is present (refresh with npm run update:standings)");
+  for (const row of standings.topScorers) {
+    assert.ok(row.name && row.club, "every scorer names a player and a club");
+    assert.ok(Number.isInteger(row.goals) && row.goals >= 0, `${row.name}: goals is a non-negative integer`);
+  }
 });

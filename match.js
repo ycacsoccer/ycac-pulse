@@ -30,7 +30,7 @@
   // pitch slots + a 9-slot bench + search/roster with signup badges.
   const squad = {
     formation: "4231", slots: [], subs: Array(MAX_SUBS).fill(null),
-    active: null, search: "", availability: "", dirty: false, saving: false, status: null,
+    active: null, search: "", availability: "confirmed", dirty: false, saving: false, status: null,
   };
 
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));

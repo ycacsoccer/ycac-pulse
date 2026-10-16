@@ -773,6 +773,16 @@ svg.timing-svg, svg.trajectory-svg { display: block; width: 100%; height: auto; 
 .standings-table tr.is-us td.st-pos { box-shadow: inset 3px 0 0 var(--gold); color: var(--navy); }
 .standings-table tr.is-us td.st-team { color: #7a5f16; }
 
+/* ---- Wave 34: published D3 top scorers under the table ---- */
+.standings-scorers { margin-top: 1.1rem; padding-top: .9rem; border-top: 1px solid var(--line); }
+.standings-scorers h3 { margin: 0 0 .55rem; color: var(--muted); font-size: .62rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.standings-scorers ol { list-style: none; margin: 0; padding: 0; display: grid; gap: .38rem; }
+.standings-scorers li { display: grid; grid-template-columns: 1.3rem minmax(0, 1fr) auto auto; gap: .6rem; align-items: baseline; font-size: .82rem; color: var(--ink); }
+.standings-scorers .ss-rank { color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; }
+.standings-scorers .ss-name { color: var(--navy); font-weight: 700; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.standings-scorers .ss-club { color: var(--muted); font-size: .72rem; }
+.standings-scorers .ss-goals { color: var(--gold); font-family: 'Libre Baskerville', Georgia, serif; font-variant-numeric: tabular-nums; }
+
 /* ---- Wave 26: competition-first player data + simplified public shell ---- */
 .pc-tot { display: grid; gap: .38rem; }
 .pc-split { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .45rem; align-items: center; }

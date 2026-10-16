@@ -179,8 +179,9 @@ function render(data) {
   const season = YCACStats.computeSeason({ players: data.players, matches: data.matches, appearances: data.appearances, goals: data.goals });
   const core = YCACStats.ranked(season.tiers.core);
   document.querySelector("#squad-chips").innerHTML = core.map((entry) => `<a class="squad-chip" href="player.html?id=${encodeURIComponent(entry.id)}">${photoCell(entry)}<span class="sc-name">${esc(entry.display_name)}</span><small>${esc(entry.primary_position || "")}</small></a>`).join("") || document.querySelector("#empty-state").innerHTML;
-  // Wave 25: TML Division 3 standings — hand-maintained league table, club row
-  // highlighted, GD rendered from gf − ga so it can never drift from the data.
+  // Wave 25: TML Division 3 standings — generated league table (wave 34:
+  // `npm run update:standings`), club row highlighted, GD rendered from
+  // gf − ga so it can never drift from the data.
   const standingsBox = document.querySelector("#standings");
   if (standingsBox) {
     const table = window.YCACStandings;
@@ -191,6 +192,14 @@ function render(data) {
       return `<tr class="${row.us ? "is-us" : ""}"><td class="st-pos">${index + 1}</td><td class="st-team">${esc(row.team)}</td><td>${row.p}</td><td>${row.w}</td><td>${row.d}</td><td>${row.l}</td><td>${row.gf}</td><td>${row.ga}</td><td>${gd}</td><td class="st-pts">${row.pts}</td></tr>`;
     }).join("");
     document.querySelector("#standings-updated").textContent = table && table.updated ? t("standingsAsOf", { date: formatDate(table.updated) }) : "";
+    // Wave 34: the published D3 top scorers ship in the same data file; the
+    // list hides itself when the page has no scorer rows to show.
+    const scorers = (table && table.topScorers) || [];
+    const scorersBox = document.querySelector("#standings-scorers");
+    if (scorersBox) {
+      scorersBox.hidden = !scorers.length;
+      document.querySelector("#standings-scorers-list").innerHTML = scorers.map((row, index) => `<li><span class="ss-rank">${index + 1}</span><span class="ss-name">${esc(row.name)}</span><span class="ss-club">${esc(row.club)}</span><strong class="ss-goals">${row.goals}</strong></li>`).join("");
+    }
   }
 }
 

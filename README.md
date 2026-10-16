@@ -41,6 +41,7 @@ Live at https://ycacsoccer.github.io/ycac-pulse/
 | 30 | Public pre-match forecast | done — `forecast.js` (pure, unit-tested) turns league-table attack/defence rates into expected goals λ, falls back to head-to-head averages, and runs a Poisson score grid into win/draw/loss probabilities + a most-likely scoreline; `match.html` shows it for upcoming fixtures with league comparison, H2H meetings, form pills, season stats and top-scorer watch — honest "no forecast yet" for first meetings without a table entry; 19 new keys ×3 |
 | 31 | Full squad picker integrated + signup editor | done — the pitch/bench/roster picker from the retired standalone `squad-picker.html` now lives inside `match.html` (formation slots, 9-slot bench, search, core-weighted **Suggest squad**, copy lineup, save image, team sheet); coaches also edit this fixture's **signups** on the page (add a player as confirmed, move between statuses, remove) and the picker's roster badges follow the same state, with an **availability filter** (all / confirmed / waitlist / no response / declined / unavailable) stacking on the roster search; standalone page/CSS/JS removed, `verify-picker.cjs` repointed to the match page (+ live coach signups writes), 23 dead i18n keys pruned (**388 ×3**), E2E **40 tests** |
 | 32 | Full public access + build badge | done — every login gate removed: migration `0004_public_access.sql` opens all site tables (view + write) to anon while `coach_roster` stays locked, the optional login remains only for write attribution (`entered_by`/`updated_by`/`saved_by`), and every page footer shows a build-info badge (commit + age); live suite reworked to public/anon probes; mobile layout pass on `match.html` (picker overflow + heading/bench/signup fixes, substitutes heading spacing) with 7 new layout tests — E2E **50 tests** |
+| 33 | League table refresh + confirmed-default squad | done — `update-standings.cjs` (`npm run update:standings`, `-- --dry-run` previews) fetches the published Division 3 table **and league top scorers** from footyjapancompetitions.com into the now-generated `standings.js`, refusing anything the shipped contract can't represent (P = W+D+L, 3-1-0 points, points-then-GD order, exactly one us row; a point deduction stops the run for a human); the index gains a **League top scorers** list under the table (new key ×3, **389 total**), and the match squad's availability filter **defaults to Confirmed**; parser tested against a real HTML capture — +6 unit tests (**54**), +1 E2E (**51**) |
 
 The plan (10 requirements mapped to screens) and the reasoning behind it live in [`PLAN.md`](PLAN.md).
 
@@ -96,6 +97,7 @@ Do not rename table or column names without updating `stats.js` and the pages th
 | `npm run test:smoke` | Playwright against the **published** site (`SMOKE_COMMIT=` optional) | network |
 | `npm run test:verify` / `test:verify:live` | the verifiers alone, `--group=anon` / `live` | `.env` for live |
 | `npm run build:site` | whitelist copy of the publishable files → `_site/` + `build-info.json` | git |
+| `npm run update:standings` | pull the published D3 table + top scorers into `standings.js` (`-- --dry-run` previews the diff) | network |
 | `npm run serve` | local static server on port 4319 | nothing |
 
 ## Verify
@@ -106,9 +108,9 @@ failure:
 | # | Gate | Command | What it checks |
 |---|---|---|---|
 | 1 | Syntax | `node scripts/check-syntax.js` | every git-tracked `.js`/`.cjs` parses (`node --check`), every `.json` is valid; skips `node_modules`, `_site`, `playwright-report`, `test-results`, `*.gs` |
-| 2 | Unit | `node --test tests/unit/*.test.cjs` | 48 tests on the frontend logic with plain `node:test` (no framework): tier/reliability/coverage rules and the season split in `stats.js`, chart geometry + KPI maths + the wave-24 goal-timing/trajectory charts in `charts.js`, key parity, interpolation and the wave-21 key removals in `i18n.js`, the wave-25 standings table arithmetic + published order in `standings.js` |
+| 2 | Unit | `node --test tests/unit/*.test.cjs` | 54 tests on the frontend logic with plain `node:test` (no framework): tier/reliability/coverage rules and the season split in `stats.js`, chart geometry + KPI maths + the wave-24 goal-timing/trajectory charts in `charts.js`, key parity, interpolation and the wave-21 key removals in `i18n.js`, the wave-25 standings table arithmetic + published order in `standings.js`, and the footyjapancompetitions.com parser/renderer in `update-standings.cjs` (a real-HTML fixture) |
 | 3 | Verifiers | `node scripts/run-verifiers.js --group=anon` | the live contract suites that need only the publishable key: `verify-i18n`, `verify-stats`, `verify-index`, `verify-render`, `verify-profile-render` |
-| 4 | E2E | `playwright test` | 50 tests in `tests/e2e/` against `scripts/serve-static.js` with **every Supabase call mocked** (`page.route` → `tests/fixtures/public-data.js`): deterministic, no credentials, no network |
+| 4 | E2E | `playwright test` | 51 tests in `tests/e2e/` against `scripts/serve-static.js` with **every Supabase call mocked** (`page.route` → `tests/fixtures/public-data.js`): deterministic, no credentials, no network |
 
 ```powershell
 npm run verify        # gates 1–4
@@ -165,3 +167,9 @@ The site reads **Supabase** (Postgres, through `data.js`) — nothing on the pub
 Google Sheets any more. The two original workbooks are a read-only archive: keep both Sheets set to
 **Anyone with the link: Viewer**. `migrate-from-sheets.cjs` (the one-time Phase 1 import) is the
 only script that still knows their gviz URL.
+
+The league table is the one piece from outside Supabase: cross-fixtures aren't in our database, so
+**`npm run update:standings`** pulls the published Division 3 standings + top scorers from
+**footyjapancompetitions.com/standings** into the shipped `standings.js` (generated, never hand-edited
+— the script validates the unit-test contract before writing and prints the round's diff). Run it
+after each round completes and commit the result.
