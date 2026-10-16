@@ -92,7 +92,7 @@ const YCACI18n = (() => {
     // login / auth (Phase 4)
     loginTitle: "Coach access | YC&AC Pulse", loginHeading: "Coach access",
     loginCoachTitle: "Coach",
-    loginCoachCopy: "Manage fixtures, players, signups, squads and team content with one coach login.",
+    loginCoachCopy: "Manage fixtures, players, signups, squads and team content — everything is open to visitors; a coach login only adds your name to each save.",
     loginPassword: "Password", authLogin: "Log in",
     loginFailed: "Login failed — check your details and try again.",
     loginNeedCoach: "This account does not have coach access. Log out, then use the coach password.",
@@ -101,7 +101,7 @@ const YCACI18n = (() => {
     authCoachLogin: "Coach", authCoachDashboard: "Dashboard", authLogout: "Log out", loginContinue: "Continue", loginHome: "Back to season",
     // coach dashboard (Phase 5)
     coachTitle: "Coach Dashboard | YC&AC Pulse",
-    coachEyebrow: "Private team tool",
+    coachEyebrow: "Team tool",
     coachHeading: "Coach Dashboard",
     coachIntro: "Stable-squad board, next-fixture signups, position coverage, and review flags — live from the team database.",
     coachPlayers: "Players", coachUsed: "Used", coachMatches: "Matches",
@@ -325,7 +325,7 @@ const YCACI18n = (() => {
     // login / auth (Phase 4)
     loginTitle: "コーチアクセス | YC&AC Pulse", loginHeading: "コーチアクセス",
     loginCoachTitle: "コーチ",
-    loginCoachCopy: "試合、選手、出場可否、メンバー選考、チーム情報を1つのコーチログインで管理します。",
+    loginCoachCopy: "試合、選手、出場可否、メンバー選考、チーム情報を管理 — すべて公開です。コーチのログインは変更者を記録するためだけに使います。",
     loginPassword: "パスワード", authLogin: "ログイン",
     loginFailed: "ログインに失敗しました。入力内容を確認してください。",
     loginNeedCoach: "このアカウントにはコーチ権限がありません。ログアウトしてコーチパスワードを使用してください。",
@@ -334,7 +334,7 @@ const YCACI18n = (() => {
     authCoachLogin: "コーチ", authCoachDashboard: "ダッシュボード", authLogout: "ログアウト", loginContinue: "続行", loginHome: "シーズンページへ",
     // coach dashboard (Phase 5)
     coachTitle: "コーチダッシュボード | YC&AC Pulse",
-    coachEyebrow: "チーム専用ツール",
+    coachEyebrow: "チームツール",
     coachHeading: "コーチダッシュボード",
     coachIntro: "スターブル陣容ボード、次の試合の出場可否、ポジションカバー、確認フラグをチームデータベースから自動更新。",
     coachPlayers: "選手", coachUsed: "出場経験", coachMatches: "試合",
@@ -560,7 +560,7 @@ const YCACI18n = (() => {
     // login / auth (Phase 4)
     loginTitle: "教练入口 | YC&AC Pulse", loginHeading: "教练入口",
     loginCoachTitle: "教练",
-    loginCoachCopy: "通过一个教练账号管理赛程、球员、报名、阵容和球队内容。",
+    loginCoachCopy: "管理比赛、球员、报名、阵容和球队内容 — 所有内容对访客开放；教练登录仅用于标记修改者。",
     loginPassword: "密码", authLogin: "登录",
     loginFailed: "登录失败 — 请检查输入内容后重试。",
     loginNeedCoach: "此账号没有教练权限。请退出后使用教练密码登录。",
@@ -569,7 +569,7 @@ const YCACI18n = (() => {
     authCoachLogin: "教练", authCoachDashboard: "管理面板", authLogout: "退出登录", loginContinue: "继续", loginHome: "返回赛季页",
     // coach dashboard (Phase 5)
     coachTitle: "教练仪表板 | YC&AC Pulse",
-    coachEyebrow: "球队内部工具",
+    coachEyebrow: "球队工具",
     coachHeading: "教练仪表板",
     coachIntro: "稳定阵容板、下场比赛报名、位置覆盖与待审标记 — 直接来自球队数据库。",
     coachPlayers: "球员", coachUsed: "已上场", coachMatches: "比赛",

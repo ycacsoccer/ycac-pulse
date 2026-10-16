@@ -1,9 +1,12 @@
 // End-to-end check of the auth contract behind data.js + auth.js:
 //   node verify-auth.cjs
 // It drives the same GoTrue/PostgREST calls the browser code makes:
-//   password grant → team read → is_coach() → write allowed/denied →
-//   refresh grant → logout, then removes everything it created.
+//   anon reads + writes open (wave 33) → password grant → is_coach() still
+//   recognises the rostered coach → authenticated reads/writes → refresh grant
+//   → logout, then removes everything it created.
 // Ephemeral users only: e2e-team@ / e2e-coach@ (deleted afterwards, even on failure).
+// The login itself stays optional: nothing gates on it, it only attributes
+// writes (entered_by / updated_by).
 const fs = require("fs");
 const path = require("path");
 
@@ -122,10 +125,14 @@ async function main() {
     state.rosterAdded = rosterRow.ok;
     check(rosterRow.ok, "roster the e2e coach (coach_roster insert)");
 
-    // --- 2. anon: no team data, no writes ------------------------------------
-    check((await count("signups", anonHeaders)) === 0, "anon sees 0 signups");
-    const anonWrite = await call(`${BASE}/saved_squads`, { method: "POST", headers: anonHeaders, body: [{ saved_squad_id: PROBE_SQUAD, match_id: match.id, formation: "4-2-3-1", player_id: player.id, selection_type: "starter" }] });
-    check(anonWrite.status === 401 || anonWrite.status === 403, "anon write denied", `status ${anonWrite.status}`);
+    // --- 2. anon: reads everything, writes freely (wave 33) ------------------
+    check((await count("signups", anonHeaders)) === signupsTotal, "anon reads every signups row", `${signupsTotal}`);
+    const anonWrite = await call(`${BASE}/saved_squads`, { method: "POST", headers: { ...anonHeaders, Prefer: "return=representation" }, body: [{ saved_squad_id: PROBE_SQUAD, match_id: match.id, formation: "4-2-3-1", player_id: player.id, selection_type: "starter", saved_by: "verify-auth.cjs" }] });
+    check(anonWrite.ok && anonWrite.data?.[0]?.id !== undefined, "anon write accepted (public since wave 33)", `status ${anonWrite.status}`);
+    check((await count("saved_squads", anonHeaders)) === squadsTotal + 1, "anon reads back its own row", `${squadsTotal} + 1 probe`);
+    const anonDelete = await call(`${BASE}/saved_squads?saved_squad_id=eq.${PROBE_SQUAD}`, { method: "DELETE", headers: anonHeaders });
+    check(anonDelete.ok, "anon deletes its own row", `status ${anonDelete.status}`);
+    check((await count("saved_squads", adminHeaders)) === squadsTotal, "anon probe removed (no leftovers)", `${squadsTotal}`);
 
     // --- 3. team session: the password-grant flow auth.js runs ---------------
     const teamGrant = await signIn(TEAM_EMAIL, E2E_PASSWORD);
@@ -137,8 +144,10 @@ async function main() {
     const teamCoach = await isCoach(teamToken);
     check(teamCoach.ok && teamCoach.value === false, "team session is_coach() → false");
 
-    const teamWrite = await call(`${BASE}/saved_squads`, { method: "POST", headers: bearerHeaders(teamToken), body: [{ saved_squad_id: PROBE_SQUAD, match_id: match.id, formation: "4-2-3-1", player_id: player.id, selection_type: "starter" }] });
-    check(teamWrite.status === 401 || teamWrite.status === 403, "team session write denied (read-only)", `status ${teamWrite.status}`);
+    const teamWrite = await call(`${BASE}/saved_squads`, { method: "POST", headers: { ...bearerHeaders(teamToken), Prefer: "return=representation" }, body: [{ saved_squad_id: PROBE_SQUAD, match_id: match.id, formation: "4-2-3-1", player_id: player.id, selection_type: "starter", saved_by: "verify-auth.cjs" }] });
+    check(teamWrite.ok && teamWrite.data?.[0]?.id !== undefined, "authenticated (non-roster) write accepted — writes are open", `status ${teamWrite.status}`);
+    const teamDelete = await call(`${BASE}/saved_squads?saved_squad_id=eq.${PROBE_SQUAD}`, { method: "DELETE", headers: bearerHeaders(teamToken) });
+    check(teamDelete.ok, "authenticated session deletes its own row", `status ${teamDelete.status}`);
 
     // refresh grant (data.js → YCACAuth.ensureFresh)
     const refreshed = await call(`${AUTH}/token?grant_type=refresh_token`, { method: "POST", headers: anonHeaders, body: { refresh_token: teamGrant.data.refresh_token } });
@@ -164,7 +173,7 @@ async function main() {
     const probeId = coachWrite.data?.[0]?.id;
     check(coachWrite.ok && probeId !== undefined, "coach session write accepted", `id ${probeId}`);
 
-    check((await count("saved_squads", anonHeaders)) === 0, "probe row stays hidden from anon", `anon sees 0 of ${squadsTotal} + 1 probe`);
+    check((await count("saved_squads", anonHeaders)) === squadsTotal + 1, "anon reads the coach's probe row too (public read)", `anon sees ${squadsTotal} + 1 probe`);
 
     if (probeId !== undefined) {
       const coachDelete = await call(`${BASE}/saved_squads?id=eq.${probeId}`, { method: "DELETE", headers: bearerHeaders(coachToken) });
@@ -187,7 +196,7 @@ async function main() {
     console.log(`${failures.length} FAILURE(S): ${failures.join(" | ")}`);
     process.exit(1);
   }
-  console.log("Auth contract verified: public-by-default UI, one coach login; legacy team RLS remains read-only.");
+  console.log("Auth contract verified: read + write open to anon; optional login still drives attribution + is_coach().");
 }
 
 main().catch(async (error) => {

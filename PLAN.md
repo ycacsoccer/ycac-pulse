@@ -125,16 +125,18 @@ Never readable/writable by anon: `coach_notes`, `coach_roster`.
 | `coach_notes` | private player notes, squad-status override | 10 |
 | `coach_roster` | who counts as a coach (`is_coach()`) | 8 |
 
-All in `supabase/migrations/0001_init.sql` (nothing applied yet, so it stays a single migration).
+All started in `supabase/migrations/0001_init.sql`; since then the injuries table (`0002`), the
+age-band column (`0003`) and the public-access policy flip (`0004`) shipped as separate
+idempotent migrations.
 
-### 4.2 Login design (requirement 8; simplified in wave 26)
+### 4.2 Login design (requirement 8; simplified in wave 26, opened up in wave 33)
 
 - **Coach login** = one coach account (`config.coachEmail`), password-only — the form never asks for
   an address; the page signs in the configured account and verifies `is_coach()`.
-- Private pages call `requireCoach()` from `auth.js`; season/player/profile/public match pages never
-  redirect. On match pages, signups and coach notes are fetched only after a verified coach session.
-- The former `config.teamEmail` / `requireTeam()` path remains only as backwards-compatible plumbing
-  for the existing RLS setup; no current page or login form exposes it.
+- **Since wave 33 there are no private pages**: `requireCoach()` / `requireTeam()` were removed,
+  RLS (migration `0004_public_access.sql`) opens every site table to anon (view + write), and
+  nothing redirects — the optional login remains only so writes are attributed to a person
+  (`entered_by` / `updated_by` / `saved_by`).
 - Player self-service signups would still require per-player accounts later.
 
 ### 4.3 Shared code
@@ -144,7 +146,7 @@ All in `supabase/migrations/0001_init.sql` (nothing applied yet, so it stays a s
   persistence, `<select>` in every masthead, default **English**. Applies to all pages, UI strings
   and date/number formats (`Intl`). Note: *coach-authored content (guidelines, match feedback) is
   shown as written — only the interface is translated.*
-- **`auth.js`** — session helpers, `requireTeam` / `requireCoach`, login panel.
+- **`auth.js`** — session helpers + optional login panel (attribution only since wave 33).
 - **`data.js`** — Supabase client + typed fetch helpers (replaces the gviz loader in `app.js`).
 
 ### 4.4 Metrics & tiers
@@ -223,11 +225,14 @@ Thresholds live in `stats.js`; coach can override per player in `coach_notes`.
 | **27** | **Age bands + tactical coverage (wave 27)** — add a privacy-conscious age range to each player, maintained directly by a coach on the player page, and add formation heat maps for common tactical shapes to the coach dashboard | ✅ **done** — `0003_player_age_band.sql` is applied and adds a constrained nullable `players.age_band` (`17-20`, `20s`, `30s`, `40s`, `50s`) rather than storing dates of birth; the public profile hero displays it when set and coaches get an inline save control with RLS/0-row protection. `tactics.js` defines complete XIs for 4-2-3-1, 4-4-2, 4-3-3 and 3-5-2 and derives each slot's best/capable candidates; the dashboard renders an accessible selectable pitch heat map, excludes current injuries from available counts while still identifying them, and links every candidate to their profile; 16 keys ×3 (**371 total**) and 4 pure unit tests (**38 total**); live verification proves anon/team age writes are no-ops, coach writes work, invalid bands are rejected and test data is restored |
 | **28** | **Public age view + tactical depth split (wave 28)** — make the completed age data easy to scan publicly and make formation coverage more useful to coaches | ✅ **done** — `agebands.js` centralises the five categories, labels and distribution; all 40 active live players have a valid band. Colour-coded, text-labelled badges appear on player cards and profile facts, while a full-width public bento panel shows all five counts, squad percentages and bars. Each tactical node is redesigned as a compact depth card with separate `★ best-position` and `+ can-play` available counts, total-depth heat colour and an injured-cover marker; selecting it still exposes linked names split by fit. 3 keys ×3 (**374 total**), 2 new unit tests (**40 total**) and 3 new E2E tests (**33 total**), including a fully authenticated mocked coach-dashboard path |
 
-Note: the injuries wave needs one manual step — no SQL-execution path exists for the service key,
-so `0002_injuries.sql` gets pasted into the Supabase SQL Editor once (README workflow).
+Note: the injuries wave and the public-access wave each need one manual step — no SQL-execution
+path exists for the service key, so `0002_injuries.sql` and `0004_public_access.sql` get pasted
+into the Supabase SQL Editor once (README workflow).
 
 Phases ship independently. Phase 3 needs no Supabase and can start immediately; phases 4–11 need
-the project to exist. **All phases 0–28 are complete**; the `verify-*.cjs` suite (14 scripts) plus `npm run verify` (syntax, 40 unit tests, 33 E2E) guard each area.
+the project to exist. **All phases are complete** (through README row 32 — wave 33's full public
+access); the `verify-*.cjs` suite (14 scripts) plus `npm run verify` (syntax, 48 unit tests, 43
+E2E) guard each area.
 
 ---
 

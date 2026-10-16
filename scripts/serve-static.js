@@ -10,6 +10,19 @@ const ROOT = path.resolve(__dirname, "..");
 const portArg = process.argv.indexOf("--port");
 const PORT = Number(portArg > -1 ? process.argv[portArg + 1] : process.env.PORT || 4319);
 
+// build-info.json is generated at publish time (scripts/build-site.js).
+// Local dev and the E2E suite run without a build step, so synthesize it from
+// git HEAD once at startup — the footer badge behaves the same everywhere.
+let buildInfoBody = null;
+if (!fs.existsSync(path.join(ROOT, "build-info.json"))) {
+  const info = { commit: "", builtAt: new Date().toISOString(), node: process.version };
+  try {
+    // eslint-disable-next-line global-require
+    info.commit = require("child_process").execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim();
+  } catch (error) { /* no git available — the badge shows the time only */ }
+  buildInfoBody = `${JSON.stringify(info, null, 2)}\n`;
+}
+
 const TYPES = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -35,6 +48,10 @@ const server = http.createServer((req, res) => {
       return;
     }
     if (!fs.existsSync(file) || !fs.statSync(file).isFile()) {
+      if (pathname === "/build-info.json" && buildInfoBody) { // synthesized above
+        res.writeHead(200, { "Content-Type": TYPES[".json"] }).end(buildInfoBody);
+        return;
+      }
       res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" }).end("not found");
       return;
     }

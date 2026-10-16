@@ -71,7 +71,7 @@ note(missingCount === 0, `all ${usedKeys.size} used keys exist in ${languages.jo
 
 // --- 4. no hardcoded CJK in pages -------------------------------------------
 const cjk = /[\u3040-\u30ff\u3400-\u9fff]/;
-for (const file of ["app.js", "login.js", "auth.js", "data.js", "coach.js", "players.js", "player.js", "admin.js", "match.js", "team.js", "index.html", "login.html", "coach.html", "players.html", "player.html", "admin.html", "match.html", "team.html"]) {
+for (const file of ["app.js", "login.js", "auth.js", "buildinfo.js", "data.js", "coach.js", "players.js", "player.js", "admin.js", "match.js", "team.js", "index.html", "login.html", "coach.html", "players.html", "player.html", "admin.html", "match.html", "team.html"]) {
   const source = read(file);
   const line = source.split("\n").findIndex((text) => cjk.test(text));
   note(line === -1, `no hardcoded Japanese/Chinese in ${file}`, line === -1 ? "" : `first hit line ${line + 1}`);

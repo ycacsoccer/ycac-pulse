@@ -5,8 +5,8 @@
       actually propagated before anything else is asserted.
    2. The public pages render from live anon data: charts, KPIs, squad chips,
       player cards, a real profile — with wave 21's attendance surface gone.
-   3. No horizontal overflow, no JS exceptions, and team-only pages still
-      bounce anonymous visitors to the login gate. */
+   3. No horizontal overflow, no JS exceptions, every page (team included)
+      reachable without a login, and the footer badge naming the build. */
 const { test, expect } = require("@playwright/test");
 
 const COMMIT = process.env.SMOKE_COMMIT || "";
@@ -64,19 +64,31 @@ test("players grid and a real profile render from live data", async ({ page }) =
   expect(errors).toEqual([]);
 });
 
-test("private coach tools bounce anonymous visitors to the single login gate", async ({ page }) => {
+test("the team page renders for anonymous visitors — no login bounce", async ({ page }) => {
+  const errors = watchErrors(page);
   await page.goto("./team.html");
-  await expect(page).toHaveURL(/login\.html/);
-  await expect(page.locator("#coach-form")).toHaveCount(1);
-  await expect(page.locator("#team-form")).toHaveCount(0);
+  await expect(page).toHaveURL(/team\.html/); // wave 33: requireCoach() is gone
+  await expect(page.locator("#coach-form")).toHaveCount(0);
+  await expect(page.locator("#team-content")).toBeVisible(); // content or its empty state
+  expect(errors).toEqual([]);
 });
 
-test("a live fixture detail is public while coach panels stay private", async ({ page }) => {
+test("a live fixture detail opens every panel for anonymous visitors", async ({ page }) => {
   await page.goto("./match.html?id=m006");
   await expect(page).toHaveURL(/match\.html\?id=m006/);
   await expect(page.locator("#match-hero")).toContainText("Corinthians Harbour FC");
-  await expect(page.locator("#signups-panel")).toBeHidden();
-  await expect(page.locator("#notes-panel")).toBeHidden();
+  await expect(page.locator("#signups-panel")).toBeVisible(); // wave 33: public reads signups/match_notes
+  await expect(page.locator("#notes-panel")).toBeVisible();
+});
+
+test("the footer names the build: commit link and relative time", async ({ page }) => {
+  await page.goto("./");
+  const badge = page.locator("#build-info");
+  await expect(badge).toBeVisible();
+  await expect(badge).toContainText(/ · /); // "<sha> · <relative time>"
+  await expect(badge.locator(".build-commit")).toHaveText(/^[0-9a-f]{7}$/);
+  await expect(badge.locator(".build-commit")).toHaveAttribute("href", /\/commit\/[0-9a-f]{7}/);
+  await expect(badge).toHaveAttribute("title", /\d{4}-\d{2}-\d{2}T/); // full sha · builtAt · node
 });
 
 for (const width of [390, 1440]) {

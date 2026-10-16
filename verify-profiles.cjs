@@ -1,8 +1,10 @@
 // Data-path + storage check for the profile pages (players.html / player.html):
 //   node verify-profiles.cjs
-// Public queries run as anon; the photo-upload flow AND the wave-20 position
-// editor run exactly like the page does them (coach PATCH → verify → restore)
-// with ephemeral users. Everything it creates is removed afterwards.
+// Public queries run as anon, and since wave 33 so do the editors: the photo
+// upload, position editor and age-band writer run exactly like the page does
+// them — as ANON (write → verify → restore). An ephemeral rostered coach runs
+// the same chain for authenticated parity. Everything it creates is removed
+// afterwards.
 const fs = require("fs");
 const path = require("path");
 const YCACStats = require("./stats.js");
@@ -79,7 +81,7 @@ async function main() {
   if (!secret || !publishable) throw new Error("missing credentials (.env / config.js)");
   console.log(`Verifying profile pages against ${env.SUPABASE_URL}\n`);
 
-  const state = { coachId: null, teamId: null, rosterAdded: false, photoPlayer: null, originalPhoto: undefined, posPlayer: null, originalPositions: null, agePlayer: null, originalAge: undefined };
+  const state = { coachId: null, rosterAdded: false, photoPlayer: null, originalPhoto: undefined, posPlayer: null, originalPositions: null, agePlayer: null, originalAge: undefined };
 
   try {
     await slate();
@@ -176,28 +178,26 @@ async function main() {
       "editable slots are focusable buttons (not aria-hidden)");
     check(editMarkup.includes('pm-slot pm-best"') && editMarkup.includes('pm-slot pm-capable"') && editMarkup.includes('pm-slot pm-empty"'),
       "editable diagram marks best / capable / empty slot states");
-    check(profileJs.includes("YCACPositionMap.editable") && profileJs.includes('data-pos-action="edit"') && profileJs.includes("state.isCoach"),
-      "player.js: coach-gated pitch editor wired to #profile-positions");
+    check(profileJs.includes("YCACPositionMap.editable") && profileJs.includes('data-pos-action="edit"') && !profileJs.includes("state.isCoach"),
+      "player.js: pitch editor wired to #profile-positions with no login gate (public since wave 33)");
     check(profileJs.includes('update("players"') && profileJs.includes("secondary_positions") && profileJs.includes("rows.length !== 1"),
       "player.js saves best + can-play positions with a 0-row guard");
     check(profileJs.includes('addEventListener("keydown"') && profileJs.includes('closest("[data-pos]")'),
       "pitch slots are keyboard-operable (keydown → pickSlot)");
 
-    // --- 2. photo upload is coach-only ---------------------------------------
+    // --- 2. photo upload is open to everyone (wave 33) -----------------------
     const anonUpload = await postObject(null);
-    check(anonUpload.status >= 400, "anon photo upload denied", `status ${anonUpload.status}`);
+    check(anonUpload.ok, "anon photo upload accepted (public write)", `status ${anonUpload.status}`);
+    const anonFile = await fetch(`${STORAGE}/object/public/player-photos/${PROBE_PATH}`);
+    check(anonFile.ok && String(anonFile.headers.get("content-type") || "").includes("image"), "anon upload serves from the public URL", `${anonFile.status} ${anonFile.headers.get("content-type")}`);
+    const anonDel = await fetch(`${STORAGE}/object/player-photos/${PROBE_PATH}`, { method: "DELETE", headers: { apikey: publishable, Authorization: `Bearer ${publishable}` } });
+    check(anonDel.ok, "anon deletes its own photo object", `status ${anonDel.status}`);
 
     const coach = await call(`${AUTH}/admin/users`, { method: "POST", headers: adminHeaders, body: JSON.stringify({ email: COACH_EMAIL, password: E2E_PASSWORD, email_confirm: true }) });
     state.coachId = coach.id;
-    const team = await call(`${AUTH}/admin/users`, { method: "POST", headers: adminHeaders, body: JSON.stringify({ email: TEAM_EMAIL, password: E2E_PASSWORD, email_confirm: true }) });
-    state.teamId = team.id;
     await call(`${BASE}/coach_roster`, { method: "POST", headers: adminHeaders, body: JSON.stringify([{ email: COACH_EMAIL }]) });
     state.rosterAdded = true;
-    check(Boolean(state.coachId && state.teamId), "ephemeral coach + team users created");
-
-    const teamGrant = await signIn(TEAM_EMAIL);
-    const teamUpload = await postObject(teamGrant.access_token);
-    check(teamUpload.status >= 400, "team session photo upload denied (read-only)", `status ${teamUpload.status}`);
+    check(Boolean(state.coachId), "ephemeral rostered coach user created");
 
     // --- 3. the coach flow, exactly like player.js ---------------------------
     const coachGrant = await signIn(COACH_EMAIL);
@@ -223,7 +223,7 @@ async function main() {
     const posOriginal = await call(`${BASE}/players?id=eq.${player.id}&select=primary_position,secondary_positions`, { headers: adminHeaders });
     state.originalPositions = { primary_position: posOriginal[0].primary_position, secondary_positions: posOriginal[0].secondary_positions };
 
-    // anon + team may fire the SAME PATCH player.js runs — both must be no-ops
+    // anon fires the SAME PATCH player.js runs — public write (wave 33)
     const attemptPositions = async (token, body) => {
       const response = await fetch(`${BASE}/players?id=eq.${player.id}`, {
         method: "PATCH",
@@ -236,14 +236,11 @@ async function main() {
       return { status: response.status, rows };
     };
     const anonAttempt = await attemptPositions(null, { primary_position: "GK" });
-    check(anonAttempt.status >= 400 || (Array.isArray(anonAttempt.rows) && anonAttempt.rows.length === 0),
-      "anon position edit denied", `status ${anonAttempt.status}`);
-    const teamAttempt = await attemptPositions(teamGrant.access_token, { primary_position: "GK" });
-    check(teamAttempt.status >= 400 || (Array.isArray(teamAttempt.rows) && teamAttempt.rows.length === 0),
-      "team session position edit denied (read-only)", `status ${teamAttempt.status}`);
-    const afterAttempts = await call(`${BASE}/players?id=eq.${player.id}&select=primary_position`, { headers: adminHeaders });
-    check(afterAttempts[0].primary_position === state.originalPositions.primary_position,
-      "position unchanged after anon/team attempts", String(afterAttempts[0].primary_position));
+    check(anonAttempt.status < 400 && Array.isArray(anonAttempt.rows) && anonAttempt.rows.length === 1,
+      "anon position edit accepted (public write)", `status ${anonAttempt.status}`);
+    const afterAttempts = await call(`${BASE}/players?id=eq.${player.id}&select=primary_position`, { headers: anonHeaders });
+    check(afterAttempts[0].primary_position === "GK",
+      "anon edit persisted, readable by anon", String(afterAttempts[0].primary_position));
 
     // the coach flow, exactly like player.js savePositions()
     const probeBest = Object.keys(positionMap.COORDS).find((code) => code !== state.originalPositions.primary_position) || "ST";
@@ -262,9 +259,8 @@ async function main() {
     state.originalAge = ageOriginal[0]?.age_band ?? null;
     const ageProbe = state.originalAge === "30s" ? "40s" : "30s";
     const anonAge = await attemptPositions(null, { age_band: ageProbe });
-    check(anonAge.status >= 400 || (Array.isArray(anonAge.rows) && anonAge.rows.length === 0), "anon age-band edit denied", `status ${anonAge.status}`);
-    const teamAge = await attemptPositions(teamGrant.access_token, { age_band: ageProbe });
-    check(teamAge.status >= 400 || (Array.isArray(teamAge.rows) && teamAge.rows.length === 0), "team age-band edit denied (read-only)", `status ${teamAge.status}`);
+    check(anonAge.status < 400 && Array.isArray(anonAge.rows) && anonAge.rows.length === 1,
+      "anon age-band edit accepted (public write)", `status ${anonAge.status}`);
     const agePatched = await call(`${BASE}/players?id=eq.${player.id}`, {
       method: "PATCH", headers: { ...bearerHeaders(coachToken), Prefer: "return=representation" }, body: JSON.stringify({ age_band: ageProbe }),
     });
@@ -317,7 +313,7 @@ async function main() {
     console.log(`${failures.length} FAILURE(S): ${failures.join(" | ")}`);
     process.exit(1);
   }
-  console.log("Profile pages verified: public queries, stats split, photo + position + age-band writes (coach-only).");
+  console.log("Profile pages verified: public queries, stats split, photo + position + age-band writes (anon + coach parity).");
 }
 
 main().catch((error) => { console.error(`ERROR ${error.message}`); process.exit(1); });

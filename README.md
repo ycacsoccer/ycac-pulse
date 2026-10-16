@@ -40,6 +40,7 @@ Live at https://ycacsoccer.github.io/ycac-pulse/
 | 29 | Match-page squad picker + attendance UX | done — the coach gets an add/remove **match squad** on `match.html?id=` for upcoming fixtures (status badges on the add cards, attending-first sort, declined/unavailable flagged, save → deactivate-then-insert into `saved_squads`), hidden for public visitors and played matches; `?v=<sha7>` cache-busting in `build:site` so stale JS can't show raw keys; E2E extended to 39 tests |
 | 30 | Public pre-match forecast | done — `forecast.js` (pure, unit-tested) turns league-table attack/defence rates into expected goals λ, falls back to head-to-head averages, and runs a Poisson score grid into win/draw/loss probabilities + a most-likely scoreline; `match.html` shows it for upcoming fixtures with league comparison, H2H meetings, form pills, season stats and top-scorer watch — honest "no forecast yet" for first meetings without a table entry; 19 new keys ×3 |
 | 31 | Full squad picker integrated + signup editor | done — the pitch/bench/roster picker from the retired standalone `squad-picker.html` now lives inside `match.html` (formation slots, 9-slot bench, search, core-weighted **Suggest squad**, copy lineup, save image, team sheet); coaches also edit this fixture's **signups** on the page (add a player as confirmed, move between statuses, remove) and the picker's roster badges follow the same state, with an **availability filter** (all / confirmed / waitlist / no response / declined / unavailable) stacking on the roster search; standalone page/CSS/JS removed, `verify-picker.cjs` repointed to the match page (+ live coach signups writes), 23 dead i18n keys pruned (**388 ×3**), E2E **40 tests** |
+| 32 | Full public access + build badge | done — every login gate removed: migration `0004_public_access.sql` opens all site tables (view + write) to anon while `coach_roster` stays locked, the optional login remains only for write attribution (`entered_by`/`updated_by`/`saved_by`), and every page footer shows a build-info badge (commit + age); live suite reworked to public/anon probes; mobile layout pass on `match.html` (picker overflow + heading/bench/signup fixes, substitutes heading spacing) with 7 new layout tests — E2E **50 tests** |
 
 The plan (10 requirements mapped to screens) and the reasoning behind it live in [`PLAN.md`](PLAN.md).
 
@@ -48,23 +49,25 @@ The plan (10 requirements mapped to screens) and the reasoning behind it live in
 1. Create a free account at [supabase.com](https://supabase.com) and a new project (any name/region).
 2. In the dashboard open **SQL Editor** → paste the contents of each file in `supabase/migrations/`
    in filename order — `0001_init.sql` (fresh projects only), then `0002_injuries.sql`, then
-   `0003_player_age_band.sql` — → **Run**.
+   `0003_player_age_band.sql`, then `0004_public_access.sql` — → **Run**.
    (`0002` is idempotent — safe to re-run — and ends with a `select` that reports `injuries ready / 4`.)
    (`0003` is also idempotent and must be applied before age groups can be saved from a player page.)
+   (`0004` is idempotent too — it opens every site table to public view + write and leaves only
+   `coach_roster` locked.)
    (Or install the Supabase CLI and run `supabase db push` from this folder.)
-3. **Authentication → Users → Add user** (tick *Auto confirm*), twice:
-   - the **team account** — one shared login for restricted pages (e.g. `team@ycac.jp`) with a
-     password the players know;
-   - your **coach account** — your own email, used for admin and any write action.
-4. In **SQL Editor** register the coach: `insert into coach_roster (email) values ('you@yourmail.com');`
-   (Every write policy checks this roster — an account that is not listed can read team pages but
-   never change data.)
+3. **Authentication → Users → Add user** (tick *Auto confirm*), optionally once:
+   - your **coach account** — your own email. Since the access flip every page and write works
+     without logging in; the login exists only so saved rows are attributed to a person
+     (`entered_by` / `updated_by` / `saved_by`).
+4. In **SQL Editor** register the coach (used for that attribution via `is_coach()`):
+   `insert into coach_roster (email) values ('you@yourmail.com');`
+   (`coach_roster` is the one table that stays private — it maps coach emails to auth users.)
 5. **Project Settings → API Keys**: copy the keys into place.
    - **Project URL** (`https://<ref>.supabase.co`) → `config.js` → `supabaseUrl`
    - **Publishable key** (`sb_publishable_…`, the browser-safe replacement for the old *anon
      public* key) → `config.js` → `supabaseAnonKey`
-   - the team account email → `config.js` → `teamEmail`, the coach account email →
-     `config.js` → `coachEmail` (login forms are password-only — the addresses are never typed)
+   - the coach account email → `config.js` → `coachEmail` (and `teamEmail` if you keep a shared
+     login; the login forms are password-only — the addresses are never typed)
    - **Secret key** (`sb_secret_…`, click the eye to reveal) is the old *service_role* equivalent:
      use it only as the `SUPABASE_SERVICE_ROLE_KEY` environment variable for the migration below —
      it bypasses RLS, so it must never go into `config.js` or any committed file.
@@ -103,9 +106,9 @@ failure:
 | # | Gate | Command | What it checks |
 |---|---|---|---|
 | 1 | Syntax | `node scripts/check-syntax.js` | every git-tracked `.js`/`.cjs` parses (`node --check`), every `.json` is valid; skips `node_modules`, `_site`, `playwright-report`, `test-results`, `*.gs` |
-| 2 | Unit | `node --test tests/unit/*.test.cjs` | 34 tests on the frontend logic with plain `node:test` (no framework): tier/reliability/coverage rules and the season split in `stats.js`, chart geometry + KPI maths + the wave-24 goal-timing/trajectory charts in `charts.js`, key parity, interpolation and the wave-21 key removals in `i18n.js`, the wave-25 standings table arithmetic + published order in `standings.js` |
+| 2 | Unit | `node --test tests/unit/*.test.cjs` | 48 tests on the frontend logic with plain `node:test` (no framework): tier/reliability/coverage rules and the season split in `stats.js`, chart geometry + KPI maths + the wave-24 goal-timing/trajectory charts in `charts.js`, key parity, interpolation and the wave-21 key removals in `i18n.js`, the wave-25 standings table arithmetic + published order in `standings.js` |
 | 3 | Verifiers | `node scripts/run-verifiers.js --group=anon` | the live contract suites that need only the publishable key: `verify-i18n`, `verify-stats`, `verify-index`, `verify-render`, `verify-profile-render` |
-| 4 | E2E | `playwright test` | 30 tests in `tests/e2e/` against `scripts/serve-static.js` with **every Supabase call mocked** (`page.route` → `tests/fixtures/public-data.js`): deterministic, no credentials, no network |
+| 4 | E2E | `playwright test` | 50 tests in `tests/e2e/` against `scripts/serve-static.js` with **every Supabase call mocked** (`page.route` → `tests/fixtures/public-data.js`): deterministic, no credentials, no network |
 
 ```powershell
 npm run verify        # gates 1–4
@@ -113,8 +116,9 @@ npm run verify:live   # + the 9 suites that hold SUPABASE_SERVICE_ROLE_KEY in .e
 ```
 
 The other nine verifiers (`verify-import`, `auth`, `coach`, `profiles`, `admin`, `match`, `team`,
-`picker`, `injuries`) create ephemeral users and write/restore rows against the real project, so
-they only run where `.env` exists: `npm run verify:live`, before you push.
+`picker`, `injuries`) probe the public-access contract, create ephemeral users and write/restore
+rows against the real project, so they only run where `.env` exists: `npm run verify:live`, before
+you push.
 
 > `verify-stats.cjs` carries an `EXPECTED` snapshot of the database (row counts, tier buckets).
 > Entering a new match or editing the roster makes it fail **on purpose** — bump that block in the
@@ -129,8 +133,8 @@ they only run where `.env` exists: `npm run verify:live`, before you push.
   from **GitHub Actions**, so a failing run means the site is **not** republished.
 - **Post-deploy smoke** (same workflow, `npm run test:smoke`): polls `build-info.json` until the
   published commit matches the pushed SHA, then loads the public pages against live data —
-  3 KPI tiles, no attendance surface, player cards, a real profile, no horizontal overflow, and
-  team-only pages still bouncing anonymous visitors to `login.html`.
+  3 KPI tiles, no attendance surface, player cards, a real profile, no horizontal overflow, the
+  build-info badge, and team pages rendering publicly (no more login bounce).
 
 **Workflow rule:** change → pre-commit (`verify:fast`) → push → CI `verify` → CI builds + deploys
 → CI smoke-tests the published site. If any step is red, nothing ships.

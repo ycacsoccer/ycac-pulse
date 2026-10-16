@@ -153,6 +153,17 @@ test("requests only the public tables, from the project host, and logs no errors
   expect(errors).toEqual([]);
 });
 
+test("footer build badge: commit link, relative time, translated on switch", async ({ page }) => {
+  const badge = page.locator("#build-info");
+  await expect(badge).toBeVisible(); // serve-static synthesizes build-info.json
+  await expect(badge).toContainText(/ · /); // "<sha> · <relative time>"
+  await expect(badge.locator(".build-commit")).toHaveText(/^[0-9a-f]{7}$/);
+  await expect(badge.locator(".build-commit")).toHaveAttribute("href", /\/commit\/[0-9a-f]{7}/);
+  await expect(badge).toHaveAttribute("title", /\d{4}-\d{2}-\d{2}T/); // full sha · builtAt · node
+  await page.selectOption("#lang-select", "ja");
+  await expect(badge).toHaveText(/[前今]|時間|分/); // 「3時間前」 style, not the English string
+});
+
 test("language switch re-renders the page in Japanese and survives a reload", async ({ page }) => {
   await expect(page.locator('h2[data-i18n="results"]').first()).toHaveText("Results");
   await page.selectOption("#lang-select", "ja");

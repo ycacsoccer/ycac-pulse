@@ -5,8 +5,8 @@
 // apps, appearance rate, goals and assists; the timeline
 // has a row for EVERY final match — absences labelled (the picked player is
 // the one who has missed the most matches while still having played) — and
-// (wave 20) drives the coach position editor: Edit → tap pitch slots →
-// mode switch → save (stubbed, no DB write) → cancel.
+// (wave 33: public since the access flip) drives the position editor:
+// Edit → tap pitch slots → mode switch → save (stubbed, no DB write) → cancel.
 const fs = require("fs");
 global.window = globalThis;
 global.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
@@ -58,7 +58,10 @@ const get = async (path) => {
 
   // --- 2. minimal DOM stub (same approach as verify-render.cjs) --------------
   const pages = ["player.html", "players.html"].map((file) => fs.readFileSync(__dirname + `/${file}`, "utf8"));
-  const htmlIds = new Set(pages.flatMap((page) => [...page.matchAll(/id="([^"]+)"/g)].map((match) => match[1])));
+  // ids may also be defined in JS-rendered templates (photo upload, age editor,
+  // positions Edit control — all public since wave 33)
+  const scripts = ["player.js", "players.js"].map((file) => fs.readFileSync(__dirname + `/${file}`, "utf8"));
+  const htmlIds = new Set([...pages, ...scripts].flatMap((source) => [...source.matchAll(/id="([^"]+)"/g)].map((match) => match[1])));
   const unknownIds = [];
   const elements = new Map();
   // listeners are RECORDED (not no-ops) so section 6 can dispatch real clicks
@@ -134,9 +137,12 @@ const get = async (path) => {
     && hero.includes("Appearance rate") && hero.includes("Goals") && hero.includes("Assists"),
   "hero splits TML + Friendly apps/rate/goals/assists", `${summaries} summaries`);
 
-  // wave 20: visitors see the diagram only — no pitch-tap editor controls
-  check(!el("profile-positions").innerHTML.includes("data-pos-action") && !el("profile-positions").innerHTML.includes("data-pos-mode"),
-    "public profile: diagram without editor controls");
+  // wave 33: the editor controls are public — Edit shows, the editor stays
+  // closed until tapped; the photo upload + age editor open for everyone.
+  check(el("profile-positions").innerHTML.includes('data-pos-action="edit"') && !el("profile-positions").innerHTML.includes("data-pos-mode"),
+    "public profile: diagram with the Edit control, editor closed");
+  check(hero.includes('id="photo-upload"') && hero.includes('id="age-band-select"'),
+    "public profile: photo upload + age editor controls present");
 
   const stats = el("profile-stats").innerHTML;
   check(stats.includes("Goals / game") && stats.includes("Appearance rate") && stats.includes(">TML<") && stats.includes(">Friendly<") && stats.includes(">All<"),
@@ -188,12 +194,11 @@ const get = async (path) => {
     check(false, "no scorer has goals in both competitions to badge-check");
   }
 
-  // --- 6. wave 20: coach position editor (tap a slot → draft → save) --------
+  // --- 6. wave 33: position editor drives the same way for everyone ---------
   const posMap = require("./positionmap.js");
   delete require.cache[require.resolve("./player.js")];
-  global.YCACAuth = { session: { access_token: "e2e-stub" }, isCoach: async () => true, ensureFresh: async () => null };
-  // wipe listeners recorded by the earlier (public) instances so only the
-  // coach instance below reacts to the dispatches
+  // wipe listeners recorded by the earlier instances so only the fresh
+  // instance below reacts to the dispatches
   (elements.get("profile-positions")).listeners = {};
   el("profile-positions").innerHTML = "";
   require("./player.js");
@@ -202,8 +207,8 @@ const get = async (path) => {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   const posPanel = () => el("profile-positions").innerHTML;
-  check(posPanel().includes('data-pos-action="edit"'), "coach profile shows the Edit positions control");
-  check(!posPanel().includes("data-pos-mode"), "coach view mode has no editor until Edit is tapped");
+  check(posPanel().includes('data-pos-action="edit"'), "profile shows the public Edit positions control");
+  check(!posPanel().includes("data-pos-mode"), "default view has no editor until Edit is tapped");
 
   const firePos = (type, event) => ((elements.get("profile-positions").listeners || {})[type] || []).forEach((fn) => fn(event));
   const tapPos = (attrs) => firePos("click", { target: { closest: (selector) => {

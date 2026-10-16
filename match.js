@@ -22,7 +22,7 @@
 
   const state = {
     mode: "loading", // loading | ok | missing | error
-    match: null, allMatches: [], apps: [], allAppearances: [], goals: [], allGoals: [], signups: [], notes: [], savedSquad: [], isCoach: false,
+    match: null, allMatches: [], apps: [], allAppearances: [], goals: [], allGoals: [], signups: [], notes: [], savedSquad: [],
     playersById: new Map(), seasonIndex: new Map(),
   };
 
@@ -221,14 +221,14 @@
     target.innerHTML = blocks.join("");
   }
 
-  /* Signups (coach): every status is editable on an upcoming fixture — add a
+  /* Signups (public): every status is editable on an upcoming fixture — add a
      player as confirmed (or any status), move a player between statuses, or
      remove a signup entirely. The squad picker's roster badges read the same
      state.signups, so both panels stay aligned. Played matches stay read-only. */
   function renderSignups() {
     const panel = $("signups-panel");
     const target = $("match-signups");
-    panel.hidden = state.mode !== "ok" || !state.isCoach;
+    panel.hidden = state.mode !== "ok";
     if (panel.hidden) { target.innerHTML = ""; return; }
     const editable = !isFinal(state.match);
     if (!state.signups.length && !editable) { target.innerHTML = empty("matchNoSignups"); return; }
@@ -336,7 +336,7 @@
   function renderNotes() {
     const panel = $("notes-panel");
     const target = $("match-notes");
-    panel.hidden = state.mode !== "ok" || !state.isCoach;
+    panel.hidden = state.mode !== "ok";
     if (panel.hidden) { target.innerHTML = ""; return; }
     const note = state.notes[0];
     const blocks = note
@@ -683,7 +683,7 @@
 
   function renderSquad() {
     const panel = $("squad-panel");
-    const visible = state.mode === "ok" && state.isCoach && !isFinal(state.match);
+    const visible = state.mode === "ok" && !isFinal(state.match);
     panel.hidden = !visible;
     if (!visible) return;
     $("squad-formation").value = squad.formation;
@@ -768,15 +768,14 @@
     if (!VALID_ID.test(id)) { showMissing(); return; }
 
     try {
-      state.isCoach = Boolean(YCACAuth.session && await YCACAuth.isCoach());
       const [matches, apps, goals, signups, notes, players, savedSquad] = await Promise.all([
         YCACData.select("matches", "select=*"), // all fixtures: the forecast needs history + standings context
         YCACData.select("appearances", "select=*,players(id,display_name,shirt_number,photo_path,primary_position)"), // all: lineup by match + Suggest weighs history
         YCACData.select("goals", "select=*"), // all goals: form scorers + head-to-head scorers
-        state.isCoach ? YCACData.select("signups", `select=*,players(id,display_name,shirt_number,photo_path)&match_id=eq.${id}`) : Promise.resolve([]),
-        state.isCoach ? YCACData.select("match_notes", `select=*&match_id=eq.${id}`) : Promise.resolve([]),
+        YCACData.select("signups", `select=*,players(id,display_name,shirt_number,photo_path)&match_id=eq.${id}`), // public: signups panel + picker badges
+        YCACData.select("match_notes", `select=*&match_id=eq.${id}`), // public: notes panel
         YCACData.select("players", "select=*"),
-        state.isCoach ? YCACData.select("saved_squads", `select=*&match_id=eq.${id}&order=saved_at`) : Promise.resolve([]),
+        YCACData.select("saved_squads", `select=*&match_id=eq.${id}&order=saved_at`), // public: saved squad for the picker
       ]);
       const match = matches.find((row) => row.id === id);
       if (!match) { showMissing(); return; }
@@ -790,7 +789,7 @@
       state.notes = notes;
       state.savedSquad = savedSquad;
       state.playersById = new Map(players.map((player) => [player.id, player]));
-      if (state.isCoach && window.YCACStats) {
+      if (window.YCACStats) {
         // tiers for the core-weighted "Suggest squad" (same engine as the coach dashboard)
         state.seasonIndex = new Map(YCACStats.computeSeason({ players, matches, appearances: apps, goals })
           .players.map((entry) => [entry.id, entry]));

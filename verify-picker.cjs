@@ -1,11 +1,12 @@
 // Data-path + static check for the squad picker, now integrated into match.html
 // (the standalone squad-picker.html was retired):
 //   node verify-picker.cjs
-// Drives the exact calls the match page makes for a coach:
-//   anon blocked → team session runs the picker queries → team writes denied
-//   → core-weighted suggest inputs via stats.js → coach save flow against a
-//   probe fixture (deactivate-then-insert, loadSavedLineup semantics) →
-//   coach signups editing (add / change status / remove) → cleanup.
+// Drives the exact calls the match page makes — all public since wave 33:
+//   anon runs the picker's 6 queries → anon runs the save flow against a probe
+//   fixture (deactivate-then-insert, loadSavedLineup semantics) → anon edits
+//   this fixture's signups (add / change status / remove) → a signed-in coach
+//   attributes writes (saved_by / entered_by) → core-weighted suggest inputs
+//   via stats.js → cleanup.
 // Ephemeral users only (e2e-picker-*@ycac-pulse.test), deleted even on failure.
 const fs = require("fs");
 const path = require("path");
@@ -69,6 +70,7 @@ const signIn = (email, password) =>
 const YCACStats = require("./stats.js");
 
 async function cleanup({ rosterAdded, users }) {
+  await call(`${BASE}/signups?match_id=eq.${PROBE_MATCH}`, { method: "DELETE", headers: adminHeaders });
   await call(`${BASE}/saved_squads?match_id=eq.${PROBE_MATCH}`, { method: "DELETE", headers: adminHeaders });
   await call(`${BASE}/matches?id=eq.${PROBE_MATCH}`, { method: "DELETE", headers: adminHeaders });
   if (rosterAdded) await call(`${BASE}/coach_roster?email=eq.${COACH_EMAIL}`, { method: "DELETE", headers: adminHeaders });
@@ -89,7 +91,7 @@ async function main() {
   check(!picker.includes("docs.google.com") && !picker.includes("script.google.com") && !picker.includes("spreadsheets"), "gviz + Apps Script endpoints are gone");
   check(!picker.includes("getSheet") && !picker.includes("squadSaveEndpoint"), "sheet loader + save endpoint references are gone");
   check(picker.includes("YCACData.select") && picker.includes('"saved_squads"') && picker.includes('"signups"'), "the match page reads Supabase (picker + signups)");
-  check(picker.includes("YCACAuth.isCoach") && !picker.includes("YCACAuth.requireTeam"), "single coach gate (view + save)");
+  check(!picker.includes("YCACAuth.isCoach") && !picker.includes("YCACAuth.requireTeam") && !picker.includes("YCACAuth.requireCoach"), "picker has no login gate (public since wave 33)");
   check(picker.includes("photoCell") && picker.includes("photo_path"), "roster cards carry photos");
   check(picker.includes("YCACStats.computeSeason") && picker.includes("tierRank"), "core-weighted suggest via stats.js");
   check(page.includes('<script src="stats.js">') && page.includes('id="squad-pitch"'), "match.html loads stats.js + hosts the pitch");
@@ -100,6 +102,7 @@ async function main() {
 
   const state = { rosterAdded: false, users: [] };
   let squadsTotal = 0;
+  let signupsTotal = 0;
 
   try {
     // --- clean slate (leftovers from an interrupted earlier run) --------------
@@ -112,19 +115,16 @@ async function main() {
     }
 
     // --- baselines ------------------------------------------------------------
-    const signupsTotal = await count("signups", adminHeaders);
+    signupsTotal = await count("signups", adminHeaders);
     squadsTotal = await count("saved_squads", adminHeaders);
     const rosterTotal = await count("coach_roster", adminHeaders);
     check(signupsTotal > 0 && squadsTotal > 0 && rosterTotal === 1, "baselines read with secret key", `${signupsTotal} signups, ${squadsTotal} saved rows`);
 
-    // --- 1. anon: the page gates before any query ------------------------------
-    check((await count("signups", anonHeaders)) === 0, "anon sees 0 signups (requireTeam needed)");
-    check((await count("saved_squads", anonHeaders)) === 0, "anon sees 0 saved squads");
+    // --- 1. anon: the page's full data set, no login (wave 33) -----------------
+    check((await count("signups", anonHeaders)) === signupsTotal, "anon sees every signups row", `${signupsTotal}`);
+    check((await count("saved_squads", anonHeaders)) === squadsTotal, "anon sees every saved squad", `${squadsTotal}`);
 
-    // --- 2. ephemeral users ----------------------------------------------------
-    const team = await call(`${AUTH}/admin/users`, { method: "POST", headers: adminHeaders, body: { email: TEAM_EMAIL, password: E2E_PASSWORD, email_confirm: true } });
-    check(team.ok && team.data?.id, "create ephemeral team user", TEAM_EMAIL);
-    if (team.data?.id) state.users.push(team.data.id);
+    // --- 2. ephemeral rostered coach (attribution path) -------------------------
     const coach = await call(`${AUTH}/admin/users`, { method: "POST", headers: adminHeaders, body: { email: COACH_EMAIL, password: E2E_PASSWORD, email_confirm: true } });
     check(coach.ok && coach.data?.id, "create ephemeral coach user", COACH_EMAIL);
     if (coach.data?.id) state.users.push(coach.data.id);
@@ -132,19 +132,14 @@ async function main() {
     state.rosterAdded = rosterRow.ok;
     check(rosterRow.ok, "roster the e2e coach");
 
-    // --- 3. team session runs the picker's exact 6 queries ---------------------
-    const teamGrant = await signIn(TEAM_EMAIL, E2E_PASSWORD);
-    check(teamGrant.ok && teamGrant.data?.access_token, "team password grant", `status ${teamGrant.status}`);
-    const teamToken = teamGrant.data?.access_token;
-    if (!teamToken) throw new Error("cannot continue without a team token");
-
+    // --- 3. the picker's exact 6 queries, as ANON (the page sends no token) ------
     const [players, matches, appearances, goals, signups, savedSquads] = await Promise.all([
-      call(`${BASE}/players?select=*&order=display_name`, { headers: bearerHeaders(teamToken) }),
-      call(`${BASE}/matches?select=*&order=date`, { headers: bearerHeaders(teamToken) }),
-      call(`${BASE}/appearances?select=*`, { headers: bearerHeaders(teamToken) }),
-      call(`${BASE}/goals?select=*`, { headers: bearerHeaders(teamToken) }),
-      call(`${BASE}/signups?select=match_id,player_id,status`, { headers: bearerHeaders(teamToken) }),
-      call(`${BASE}/saved_squads?select=*`, { headers: bearerHeaders(teamToken) }),
+      call(`${BASE}/players?select=*&order=display_name`, { headers: anonHeaders }),
+      call(`${BASE}/matches?select=*&order=date`, { headers: anonHeaders }),
+      call(`${BASE}/appearances?select=*`, { headers: anonHeaders }),
+      call(`${BASE}/goals?select=*`, { headers: anonHeaders }),
+      call(`${BASE}/signups?select=match_id,player_id,status`, { headers: anonHeaders }),
+      call(`${BASE}/saved_squads?select=*`, { headers: anonHeaders }),
     ]);
     check(players.ok && players.data.length >= 30 && players.data.every((p) => p.id && p.display_name && "photo_path" in p && "active" in p), "picker query: players (photoCell fields present)", `${players.data.length} rows`);
     check(matches.ok && matches.data.length >= 10 && matches.data.every((m) => m.id && m.date && m.competition && "ycac_goals" in m), "picker query: matches (nullable scores)", `${matches.data.length} rows`);
@@ -152,10 +147,6 @@ async function main() {
     check(goals.ok && goals.data.length >= 30, "picker query: goals", `${goals.data.length} rows`);
     check(signups.ok && signups.data.length === signupsTotal && signups.data.every((s) => s.match_id && s.player_id && s.status), "picker query: signups (signup lookup shape)", `${signups.data.length}/${signupsTotal}`);
     check(savedSquads.ok && savedSquads.data.length === squadsTotal && savedSquads.data.every((s) => s.saved_squad_id && s.formation && s.selection_type && "slot_order" in s && "active" in s), "picker query: saved squads (loadSavedLineup shape)", `${savedSquads.data.length}/${squadsTotal}`);
-
-    // --- 4. team writes stay denied ---------------------------------------------
-    const teamInsert = await call(`${BASE}/saved_squads`, { method: "POST", headers: bearerHeaders(teamToken), body: [{ saved_squad_id: PROBE_SQUAD, match_id: matches.data[0].id, formation: "4-2-3-1", player_id: players.data[0].id, selection_type: "starter" }] });
-    check(teamInsert.status === 401 || teamInsert.status === 403, "team insert into saved_squads denied", `status ${teamInsert.status}`);
 
     // --- 5. core-weighted suggest inputs (stats.js over the picker data) --------
     const season = YCACStats.computeSeason({ players: players.data, matches: matches.data, appearances: appearances.data, goals: goals.data });
@@ -169,60 +160,60 @@ async function main() {
     check(fixtures.length === 0 || fixtures.some((match) => eligible(match) >= 1), "available-player pool (non-declined signups) is non-empty",
       `${fixtures.length} fixture(s)${fixtures.length ? ` · next has ${eligible(fixtures[0])} eligible` : " (all played)"}`);
 
-    // --- 6. coach save flow against a probe fixture ------------------------------
-    const coachGrant = await signIn(COACH_EMAIL, E2E_PASSWORD);
-    const coachToken = coachGrant.data?.access_token;
-    check(coachGrant.ok && coachToken, "coach password grant", `status ${coachGrant.status}`);
-    if (!coachToken) throw new Error("cannot continue without a coach token");
-
+    // --- 6. anon runs the save flow against a probe fixture ---------------------
     const probeMatch = await call(`${BASE}/matches`, { method: "POST", headers: adminHeaders, body: [{ id: PROBE_MATCH, date: "2027-01-01", competition: "Friendly Match", opponent: "E2E Probe FC" }] });
     check(probeMatch.ok, "probe fixture inserted", PROBE_MATCH);
     const [probePlayerA, probePlayerB] = players.data.slice(0, 2);
 
     // saveSquad step 1 — retire previous saves (none yet → 0 rows, 200)
-    const retire0 = await call(`${BASE}/saved_squads?match_id=eq.${PROBE_MATCH}&active=eq.true`, { method: "PATCH", headers: { ...bearerHeaders(coachToken), Prefer: "return=representation" }, body: { active: false } });
-    check(retire0.ok && Array.isArray(retire0.data) && retire0.data.length === 0, "coach deactivates previous save (no rows yet)", `status ${retire0.status}`);
+    const retire0 = await call(`${BASE}/saved_squads?match_id=eq.${PROBE_MATCH}&active=eq.true`, { method: "PATCH", headers: { ...anonHeaders, Prefer: "return=representation" }, body: { active: false } });
+    check(retire0.ok && Array.isArray(retire0.data) && retire0.data.length === 0, "anon deactivates previous save (no rows yet)", `status ${retire0.status}`);
 
-    // saveSquad step 2 — insert the new group
-    const group1 = await call(`${BASE}/saved_squads`, { method: "POST", headers: { ...bearerHeaders(coachToken), Prefer: "return=representation" }, body: [
-      { saved_squad_id: PROBE_SQUAD, match_id: PROBE_MATCH, formation: "4-2-3-1", player_id: probePlayerA.id, selection_type: "starter", slot_order: 0, saved_by: COACH_EMAIL },
-      { saved_squad_id: PROBE_SQUAD, match_id: PROBE_MATCH, formation: "4-2-3-1", player_id: probePlayerB.id, selection_type: "sub", slot_order: 1, saved_by: COACH_EMAIL },
+    // saveSquad step 2 — insert the new group (logged out: saved_by = null)
+    const group1 = await call(`${BASE}/saved_squads`, { method: "POST", headers: { ...anonHeaders, Prefer: "return=representation" }, body: [
+      { saved_squad_id: PROBE_SQUAD, match_id: PROBE_MATCH, formation: "4-2-3-1", player_id: probePlayerA.id, selection_type: "starter", slot_order: 0, saved_by: null },
+      { saved_squad_id: PROBE_SQUAD, match_id: PROBE_MATCH, formation: "4-2-3-1", player_id: probePlayerB.id, selection_type: "sub", slot_order: 1, saved_by: null },
     ] });
-    check(group1.ok && group1.data?.length === 2, "coach saves a squad group (2 rows)", `${group1.data?.length ?? 0} rows`);
+    check(group1.ok && group1.data?.length === 2, "anon saves a squad group (public write, 2 rows)", `${group1.data?.length ?? 0} rows`);
 
-    // team session reads it back (picker loadSavedLineup input)
-    const teamRead = await call(`${BASE}/saved_squads?match_id=eq.${PROBE_MATCH}`, { headers: bearerHeaders(teamToken) });
-    check(teamRead.ok && teamRead.data.length === 2 && teamRead.data.every((r) => r.saved_squad_id === PROBE_SQUAD && r.saved_by === COACH_EMAIL), "team session reads the saved squad", `${teamRead.data.length} rows`);
-
-    // team tries the picker's deactivate step → must be a no-op
-    const teamRetire = await call(`${BASE}/saved_squads?match_id=eq.${PROBE_MATCH}&active=eq.true`, { method: "PATCH", headers: { ...bearerHeaders(teamToken), Prefer: "return=representation" }, body: { active: false } });
-    const stillActive = await call(`${BASE}/saved_squads?match_id=eq.${PROBE_MATCH}&active=eq.true`, { headers: bearerHeaders(teamToken) });
-    check(teamRetire.ok && Array.isArray(teamRetire.data) && teamRetire.data.length === 0 && stillActive.data.length === 2, "team deactivate attempt is a no-op (200 + rows stay active)", `status ${teamRetire.status}`);
+    // the picker reads it back (loadSavedLineup input)
+    const anonRead = await call(`${BASE}/saved_squads?match_id=eq.${PROBE_MATCH}`, { headers: anonHeaders });
+    check(anonRead.ok && anonRead.data.length === 2 && anonRead.data.every((r) => r.saved_squad_id === PROBE_SQUAD), "anon reads the saved squad", `${anonRead.data.length} rows`);
 
     // second save on the same fixture — old group retired, exactly one active group left
-    const retire1 = await call(`${BASE}/saved_squads?match_id=eq.${PROBE_MATCH}&active=eq.true`, { method: "PATCH", headers: { ...bearerHeaders(coachToken), Prefer: "return=representation" }, body: { active: false } });
+    const retire1 = await call(`${BASE}/saved_squads?match_id=eq.${PROBE_MATCH}&active=eq.true`, { method: "PATCH", headers: { ...anonHeaders, Prefer: "return=representation" }, body: { active: false } });
     check(retire1.ok && retire1.data.length === 2, "second save retires the previous group", `${retire1.data.length} rows deactivated`);
-    const group2 = await call(`${BASE}/saved_squads`, { method: "POST", headers: { ...bearerHeaders(coachToken), Prefer: "return=representation" }, body: [
-      { saved_squad_id: `${PROBE_SQUAD}-2`, match_id: PROBE_MATCH, formation: "4-4-2", player_id: probePlayerB.id, selection_type: "starter", slot_order: 0, saved_by: COACH_EMAIL },
+    const group2 = await call(`${BASE}/saved_squads`, { method: "POST", headers: { ...anonHeaders, Prefer: "return=representation" }, body: [
+      { saved_squad_id: `${PROBE_SQUAD}-2`, match_id: PROBE_MATCH, formation: "4-4-2", player_id: probePlayerB.id, selection_type: "starter", slot_order: 0, saved_by: null },
     ] });
     check(group2.ok && group2.data?.length === 1, "second save inserts a new group");
-    const activeGroups = await call(`${BASE}/saved_squads?match_id=eq.${PROBE_MATCH}&active=eq.true`, { headers: bearerHeaders(teamToken) });
+    const activeGroups = await call(`${BASE}/saved_squads?match_id=eq.${PROBE_MATCH}&active=eq.true`, { headers: anonHeaders });
     const groupIds = [...new Set(activeGroups.data.map((r) => r.saved_squad_id))];
     check(groupIds.length === 1 && groupIds[0] === `${PROBE_SQUAD}-2`, "exactly one active group → loadSavedLineup picks the latest save", `${activeGroups.data.length} row(s) in ${groupIds.join(",")}`);
 
-    // --- 6b. coach signups editing (match page: add / change / remove) ----------
-    const signupAdd = await call(`${BASE}/signups`, { method: "POST", headers: { ...bearerHeaders(coachToken), Prefer: "return=representation" }, body: [
-      { match_id: PROBE_MATCH, player_id: probePlayerA.id, status: "confirmed", entered_by: COACH_EMAIL },
+    // --- 6b. anon signups editing (match page: add / change / remove) -----------
+    const signupAdd = await call(`${BASE}/signups`, { method: "POST", headers: { ...anonHeaders, Prefer: "return=representation" }, body: [
+      { match_id: PROBE_MATCH, player_id: probePlayerA.id, status: "confirmed", entered_by: null },
     ] });
-    check(signupAdd.ok && signupAdd.data?.length === 1 && signupAdd.data[0].status === "confirmed", "coach adds a confirmed signup", `status ${signupAdd.status}`);
-    const signupPatch = await call(`${BASE}/signups?match_id=eq.${PROBE_MATCH}&player_id=eq.${probePlayerA.id}`, { method: "PATCH", headers: { ...bearerHeaders(coachToken), Prefer: "return=representation" }, body: { status: "waitlist", responded_at: new Date().toISOString() } });
-    check(signupPatch.ok && signupPatch.data?.[0]?.status === "waitlist", "coach moves a signup to another status");
-    // the team session may edit signups on the match page too? No — policy is coach-only:
-    const teamSignupPatch = await call(`${BASE}/signups?match_id=eq.${PROBE_MATCH}&player_id=eq.${probePlayerA.id}`, { method: "PATCH", headers: { ...bearerHeaders(teamToken), Prefer: "return=representation" }, body: { status: "confirmed" } });
-    const teamSignupRead = await call(`${BASE}/signups?match_id=eq.${PROBE_MATCH}`, { headers: bearerHeaders(teamToken) });
-    check(teamSignupPatch.ok && teamSignupPatch.data?.length === 0 && teamSignupRead.data?.[0]?.status === "waitlist", "team signup edit is a no-op (read-only for the team)", `status ${teamSignupPatch.status}`);
-    const signupDelete = await call(`${BASE}/signups?match_id=eq.${PROBE_MATCH}&player_id=eq.${probePlayerA.id}`, { method: "DELETE", headers: { ...bearerHeaders(coachToken), Prefer: "return=representation" } });
-    check(signupDelete.ok && signupDelete.data?.length === 1, "coach removes a signup");
+    check(signupAdd.ok && signupAdd.data?.length === 1 && signupAdd.data[0].status === "confirmed", "anon adds a confirmed signup", `status ${signupAdd.status}`);
+    const signupPatch = await call(`${BASE}/signups?match_id=eq.${PROBE_MATCH}&player_id=eq.${probePlayerA.id}`, { method: "PATCH", headers: { ...anonHeaders, Prefer: "return=representation" }, body: { status: "waitlist", responded_at: new Date().toISOString() } });
+    check(signupPatch.ok && signupPatch.data?.[0]?.status === "waitlist", "anon moves a signup to another status");
+    const signupDelete = await call(`${BASE}/signups?match_id=eq.${PROBE_MATCH}&player_id=eq.${probePlayerA.id}`, { method: "DELETE", headers: { ...anonHeaders, Prefer: "return=representation" } });
+    check(signupDelete.ok && signupDelete.data?.length === 1, "anon removes a signup");
+
+    // --- 6c. a signed-in coach attributes writes (saved_by / entered_by) ---------
+    const coachGrant = await signIn(COACH_EMAIL, E2E_PASSWORD);
+    const coachToken = coachGrant.data?.access_token;
+    check(coachGrant.ok && coachToken, "coach password grant (attribution path)", `status ${coachGrant.status}`);
+    if (!coachToken) throw new Error("cannot continue without a coach token");
+    const attributed = await call(`${BASE}/saved_squads`, { method: "POST", headers: { ...bearerHeaders(coachToken), Prefer: "return=representation" }, body: [
+      { saved_squad_id: `${PROBE_SQUAD}-coach`, match_id: PROBE_MATCH, formation: "4-2-3-1", player_id: probePlayerA.id, selection_type: "starter", slot_order: 0, saved_by: COACH_EMAIL },
+    ] });
+    check(attributed.ok && attributed.data?.[0]?.saved_by === COACH_EMAIL, "coach save carries saved_by = session email", attributed.data?.[0]?.saved_by);
+    const attributedSignup = await call(`${BASE}/signups`, { method: "POST", headers: { ...bearerHeaders(coachToken), Prefer: "return=representation" }, body: [
+      { match_id: PROBE_MATCH, player_id: probePlayerB.id, status: "confirmed", entered_by: COACH_EMAIL },
+    ] });
+    check(attributedSignup.ok && attributedSignup.data?.[0]?.entered_by === COACH_EMAIL, "coach signup carries entered_by = session email", attributedSignup.data?.[0]?.entered_by);
   } finally {
     await cleanup(state);
   }
@@ -230,6 +221,8 @@ async function main() {
   // --- 7. clean slate restored --------------------------------------------------
   const squadsLeft = await count("saved_squads", adminHeaders);
   check(squadsLeft === squadsTotal, "saved_squads restored (no leftovers)", `${squadsLeft} of ${squadsTotal}`);
+  const signupsLeft = await count("signups", adminHeaders);
+  check(signupsLeft === signupsTotal, "signups restored (no leftovers)", `${signupsLeft} of ${signupsTotal}`);
   const matchesLeft = await call(`${BASE}/matches?id=eq.${PROBE_MATCH}`, { headers: adminHeaders });
   check((matchesLeft.data || []).length === 0, "probe fixture deleted");
   const rosterLeft = await count("coach_roster", adminHeaders);
@@ -243,7 +236,7 @@ async function main() {
     console.log(`${failures.length} FAILURE(S): ${failures.join(" | ")}`);
     process.exit(1);
   }
-  console.log("Squad picker verified: gated queries, coach-only squad save, coach signups editing, core-weighted suggest, static contract.");
+  console.log("Squad picker verified: public queries, anon squad save + signup editing, coach attribution, core-weighted suggest, static contract.");
 }
 
 main().catch(async (error) => {

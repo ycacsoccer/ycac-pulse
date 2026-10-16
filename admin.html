@@ -22,7 +22,7 @@
 
     <main class="coach-main admin-main">
       <section class="coach-hero">
-        <p class="eyebrow" data-i18n="coachEyebrow">Private team tool</p>
+        <p class="eyebrow" data-i18n="coachEyebrow">Team tool</p>
         <h1 data-i18n="adminHeading">Admin</h1>
         <p class="coach-intro" data-i18n="adminIntro">Manage players, fixtures, signups, match notes and team pages — every save writes straight to the team database.</p>
         <div id="admin-status" class="admin-status" aria-live="polite"></div>
@@ -41,7 +41,7 @@
       <!-- Players ------------------------------------------------------------->
       <section class="panel admin-panel" data-panel="players">
         <div class="section-heading">
-          <div><p class="eyebrow" data-i18n="coachEyebrow">Private team tool</p><h2 data-i18n="coachPlayers">Players</h2></div>
+          <div><p class="eyebrow" data-i18n="coachEyebrow">Team tool</p><h2 data-i18n="coachPlayers">Players</h2></div>
           <button id="new-player" class="primary-button" type="button" data-i18n="adminNewPlayer">New player</button>
         </div>
         <div id="player-form" class="admin-form" hidden></div>
@@ -52,7 +52,7 @@
       <!-- Matches ------------------------------------------------------------->
       <section class="panel admin-panel" data-panel="matches" hidden>
         <div class="section-heading">
-          <div><p class="eyebrow" data-i18n="coachEyebrow">Private team tool</p><h2 data-i18n="coachMatches">Matches</h2></div>
+          <div><p class="eyebrow" data-i18n="coachEyebrow">Team tool</p><h2 data-i18n="coachMatches">Matches</h2></div>
           <button id="new-match" class="primary-button" type="button" data-i18n="adminNewMatch">New fixture</button>
         </div>
         <div id="match-form" class="admin-form" hidden></div>
@@ -131,11 +131,12 @@
       </section>
     </main>
 
-    <footer><span data-i18n="footer">YC&amp;AC Pulse · Official Top Team of Yokohama Country &amp; Athletic Club</span> <a href="https://ycac.jp" target="_blank" rel="noreferrer">ycac.jp</a></footer>
+    <footer><span data-i18n="footer">YC&amp;AC Pulse · Official Top Team of Yokohama Country &amp; Athletic Club</span> <a href="https://ycac.jp" target="_blank" rel="noreferrer">ycac.jp</a> <span id="build-info" class="build-info" hidden></span></footer>
     <script src="config.js"></script>
     <script src="i18n.js"></script>
     <script src="data.js"></script>
     <script src="auth.js"></script>
+    <script src="buildinfo.js"></script>
     <script src="admin.js"></script>
   </body>
 </html>

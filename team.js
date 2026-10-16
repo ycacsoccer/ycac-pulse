@@ -1,8 +1,7 @@
-/* YC&AC Pulse — private team page (Phase 9, requirement 7).
-   Coach-login page behind requireCoach(): renders the three team_content slugs
-   (guidelines · coach instructions · club info) exactly as the coach wrote
-   them in admin.html — the interface is translated, authored text is not.
-   Sections the coach hasn't written yet are skipped. */
+/* YC&AC Pulse — team page (Phase 9, requirement 7; public since wave 33).
+   Renders the three team_content slugs (guidelines · coach instructions · club
+   info) exactly as the coach wrote them in admin.html — the interface is
+   translated, authored text is not. Sections not written yet are skipped. */
 (() => {
   const t = (key, vars) => (window.YCACI18n ? YCACI18n.t(key, vars) : key);
   const $ = (id) => document.getElementById(id);
@@ -41,8 +40,6 @@
   }
 
   (async () => {
-    const session = await YCACAuth.requireCoach();
-    if (!session) return;
     if (window.YCACI18n) YCACI18n.onChange(render); // re-render in the new language
     try {
       state.rows = await YCACData.select("team_content", "select=*");

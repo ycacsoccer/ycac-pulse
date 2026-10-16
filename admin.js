@@ -1,13 +1,12 @@
-/* YC&AC Pulse — admin tool (Phase 7, requirements 2, 6, 7).
-   Coach-login page (requireCoach redirects team/anon sessions). Sections:
+/* YC&AC Pulse — admin tool (Phase 7, requirements 2, 6, 7; public since wave 33).
+   Sections:
    - Players : create / edit / delete, photo upload, activate & deactivate
    - Matches : fixtures & results — score, tap-a-squad lineup, goals & assists
-   - Signups : coach-entered availability per fixture (entered_by = this account)
+   - Signups : availability per fixture (entered_by = signed-in account, else null)
    - Notes   : match_notes reflection / coaching points / squad review (req 6)
    - Content : team_content guidelines / coach instructions / club info (req 7)
    - Backup  : one JSON file with every table (data-loss insurance)
-   Every write is re-checked server-side by RLS is_coach() — this file only
-   decides what the coach sees. */
+   Writes are open to everyone since wave 33 (migration 0004_public_access.sql). */
 (() => {
   const t = (key, vars) => (window.YCACI18n ? YCACI18n.t(key, vars) : key);
   const $ = (id) => document.getElementById(id);
@@ -775,7 +774,7 @@
       const [row] = await YCACData.insert("injuries", {
         player_id: playerId, detail, since_date: since,
         expected_return: $("injury-return").value.trim() || null,
-        updated_at: new Date().toISOString(), updated_by: YCACAuth.session?.email || "coach",
+        updated_at: new Date().toISOString(), updated_by: email() || "public",
       });
       state.injuries = [...state.injuries, row].sort((a, b) => String(a.since_date).localeCompare(String(b.since_date)));
       $("injury-detail").value = "";
@@ -852,9 +851,6 @@
   }
 
   (async () => {
-    const session = await YCACAuth.requireCoach();
-    if (!session) return; // redirecting to login.html?next=admin.html&need=coach
-
     document.querySelectorAll(".admin-tab").forEach((button) => {
       button.addEventListener("click", () => { state.tab = button.dataset.tab; renderTab(); });
     });

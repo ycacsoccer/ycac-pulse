@@ -1,33 +1,24 @@
-/* Match page — the coach-only squad picker + signup editor on upcoming
-   fixtures (waves 29–31). Public visitors must never see either panel or ask
-   for saved_squads/signups (RLS); a coach picks players on the pitch, saves
-   the squad, and edits this fixture's signups — both reading the same state. */
+/* Match page — the squad picker + signup editor on upcoming fixtures
+   (waves 29–31, public since wave 33). Every visitor sees both panels and
+   may use them: pick players on the pitch, save the squad, and edit this
+   fixture's signups — both panels reading the same state. Played matches
+   stay read-only. */
 const { test, expect } = require("@playwright/test");
-const { mockSupabase, watchErrors, publicOnly } = require("./mocks");
+const { mockSupabase, watchErrors, publicOnly, fitsViewport } = require("./mocks");
 
-const coachSession = async ({ page }) => {
-  await page.addInitScript(() => {
-    localStorage.setItem("ycac-session", JSON.stringify({
-      access_token: "e2e-coach", refresh_token: "e2e-refresh",
-      expires_at: Math.floor(Date.now() / 1000) + 3600,
-      user: { id: "coach", email: "coach@example.test" },
-    }));
-  });
-};
-
-test("public visitor never sees the squad picker on an upcoming fixture", async ({ page }) => {
+test("public visitor gets the full squad picker on an upcoming fixture", async ({ page }) => {
   const api = await mockSupabase(page);
   const errors = watchErrors(page);
   await page.goto("/match.html?id=x1");
   await expect(page.locator("#match-hero")).toContainText("Titans FC");
-  await expect(page.locator("#squad-panel")).toBeHidden();
-  expect(publicOnly(api)).toBe(true); // no saved_squads request from an anon page
+  await expect(page.locator("#squad-panel")).toBeVisible(); // wave 33: public reads saved_squads/signups
+  await expect(page.locator("#signups-panel")).toBeVisible();
+  expect(publicOnly(api)).toBe(true); // the anon role may read every table asked for
   expect(errors).toEqual([]);
 });
 
-test("coach gets the full picker on an upcoming fixture: pitch, bench, save", async ({ page }) => {
-  await coachSession({ page });
-  const api = await mockSupabase(page, { coach: true });
+test("the full picker on an upcoming fixture: pitch, bench, save", async ({ page }) => {
+  const api = await mockSupabase(page);
   const errors = watchErrors(page);
   await page.goto("/match.html?id=x1");
   await expect(page.locator("#match-hero")).toContainText("Titans FC");
@@ -78,9 +69,8 @@ test("coach gets the full picker on an upcoming fixture: pitch, bench, save", as
 });
 
 test("squad picker flags attendance: attending first, declined/unavailable badged", async ({ page }) => {
-  await coachSession({ page });
   const errors = watchErrors(page);
-  await mockSupabase(page, { coach: true });
+  await mockSupabase(page);
   await page.goto("/match.html?id=x1");
   await expect(page.locator("#squad-panel")).toBeVisible();
 
@@ -106,9 +96,8 @@ test("squad picker flags attendance: attending first, declined/unavailable badge
 });
 
 test("squad roster filters by availability", async ({ page }) => {
-  await coachSession({ page });
   const errors = watchErrors(page);
-  await mockSupabase(page, { coach: true });
+  await mockSupabase(page);
   await page.goto("/match.html?id=x1");
   await expect(page.locator("#squad-panel")).toBeVisible();
   const cards = page.locator(".pk-card");
@@ -141,9 +130,8 @@ test("squad roster filters by availability", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test("coach edits signups on the match page and the picker stays aligned", async ({ page }) => {
-  await coachSession({ page });
-  const api = await mockSupabase(page, { coach: true });
+test("a visitor edits signups on the match page and the picker stays aligned", async ({ page }) => {
+  const api = await mockSupabase(page);
   const errors = watchErrors(page);
   await page.goto("/match.html?id=x1");
   const panel = page.locator("#signups-panel");
@@ -175,9 +163,8 @@ test("coach edits signups on the match page and the picker stays aligned", async
 });
 
 test("match page for a played match hides the squad picker and signup editing", async ({ page }) => {
-  await coachSession({ page });
   const errors = watchErrors(page);
-  await mockSupabase(page, { coach: true });
+  await mockSupabase(page);
   await page.goto("/match.html?id=m1");
   await expect(page.locator("#match-hero")).toContainText("Rovers AFC");
   await expect(page.locator("#squad-panel")).toBeHidden();
@@ -214,4 +201,52 @@ test("forecast panel hides on a played match", async ({ page }) => {
   await page.goto("/match.html?id=m1");
   await expect(page.locator("#forecast-panel")).toBeHidden();
   expect(errors).toEqual([]);
+});
+
+/* ---- mobile layout (the picker once pushed the page past a 320px screen
+   and crushed the "Match squad" heading into the button stack) ---------- */
+
+for (const width of [320, 390, 1440]) {
+  test(`no horizontal overflow at ${width}px (upcoming fixture)`, async ({ page }) => {
+    await mockSupabase(page);
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/match.html?id=x1");
+    await expect(page.locator("#squad-panel")).toBeVisible();
+    expect(await fitsViewport(page)).toBe(true);
+  });
+}
+
+test("no horizontal overflow at 320px (played fixture)", async ({ page }) => {
+  await mockSupabase(page);
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto("/match.html?id=m1");
+  await expect(page.locator("#lineup-panel")).toBeVisible();
+  expect(await fitsViewport(page)).toBe(true);
+});
+
+for (const width of [320, 390]) {
+  test(`match-squad heading sits above the action buttons at ${width}px`, async ({ page }) => {
+    await mockSupabase(page);
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/match.html?id=x1");
+    await expect(page.locator("#squad-panel")).toBeVisible();
+    const heading = await page.locator("#squad-panel .section-heading h2").boundingBox();
+    const controls = await page.locator("#squad-panel .squad-controls").boundingBox();
+    expect(controls.y).toBeGreaterThanOrEqual(heading.y + heading.height - 1); // stacked, never side-crushed
+    expect(heading.height).toBeLessThan(36); // the h2 stays on one line (1.55rem ≈ 25px)
+  });
+}
+
+test("played match: the substitutes heading keeps its gap below the starters", async ({ page }) => {
+  await mockSupabase(page);
+  await page.goto("/match.html?id=m1");
+  const gap = await page.evaluate(() => {
+    const groups = document.querySelectorAll("#match-lineup .match-group");
+    if (groups.length < 2) return -1;
+    const players = groups[0].querySelector(".match-players");
+    const next = groups[1].querySelector("h4");
+    if (!players || !next) return -1;
+    return next.getBoundingClientRect().top - players.getBoundingClientRect().bottom;
+  });
+  expect(gap).toBeGreaterThan(6);
 });

@@ -15,7 +15,7 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem 4rem; }.hero { disp
 .match { display: grid; grid-template-columns: 6.5rem 1fr auto; gap: 1rem; align-items: center; padding: 1.05rem 0; border-top: 1px solid var(--line); }.match-date { color: var(--muted); font-size: .75rem; font-weight: 600; }.match-opponent { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1rem; font-weight: 700; }.match-meta { margin-top: .25rem; color: var(--muted); font-size: .72rem; }.match-score { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.7rem; font-weight: 700; }.match-score.win { color: var(--blue); }.leader { display: grid; grid-template-columns: 1.8rem 1fr auto; gap: .6rem; align-items: center; padding: .9rem 0; border-top: 1px solid var(--line); }.rank { color: var(--gold); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1rem; }.leader-name { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-weight: 700; }.leader-meta { margin-top: .2rem; color: var(--muted); font-size: .72rem; }.leader-total { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.35rem; font-weight: 700; }.leader-total span { color: var(--muted); font-family: 'DM Sans', Arial, sans-serif; font-size: .6rem; letter-spacing: .1em; }
 .fixtures { display: grid; gap: .65rem; margin-bottom: 1.75rem; }.fixture { display: grid; grid-template-columns: 5rem 1fr auto; gap: .75rem; align-items: center; padding: 1rem; color: white; background: var(--navy); }.fixture-date { color: var(--gold); font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }.fixture-opponent { font-family: 'Libre Baskerville', Georgia, serif; font-size: .96rem; font-weight: 700; }.fixture-meta { margin-top: .22rem; color: #c9d7eb; font-size: .7rem; }.fixture-actions { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .7rem; }.fixture-actions a { padding: .38rem .5rem; color: var(--navy); background: var(--gold-pale); font-size: .63rem; font-weight: 700; text-decoration: none; }.fixture-actions a:last-child { color: white; background: transparent; border: 1px solid rgba(255,255,255,.5); }.fixture-actions a:hover { background: var(--gold); color: var(--navy); }.fixture-time { padding-left: .75rem; border-left: 1px solid rgba(255,255,255,.25); color: var(--gold-pale); font-size: .76rem; font-weight: 700; white-space: nowrap; }
 .player-search input { width: min(220px, 42vw); padding: .65rem .8rem; color: var(--ink); border: 1px solid var(--line); border-radius: 0; font: inherit; font-size: .78rem; }.table-wrap { overflow-x: auto; } table { width: 100%; min-width: 680px; border-collapse: collapse; } th, td { padding: .9rem .55rem; border-bottom: 1px solid var(--line); text-align: left; } th { color: var(--muted); font-size: .64rem; letter-spacing: .09em; text-transform: uppercase; } td { font-size: .84rem; } td:first-child { color: var(--navy); font-family: 'Libre Baskerville', Georgia, serif; font-size: .95rem; font-weight: 700; }.empty { color: var(--muted); }.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.instagram-panel { display: grid; grid-template-columns: 1fr auto; gap: 1rem 2rem; align-items: end; margin-top: 1.25rem; padding: clamp(1.5rem, 4vw, 3rem); color: white; background: var(--navy); }.instagram-panel .eyebrow { grid-column: 1 / -1; margin-bottom: 0; }.instagram-panel h2 { margin: 0; font-family: 'Libre Baskerville', Georgia, serif; font-size: clamp(1.6rem, 4vw, 2.45rem); font-weight: 400; }.instagram-panel p:not(.eyebrow) { margin: .7rem 0 0; color: #cad7e9; line-height: 1.5; }.instagram-panel a { align-self: center; padding: .85rem 1rem; color: var(--navy); background: var(--gold-pale); font-size: .78rem; font-weight: 700; text-decoration: none; }.instagram-panel a:hover { background: var(--gold); } footer { max-width: 1240px; margin: 0 auto; padding: 1.8rem 1.25rem 3rem; color: var(--muted); font-size: .74rem; } footer a { margin-left: .5rem; color: var(--navy); font-weight: 700; }
+.instagram-panel { display: grid; grid-template-columns: 1fr auto; gap: 1rem 2rem; align-items: end; margin-top: 1.25rem; padding: clamp(1.5rem, 4vw, 3rem); color: white; background: var(--navy); }.instagram-panel .eyebrow { grid-column: 1 / -1; margin-bottom: 0; }.instagram-panel h2 { margin: 0; font-family: 'Libre Baskerville', Georgia, serif; font-size: clamp(1.6rem, 4vw, 2.45rem); font-weight: 400; }.instagram-panel p:not(.eyebrow) { margin: .7rem 0 0; color: #cad7e9; line-height: 1.5; }.instagram-panel a { align-self: center; padding: .85rem 1rem; color: var(--navy); background: var(--gold-pale); font-size: .78rem; font-weight: 700; text-decoration: none; }.instagram-panel a:hover { background: var(--gold); } footer { max-width: 1240px; margin: 0 auto; padding: 1.8rem 1.25rem 3rem; color: var(--muted); font-size: .74rem; } footer a { margin-left: .5rem; color: var(--navy); font-weight: 700; }.build-info { margin-left: .5rem; color: var(--muted); font-size: .72rem; white-space: nowrap; }.build-info .build-commit { margin-left: 0; color: var(--navy); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; text-decoration: none; }.build-info .build-commit:hover { text-decoration: underline; }
 @media (max-width: 760px) { .masthead { min-height: 66px; }.club-mark { width: 39px; height: 39px; }.brand { font-size: 1rem; }.brand small { display: none; }.masthead nav { display: none; }.lang-switch { margin-left: auto; }.hero { grid-template-columns: 1fr; gap: 2rem; padding-top: 4.5rem; }.hero-note { max-width: 28rem; }.content-grid { grid-template-columns: 1fr; }.match { grid-template-columns: 5.5rem 1fr auto; }.instagram-panel { grid-template-columns: 1fr; }.instagram-panel a { justify-self: start; } }
 @media (max-width: 480px) { .player-search input { width: 128px; }
   /* Fixture card: the 5rem · 1fr · auto grid cannot hold date + details +
@@ -322,6 +322,10 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem 4rem; }.hero { disp
 .match-hero .badge { color: #cad7e9; background: transparent; border-color: #46608c; }
 .match-group h4 { display: flex; align-items: baseline; gap: .45rem; margin: 1.1rem 0 .5rem; color: var(--navy); font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .match-group h4:first-child { margin-top: 0; }
+/* a group's own h4 is always :first-child, so the rule above zeroed the top
+   margin inside EVERY group — the Lineup's SUBSTITUTES heading ended up glued
+   to the last starter. Sibling groups keep their heading spacing. */
+.match-group + .match-group h4 { margin-top: 1.1rem; }
 .match-group h4 small { color: var(--muted); font-size: .66rem; }
 .match-players { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: .3rem .9rem; }
 .match-player { display: flex; align-items: center; gap: .6rem; padding: .4rem .5rem; color: var(--ink); text-decoration: none; border: 1px solid transparent; }
@@ -455,10 +459,41 @@ table.fc-compare { width: 100%; border-collapse: collapse; font-size: .84rem; }
 @media (max-width: 640px) {
   .match-players { grid-template-columns: 1fr; }
   .fc-date { min-width: 5.2rem; }
-  .pk-layout { grid-template-columns: 1fr; }
-  .pk-pitch { min-height: 480px; }
-  .pk-slot { width: 56px; }
+  /* heading over controls: side-by-side squeezed "Match squad" to two lines
+     inside a ~76px column while the button stack crowded it. */
+  .section-heading { flex-wrap: wrap; gap: .75rem 1rem; }
+  .squad-controls { width: 100%; justify-content: flex-start; }
+  /* single column, but clamped: a bare 1fr grows to the pitch's min-content
+     (4 × slot + gaps ≈ 282px) and pushed the panel 3px past a 320px screen —
+     minmax(0, 1fr) lets the column shrink and the pitch follow. */
+  .pk-layout { grid-template-columns: minmax(0, 1fr); }
+  .pk-pitch { min-height: 480px; padding: .9rem .5rem; }
+  .pk-row { gap: .3rem; }
+  .pk-slot { width: clamp(46px, 12vw, 64px); }
   .pk-name { font-size: .58rem; }
+  /* bench labels: "Open substitute" needs ~54px for one word alone, so at
+     3 columns × 74px the slot stacks index-over-label and lets the label
+     wrap instead of ellipsing ("Open s…") or blowing the grid wider. */
+  .pk-bench-slot { grid-template-columns: 1fr; justify-items: center; gap: .15rem; padding: .4rem .25rem; text-align: center; }
+  .pk-bench-name { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; font-size: .62rem; line-height: 1.25; }
+  /* signup chips: keep the name on one line; status controls drop below */
+  .signup-chip { flex-wrap: wrap; }
+  .signup-chip > span:not(.avatar) { white-space: nowrap; }
+  .signup-chip .sc-status { margin-left: auto; }
+}
+
+@media (max-width: 380px) {
+  /* roster cards: the 5-column row squeezed names to "Ada …" — badge and
+     position drop onto their own line (auto-placement fills row 2). */
+  .pk-card { grid-template-columns: 26px 1.7rem minmax(0, 1fr); row-gap: .3rem; }
+  .pk-card .sa-status { grid-row: 2; grid-column: 1 / -1; justify-self: start; }
+  /* the position group heading already labels the section, and XI/sub picks
+     are tinted — the tiny pos label would collide with the badge in row 2 */
+  .pk-card .pk-card-pos { display: none; }
+  /* signup chips: without this the × button wrapped alone onto its own
+     line — pin the name to the first row so select + × stay paired on the
+     second (right-aligned by the sc-status auto margin above). */
+  .signup-chip > span:not(.avatar) { flex: 1 1 calc(100% - 60px); }
 }
 
 /* ---- team page (Phase 9) ---- */

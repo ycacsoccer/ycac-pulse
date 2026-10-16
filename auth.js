@@ -1,14 +1,12 @@
-/* YC&AC Pulse — auth (Phase 4; simplified in wave 26).
-   The site is public by default. The only login shown in the UI is COACH:
-   a rostered Supabase account recognised by is_coach() (coach_roster), with
-   access to the dashboard, admin, squad picker and private team content.
-   The old read-only team account can remain in Supabase for backwards
-   compatibility, but no page or login control asks players to use it.
+/* YC&AC Pulse — auth (Phase 4; simplified in wave 26, gates removed in wave 33).
+   Every page and write is public since wave 33 (migration 0004_public_access.sql)
+   — the optional COACH login remains only for attribution: a rostered Supabase
+   account recognised by is_coach() (coach_roster) whose email is recorded in
+   entered_by / updated_by on writes. Nothing redirects anonymous visitors.
 
    Page API:
-      await YCACAuth.requireCoach()   → redirects unless a rostered coach is signed in
-     YCACAuth.mountAuthUI()          → fills every [data-auth-slot] with log in / out
-     YCACAuth.onChange(fn)           → re-render when the session changes        */
+     YCACAuth.mountAuthUI()   → fills every [data-auth-slot] with log in / out
+     YCACAuth.onChange(fn)    → re-render when the session changes            */
 
 const YCACAuth = (() => {
   const config = (typeof window !== "undefined" && window.YCAC_CONFIG) || {};
@@ -106,24 +104,6 @@ const YCACAuth = (() => {
     return value;
   }
 
-  const loginUrl = () => {
-    const next = encodeURIComponent(`${location.pathname.split("/").pop()}${location.search}`);
-    return `login.html?next=${next}`;
-  };
-
-  // Compatibility alias for any old cached page: there is now one private
-  // access level, so a former "team" gate is a coach gate too.
-  async function requireTeam() {
-    return requireCoach();
-  }
-
-  async function requireCoach() {
-    if (!session) { location.replace(loginUrl()); return null; }
-    if (await isCoach()) return session;
-    location.replace(loginUrl());
-    return null;
-  }
-
   function onChange(listener) { listeners.push(listener); }
 
   /* Masthead widget: fills [data-auth-slot] with a log-in link or the signed-in
@@ -147,7 +127,7 @@ const YCACAuth = (() => {
     if (window.YCACI18n) YCACI18n.onChange(() => mountAuthUI(document)); // re-translate on language switch
   }
 
-  const api = { get session() { return session; }, ensureFresh, signIn, signOut, isCoach, requireTeam, requireCoach, onChange, mountAuthUI };
+  const api = { get session() { return session; }, ensureFresh, signIn, signOut, isCoach, onChange, mountAuthUI };
   if (typeof window !== "undefined") {
     window.YCACAuth = api;
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);

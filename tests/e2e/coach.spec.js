@@ -1,17 +1,11 @@
-/* Coach dashboard — authenticated mocked Supabase. Wave 28 verifies that the
-   formation map exposes best-position and can-play depth separately. */
+/* Coach dashboard — public since wave 33 (no session needed). Wave 28
+   verifies that the formation map exposes best-position and can-play depth
+   separately. */
 const { test, expect } = require("@playwright/test");
 const { mockSupabase, watchErrors } = require("./mocks");
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => {
-    localStorage.setItem("ycac-session", JSON.stringify({
-      access_token: "e2e-coach", refresh_token: "e2e-refresh",
-      expires_at: Math.floor(Date.now() / 1000) + 3600,
-      user: { id: "coach", email: "coach@example.test" },
-    }));
-  });
-  await mockSupabase(page, { coach: true });
+  await mockSupabase(page);
 });
 
 test("wave 28: tactical slots split best and can-play coverage", async ({ page }) => {

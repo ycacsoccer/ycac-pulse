@@ -1,11 +1,14 @@
 // Data-path check for the team page (team.html + team.js):
 //   node verify-team.cjs
 // Captures the current team_content rows, inserts probe rows for any of the
-// three slugs the coach hasn't written yet (secret key), then signs in an
-// ephemeral TEAM user and runs the page's exact query. Asserts: anon still
-// sees 0 rows (page must gate), all three slugs resolve in admin order with
-// titles/bodies passed through exactly as written (no translation mangling),
-// then removes the probes and the user — restoring the original state.
+// three slugs the coach hasn't written yet (secret key), then asserts the
+// wave-33 contract: ANON reads every row (page needs no login), ANON can
+// write — the slug column is check-constrained to the three real sections, so
+// the write probe round-trips an existing slug (delete → anon insert with
+// marker text → read back → original text restored byte-for-byte), an
+// authenticated session reads the same set, all three slugs resolve in admin
+// order with titles/bodies passed through exactly as written (no translation
+// mangling) — then removes the probes, restoring the original state.
 const fs = require("fs");
 const path = require("path");
 
@@ -35,6 +38,8 @@ const bearerHeaders = (token) => ({ apikey: publishable, Authorization: `Bearer 
 const TEAM_EMAIL = "e2e-team-page@ycac-pulse.test";
 const E2E_PASSWORD = "E2e-Verify-2026!";
 // The same order team.js renders (SLUGS in team.js must match this).
+// 0001 check constraint: slug in exactly this set — inserts with any other
+// slug are rejected regardless of who writes them.
 const SLUGS = ["guidelines", "coach-instructions", "club-info"];
 const PROBE_TITLE = "E2E probe title — as written";
 const PROBE_BODY = "Line one, exactly as written.\n\nLine two & <not> translated — 改行もそのまま。";
@@ -77,11 +82,31 @@ async function main() {
     }
     check(true, "probe content written for missing slugs", state.inserted.length ? `inserted: ${state.inserted.join(", ")}` : "baseline already complete");
 
-    // --- 3. anon is gated out while content exists ------------------------
+    // --- 3. anon reads EVERYTHING while content exists ---------------------
     const anonRows = await call(`${BASE}/team_content?select=*`, { headers: anonHeaders });
-    check(anonRows.length === 0, "anon sees 0 team_content rows (page must gate on login)", `${anonRows.length}`);
+    check(anonRows.length >= 3, "anon reads every team_content row (public since wave 33)", `${anonRows.length}`);
 
-    // --- 4. ephemeral team user — the page's own gate ---------------------
+    // --- 3b. anon may WRITE team_content. The 0001 check constraint only
+    //         allows the three real slugs, so the probe deletes one, anon
+    //         re-inserts it with marker text, reads it back — then the
+    //         original text (this run's probe or the coach's own) goes back
+    //         byte-for-byte before the render checks below.
+    const writeSlug = state.inserted[0] || SLUGS[0];
+    const original = state.inserted.includes(writeSlug)
+      ? { title: PROBE_TITLE, body: PROBE_BODY }
+      : baseline.find((row) => row.slug === writeSlug) || { title: "", body: "" };
+    await call(`${BASE}/team_content?slug=eq.${writeSlug}`, { method: "DELETE", headers: adminHeaders }).catch(() => {});
+    await call(`${BASE}/team_content`, { method: "POST", headers: anonHeaders, body: [{ slug: writeSlug, title: "anon write probe", body: "written by the anon role" }] });
+    const anonWrite = await call(`${BASE}/team_content?slug=eq.${writeSlug}`, { headers: anonHeaders });
+    check(anonWrite.length === 1 && anonWrite[0].body === "written by the anon role",
+      "anon inserts and reads back team_content", `${anonWrite.length} row (${writeSlug})`);
+    await call(`${BASE}/team_content?slug=eq.${writeSlug}`, { method: "DELETE", headers: adminHeaders }).catch(() => {});
+    await call(`${BASE}/team_content`, { method: "POST", headers: adminHeaders, body: [{ slug: writeSlug, title: original.title, body: original.body }] });
+    const restoredRow = await call(`${BASE}/team_content?slug=eq.${writeSlug}`, { headers: adminHeaders });
+    check(restoredRow.length === 1 && restoredRow[0].title === original.title && restoredRow[0].body === original.body,
+      "row restored byte-for-byte after the write probe", `${writeSlug}`);
+
+    // --- 4. ephemeral team user — authenticated reads work the same way ----
     const existing = await call(`${AUTH}/admin/users`, { headers: adminHeaders });
     for (const user of existing.users || []) {
       if (user.email === TEAM_EMAIL) await call(`${AUTH}/admin/users/${user.id}`, { method: "DELETE", headers: adminHeaders });
@@ -91,9 +116,9 @@ async function main() {
     const token = (await signIn(TEAM_EMAIL)).access_token;
     check(Boolean(token), "password grant (team session)");
 
-    // --- 5. the page's exact query ---------------------------------------
+    // --- 5. the page's exact query, with an authenticated session ----------
     const rows = await call(`${BASE}/team_content?select=*`, { headers: bearerHeaders(token) });
-    check(rows.length >= 3, "team session reads team_content", `${rows.length} rows`);
+    check(rows.length >= 3 && rows.length === anonRows.length, "authenticated session reads the same rows", `${rows.length} rows`);
 
     // --- 6. simulate team.js render: slug order + text as written ---------
     const blocks = SLUGS
@@ -113,8 +138,8 @@ async function main() {
     // --- 7. static contract ------------------------------------------------
     const page = fs.readFileSync(path.join(__dirname, "team.html"), "utf8");
     const source = fs.readFileSync(path.join(__dirname, "team.js"), "utf8");
-    check(source.includes("requireCoach") && !source.includes("requireTeam"), "team.js uses the single coach gate");
-    check(page.includes('name="robots" content="noindex'), "team.html is noindexed (team-only page)");
+    check(!source.includes("requireCoach") && !source.includes("requireTeam"), "team.js has no login gate (public since wave 33)");
+    check(page.includes('name="robots" content="noindex'), "team.html is noindexed (linked pages only)");
     check(page.includes("data-i18n-title=\"teamTitle\"") && source.includes('"contentGuidelines"'), "page + slug labels flow through i18n keys");
   } finally {
     // --- restore: remove only what this run inserted ----------------------
@@ -140,7 +165,7 @@ async function main() {
     console.log(`${failures.length} FAILURE(S): ${failures.join(" | ")}`);
     process.exit(1);
   }
-  console.log("Team page verified: gating, slug order, authored text passthrough, cleanup.");
+  console.log("Team page verified: public read + write, slug order, authored text passthrough, cleanup.");
 }
 
 main().catch((error) => { console.error(`ERROR ${error.message}`); process.exit(1); });

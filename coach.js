@@ -1,11 +1,11 @@
-/* YC&AC Pulse — coach dashboard (Phase 5, requirement 10).
-   Coach-login page: shows the stable-squad board by tier, the next fixture with
-   signups, position coverage, and review flags — all live from Supabase.
+/* YC&AC Pulse — coach dashboard (Phase 5, requirement 10; public since wave 33).
+   Shows the stable-squad board by tier, the next fixture with signups,
+   position coverage, and review flags — all live from Supabase.
 
    Lens (TML / Friendly / All) switches the participation numbers on the board;
    tiers and reliability stay season-wide by design (Core = TML ≥ 67% only).
-   coach_notes.squad_status is coach-readable only, so a team session simply
-   gets fully derived tiers. */
+   coach_notes.squad_status is now publicly readable (wave 33), so squad
+   overrides apply for everyone. */
 (() => {
   const t = (key, vars) => (window.YCACI18n ? YCACI18n.t(key, vars) : key);
   const $ = (id) => document.getElementById(id);
@@ -37,12 +37,12 @@
       YCACData.select("matches", "select=*&order=date"),
       YCACData.select("appearances", "select=*"),
       YCACData.select("goals", "select=*"),
-      YCACData.select("signups", "select=match_id,player_id,status"), // team table: needs the session
+      YCACData.select("signups", "select=match_id,player_id,status"), // public (wave 33)
       YCACData.select("injuries", "select=*&order=since_date"),
     ]);
     let overrides = {};
     try {
-      const notes = await YCACData.select("coach_notes", "select=player_id,squad_status"); // coach sessions only → [] for team
+      const notes = await YCACData.select("coach_notes", "select=player_id,squad_status"); // public (wave 33)
       overrides = Object.fromEntries(notes.filter((note) => note.squad_status).map((note) => [note.player_id, { squad_status: note.squad_status }]));
     } catch (error) { /* derived tiers are fine */ }
 
@@ -261,8 +261,6 @@
   }
 
   (async () => {
-    const session = await YCACAuth.requireCoach();
-    if (!session) return; // redirecting to login.html?next=coach.html
     $("lens").value = state.lens;
     $("lens").addEventListener("change", (event) => { state.lens = event.target.value; renderBoard(); });
     $("formation-lens").value = state.formation;

@@ -1,11 +1,12 @@
-/* YC&AC Pulse — player profile (Phase 6, requirements 9 + photo).
+/* YC&AC Pulse — player profile (Phase 6, requirements 9 + photo; editors
+   public since wave 33).
    Public page: TML/Friendly hero summaries (apps, appearance rate, goals,
    assists), info, detailed TML/Friendly/All stats, positions, and a
    PERFORMANCE TIMELINE of every
-   final match — absences labelled — and goals. Coaches get an "Update photo"
-   control and a pitch-tap position editor (tap a slot to set the BEST
-   position or toggle CAN-PLAY ones) — storage/table RLS enforce is_coach()
-   regardless of what the UI shows. */
+   final match — absences labelled — and goals. Photo upload, age band and the
+   pitch-tap position editor (tap a slot to set the BEST position or toggle
+   CAN-PLAY ones) are open to everyone — storage/table RLS allows it since
+   migration 0004_public_access.sql. */
 (() => {
   const t = (key, vars) => (window.YCACI18n ? YCACI18n.t(key, vars) : key);
   const $ = (id) => document.getElementById(id);
@@ -18,7 +19,7 @@
   // posEdit: coach position editor draft (wave 20) — posMode picks what a tap
   // means (set BEST vs toggle CAN-PLAY); posStatus is an i18n key or "".
   const AGE_BANDS = window.YCACAgeBands ? YCACAgeBands.ORDER : ["17-20", "20s", "30s", "40s", "50s"];
-  const state = { player: null, players: [], matches: [], appearances: [], goals: [], entry: null, injury: null, isCoach: false,
+  const state = { player: null, players: [], matches: [], appearances: [], goals: [], entry: null, injury: null,
     ageStatus: "", posEdit: false, posMode: "best", posBest: "", posCapable: [], posStatus: "" };
 
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
@@ -110,20 +111,18 @@
         </div>
         ${state.injury ? `<p class="profile-injury"><span class="injured-badge">${esc(t("injuredBadge"))}</span> ${esc(state.injury.detail)}<small>${esc(t("injurySince"))} ${esc(formatDate(state.injury.since_date))}${state.injury.expected_return ? ` · ${esc(t("injuryReturn"))} ${esc(state.injury.expected_return)}` : ""}</small></p>` : ""}
         <div class="profile-upload">
-          ${state.isCoach ? `<button id="photo-upload" class="quiet-button" type="button">${esc(t("uploadPhoto"))}</button>` : ""}
+          <button id="photo-upload" class="quiet-button" type="button">${esc(t("uploadPhoto"))}</button>
           <span id="upload-status" class="upload-status" aria-live="polite"></span>
         </div>
-        ${state.isCoach ? `<div class="age-editor">
+        <div class="age-editor">
           <label><span>${esc(t("ageGroup"))}</span><select id="age-band-select"><option value="">${esc(t("ageNotSet"))}</option>${AGE_BANDS.map((band) => `<option value="${band}"${player.age_band === band ? " selected" : ""}>${ageLabel(band)}</option>`).join("")}</select></label>
           <button id="age-band-save" class="quiet-button small" type="button"${state.ageStatus === "saving" ? " disabled" : ""}>${esc(t("adminSave"))}</button>
           <span class="upload-status" aria-live="polite">${esc(ageStatusText())}</span>
-        </div>` : ""}
+        </div>
       </div>`;
 
-    if (state.isCoach) {
-      $("photo-upload").addEventListener("click", () => $("photo-input").click());
-      $("age-band-save").addEventListener("click", saveAgeBand);
-    }
+    $("photo-upload").addEventListener("click", () => $("photo-input").click());
+    $("age-band-save").addEventListener("click", saveAgeBand);
 
     const bio = $("profile-bio");
     bio.hidden = !player.bio;
@@ -222,10 +221,10 @@
     const best = player.primary_position || "";
     const capable = player.secondary_positions || [];
     const status = posStatusText();
-    const coachRow = state.isCoach ? `<div class="pos-edit-row">
+    const coachRow = `<div class="pos-edit-row">
         <button class="quiet-button small" type="button" data-pos-action="edit">${esc(t("positionsEdit"))}</button>
         ${status ? `<span class="upload-status" aria-live="polite">${esc(status)}</span>` : ""}
-      </div>` : "";
+      </div>`;
     if (!best && !capable.length) { $("profile-positions").innerHTML = `<p class="empty">${esc(t("positionsEmpty"))}</p>${coachRow}`; return; }
     const diagram = window.YCACPositionMap ? YCACPositionMap.svg(best, capable) : "";
     const label = (cls, key, value) => `<span class="pm-label ${cls}"><small>${esc(t(key))}</small><strong>${esc(value)}</strong></span>`;
@@ -241,8 +240,8 @@
 
   /* Editor mode — every coordinate becomes a tappable slot (positionmap
      .editable). The mode toggle decides what a tap does; Save writes
-     primary_position + secondary_positions in one PATCH (RLS still requires
-     is_coach() regardless of what the UI shows). */
+     primary_position + secondary_positions in one PATCH (open to everyone
+     since wave 33). */
   function renderPositionEditor() {
     const best = state.posBest;
     const capable = state.posCapable;
@@ -269,7 +268,7 @@
   }
 
   function startEdit() {
-    if (!state.isCoach || !state.player) return;
+    if (!state.player) return;
     state.posEdit = true;
     state.posMode = "best";
     state.posBest = state.player.primary_position || "";
@@ -297,7 +296,7 @@
   }
 
   async function savePositions() {
-    if (!state.posEdit || !state.isCoach || state.posStatus === "positionsSaving") return;
+    if (!state.posEdit || state.posStatus === "positionsSaving") return;
     state.posStatus = "positionsSaving";
     renderPositions();
     const patch = {
@@ -325,7 +324,7 @@
 
   function handlePosAction(action) {
     if (action === "edit") return startEdit();
-    if (!state.posEdit || !state.isCoach) return; // stale listeners no-op
+    if (!state.posEdit) return; // stale listeners no-op
     if (action === "cancel") { state.posEdit = false; state.posStatus = ""; renderPositions(); }
     else if (action === "save") savePositions();
   }
@@ -338,7 +337,7 @@
     if (!target || typeof target.closest !== "function") return;
     const action = target.closest("[data-pos-action]");
     if (action) { handlePosAction(action.getAttribute("data-pos-action")); return; }
-    if (!state.posEdit || !state.isCoach) return;
+    if (!state.posEdit) return;
     const mode = target.closest("[data-pos-mode]");
     if (mode) {
       state.posMode = mode.getAttribute("data-pos-mode") === "capable" ? "capable" : "best";
@@ -355,7 +354,7 @@
     const target = event && event.target;
     if (!target || typeof target.closest !== "function") return;
     const slot = target.closest("[data-pos]");
-    if (slot && state.posEdit && state.isCoach) { event.preventDefault(); pickSlot(slot.getAttribute("data-pos")); }
+    if (slot && state.posEdit) { event.preventDefault(); pickSlot(slot.getAttribute("data-pos")); }
   }
 
   function renderAll() {
@@ -374,7 +373,7 @@
   }
 
   async function saveAgeBand() {
-    if (!state.isCoach || !state.player || state.ageStatus === "saving") return;
+    if (!state.player || state.ageStatus === "saving") return;
     const selected = $("age-band-select").value;
     if (selected && !AGE_BANDS.includes(selected)) return;
     state.ageStatus = "saving";
@@ -421,10 +420,6 @@
       const found = await load();
       if (!found) { renderNotFound(); return; }
       renderAll();
-      if (YCACAuth.session) {
-        try { state.isCoach = await YCACAuth.isCoach(); } catch (error) { state.isCoach = false; }
-        if (state.isCoach) renderAll(); // hero photo button + positions Edit control
-      }
     } catch (error) {
       console.error(error);
       $("profile-hero").innerHTML = `<div class="profile-id"><p class="login-error">${esc(t("coachError"))}</p></div>`;

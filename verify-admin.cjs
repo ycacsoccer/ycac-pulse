@@ -1,11 +1,13 @@
 // Data-path check for the admin tool (admin.html + admin.js):
 //   node verify-admin.cjs
-// Signs in an ephemeral COACH user (rostered) and runs every flow the page
-// offers: player create/patch, fixture create/score, lineup & goals replace,
-// signups entry with entered_by, match_notes upsert, team_content upsert
-// (captured + restored), the 10-table backup query set, cascade deletes — plus
-// an ephemeral TEAM user to prove writes are denied for non-coaches.
-// Everything it creates is removed afterwards.
+// Public since wave 33 — the page needs no login. Runs every flow it offers
+// against the exact queries admin.js uses: player create/patch, fixture
+// create/score, lineup & goals replace, signups entry with entered_by,
+// match_notes upsert, team_content upsert (captured + restored), the 10-table
+// backup query set, cascade deletes — with a signed-in rostered coach
+// (attribution path) plus explicit ANON read/write probes proving the public
+// path. Ephemeral users prove is_coach() still distinguishes rostered
+// coaches. Everything it creates is removed afterwards.
 const fs = require("fs");
 const path = require("path");
 
@@ -38,6 +40,7 @@ const TEAM_EMAIL = "e2e-admin-team@ycac-pulse.test";
 const E2E_PASSWORD = "E2e-Verify-2026!";
 const P1 = "e2e-admin-player";
 const P2 = "e2e-admin-player-2";
+const P3 = "e2e-admin-anon";
 const MATCH = "e2e-admin-match";
 
 // The exact query strings admin.js runs.
@@ -81,7 +84,7 @@ async function slate() {
   }
   await call(`${BASE}/coach_roster?email=in.("${COACH_EMAIL}","${TEAM_EMAIL}")`, { method: "DELETE", headers: adminHeaders }).catch(() => {});
   await call(`${BASE}/matches?id=eq.${MATCH}`, { method: "DELETE", headers: adminHeaders }).catch(() => {});
-  await call(`${BASE}/players?id=in.("${P1}","${P2}")`, { method: "DELETE", headers: adminHeaders }).catch(() => {});
+  await call(`${BASE}/players?id=in.("${P1}","${P2}","${P3}")`, { method: "DELETE", headers: adminHeaders }).catch(() => {});
 }
 
 async function main() {
@@ -93,10 +96,11 @@ async function main() {
   try {
     await slate();
 
-    // --- 1. anon sees nothing on the admin's team tables ---------------------
+    // --- 1. anon reads every admin table (parity with the secret key) --------
     for (const table of ["signups", "match_notes", "team_content", "coach_notes"]) {
       const rows = await call(`${BASE}/${table}?select=*`, { headers: anonHeaders });
-      check(Array.isArray(rows) && rows.length === 0, `anon sees 0 rows on ${table}`, `${rows.length}`);
+      const svc = await call(`${BASE}/${table}?select=*`, { headers: adminHeaders });
+      check(Array.isArray(rows) && rows.length === svc.length, `anon reads every ${table} row (public since wave 33)`, `${rows.length} of ${svc.length}`);
     }
 
     // --- 2. ephemeral coach (rostered) + team (read-only) users -------------
@@ -117,13 +121,13 @@ async function main() {
 
     const coachRpc = await call(`${BASE}/rpc/is_coach`, { method: "POST", headers: bearerHeaders(coachToken), body: {} });
     const teamRpc = await call(`${BASE}/rpc/is_coach`, { method: "POST", headers: bearerHeaders(teamToken), body: {} });
-    check(coachRpc === true, "coach session passes requireCoach (is_coach)");
-    check(teamRpc === false, "team session fails requireCoach", String(teamRpc));
+    check(coachRpc === true, "rostered coach is_coach() → true (attribution still works)");
+    check(teamRpc === false, "non-rostered session is_coach() → false", String(teamRpc));
 
-    // --- 3. the page's exact queries, with the coach session ----------------
+    // --- 3. the page's exact queries, as ANON (the page sends no token) ------
     const data = {};
     await Promise.all(Object.entries(QUERIES).map(async ([table, query]) => {
-      data[table] = await call(`${BASE}/${table}?${query}`, { headers: bearerHeaders(coachToken) });
+      data[table] = await call(`${BASE}/${table}?${query}`, { headers: anonHeaders });
     }));
     check(data.players.length >= 30, "players query", `${data.players.length} rows`);
     check(data.players.every((row, i, list) => i === 0 || list[i - 1].display_name.localeCompare(row.display_name) <= 0), "players ordered by name");
@@ -134,7 +138,7 @@ async function main() {
     check(Array.isArray(data.match_notes) && Array.isArray(data.team_content), "match_notes + team_content queries", `${data.match_notes.length} notes, ${data.team_content.length} pages`);
     check(Array.isArray(data.injuries), "injuries query", `${data.injuries.length} rows`); // exact seed baseline lives in verify-injuries
 
-    // --- 4. players: create → patch, and team writes denied ------------------
+    // --- 4. players: create → patch (coach = attribution path), then anon ----
     const probe = { id: P1, display_name: "E2E Admin Probe", shirt_number: 99, primary_position: "ST", secondary_positions: ["AT"], preferred_foot: "right", active: true };
     const created = await call(`${BASE}/players`, { method: "POST", headers: repHeaders(coachToken), body: [probe] });
     check(created.length === 1 && created[0].id === P1, "coach creates a player", created[0]?.id);
@@ -144,14 +148,13 @@ async function main() {
     const patched = await call(`${BASE}/players?id=eq.${P1}`, { method: "PATCH", headers: repHeaders(coachToken), body: { display_name: "E2E Admin Probe (edited)", bio: "profile edited in admin" } });
     check(patched.length === 1 && patched[0].display_name === "E2E Admin Probe (edited)" && patched[0].bio, "coach patches a player", patched[0]?.display_name);
 
-    const teamInsert = await fetch(`${BASE}/players`, {
-      method: "POST", headers: repHeaders(teamToken), body: JSON.stringify([{ id: "e2e-admin-should-fail", display_name: "Nope" }]),
-    });
-    check(teamInsert.status >= 400, "team session cannot create players", `status ${teamInsert.status}`);
-    const teamUpdate = await call(`${BASE}/players?id=eq.${P1}`, { method: "PATCH", headers: repHeaders(teamToken), body: { display_name: "Nope" } });
-    check(Array.isArray(teamUpdate) && teamUpdate.length === 0, "team session update affects 0 rows", `${teamUpdate?.length} rows`);
-    const stillOurs = await call(`${BASE}/players?id=eq.${P1}&select=display_name`, { headers: bearerHeaders(coachToken) });
-    check(stillOurs[0]?.display_name === "E2E Admin Probe (edited)", "player name untouched by team PATCH", stillOurs[0]?.display_name);
+    // wave 33: the anon role writes the same table (public since 0004)
+    const anonInsert = await call(`${BASE}/players`, { method: "POST", headers: { ...anonHeaders, Prefer: "return=representation" }, body: [{ id: P3, display_name: "E2E Admin Anon Probe", primary_position: "CM", active: true }] });
+    check(anonInsert.length === 1 && anonInsert[0].id === P3, "anon creates a player (public write)", anonInsert[0]?.id);
+    const anonPatch = await call(`${BASE}/players?id=eq.${P1}`, { method: "PATCH", headers: { ...anonHeaders, Prefer: "return=representation" }, body: { display_name: "E2E Admin Probe (anon edit)" } });
+    check(anonPatch.length === 1 && anonPatch[0].display_name === "E2E Admin Probe (anon edit)", "anon patches a player (public write)", anonPatch[0]?.display_name);
+    const anonSeesP3 = await call(`${BASE}/players?id=eq.${P3}&select=id`, { headers: anonHeaders });
+    check(anonSeesP3.length === 1, "anon reads back its own player row", `${anonSeesP3.length} row`);
 
     // --- 5. matches: create → score → lineup & goals replace ----------------
     const matchRow = {
@@ -209,14 +212,14 @@ async function main() {
       check(ins.length === 1 && ins[0].slug === "club-info", "coach creates team_content", ins[0]?.slug);
     }
 
-    // --- 9. backup: the exact 10-table export set ----------------------------
+    // --- 9. backup: the exact 10-table export set, as ANON -------------------
     const backup = {};
     await Promise.all(BACKUP_TABLES.map(async (table) => {
-      backup[table] = await call(`${BASE}/${table}?select=*`, { headers: bearerHeaders(coachToken) });
+      backup[table] = await call(`${BASE}/${table}?select=*`, { headers: anonHeaders });
     }));
     check(BACKUP_TABLES.every((table) => Array.isArray(backup[table])),
       "backup exports every table", BACKUP_TABLES.map((table) => `${table}:${backup[table].length}`).join(" "));
-    check(Array.isArray(backup.coach_notes), "coach_notes readable with a coach session", `${backup.coach_notes.length} rows`);
+    check(Array.isArray(backup.coach_notes), "coach_notes readable with anon (public since wave 33)", `${backup.coach_notes.length} rows`);
 
     // --- 10. delete the fixture → everything cascades -----------------------
     await call(`${BASE}/matches?id=eq.${MATCH}`, { method: "DELETE", headers: repHeaders(coachToken) });
@@ -226,9 +229,9 @@ async function main() {
       orphaned.map((rows, index) => `${["apps", "goals", "signups", "notes"][index]}:${rows.length}`).join(" "));
 
     // --- 11. delete the probe players (references cleared by the cascade) ----
-    await call(`${BASE}/players?id=in.("${P1}","${P2}")`, { method: "DELETE", headers: repHeaders(coachToken) });
-    const remaining = await call(`${BASE}/players?id=in.("${P1}","${P2}")&select=id`, { headers: adminHeaders });
-    check(remaining.length === 0, "coach deletes the probe players", `${remaining.length} left`);
+    await call(`${BASE}/players?id=in.("${P1}","${P2}","${P3}")`, { method: "DELETE", headers: repHeaders(coachToken) });
+    const remaining = await call(`${BASE}/players?id=in.("${P1}","${P2}","${P3}")&select=id`, { headers: adminHeaders });
+    check(remaining.length === 0, "coach deletes the probe players (incl. the anon probe)", `${remaining.length} left`);
   } finally {
     // restore everything this run touched
     if (state.contentModified) {
@@ -247,7 +250,7 @@ async function main() {
     ? content[0]?.title === state.contentOriginal.title && content[0]?.body === state.contentOriginal.body
     : content.length === 0;
   check(restored, "team_content restored to original state", state.contentOriginal ? "edited row reverted" : "probe row removed");
-  const probes = await call(`${BASE}/players?id=in.("${P1}","${P2}")&select=id`, { headers: adminHeaders });
+  const probes = await call(`${BASE}/players?id=in.("${P1}","${P2}","${P3}")&select=id`, { headers: adminHeaders });
   const probeMatch = await call(`${BASE}/matches?id=eq.${MATCH}&select=id`, { headers: adminHeaders });
   check(probes.length === 0 && probeMatch.length === 0, "probe player + fixture rows removed", `${probes.length} players, ${probeMatch.length} matches`);
   const roster = await call(`${BASE}/coach_roster?select=email`, { headers: adminHeaders });
@@ -261,7 +264,7 @@ async function main() {
     console.log(`${failures.length} FAILURE(S): ${failures.join(" | ")}`);
     process.exit(1);
   }
-  console.log("Admin tool verified: players, fixtures, lineup/goals, signups, notes, content, backup, RLS.");
+  console.log("Admin tool verified: public reads, coach + anon writes, fixtures, lineup/goals, signups, notes, content, backup, is_coach.");
 }
 
 main().catch((error) => { console.error(`ERROR ${error.message}`); process.exit(1); });

@@ -1,8 +1,9 @@
 // Data-path check for the coach dashboard (coach.html + coach.js):
 //   node verify-coach.cjs
-// Signs in an ephemeral rostered coach, runs the dashboard's exact queries (same
-// strings coach.js uses), feeds them through stats.js, and asserts the inputs
-// behind the board, the coverage matrix and the flags. User is deleted after.
+// Public since wave 33: no login anywhere in the flow. Runs the dashboard's
+// exact queries (same strings coach.js uses) as ANON — asserting the anon role
+// reads every row the coach session used to — feeds them through stats.js, and
+// asserts the inputs behind the board, the coverage matrix and the flags.
 const fs = require("fs");
 const path = require("path");
 const YCACStats = require("./stats.js");
@@ -22,16 +23,11 @@ const readConfig = () => {
 const env = readEnv();
 const config = readConfig();
 const BASE = `${env.SUPABASE_URL}/rest/v1`;
-const AUTH = `${env.SUPABASE_URL}/auth/v1`;
 const secret = env.SUPABASE_SERVICE_ROLE_KEY;
 const publishable = config.publishable;
 
 const adminHeaders = { apikey: secret, Authorization: `Bearer ${secret}`, "Content-Type": "application/json" };
 const anonHeaders = { apikey: publishable, Authorization: `Bearer ${publishable}`, "Content-Type": "application/json" };
-const bearerHeaders = (token) => ({ apikey: publishable, Authorization: `Bearer ${token}`, "Content-Type": "application/json" });
-
-const E2E_EMAIL = "e2e-dashboard@ycac-pulse.test";
-const E2E_PASSWORD = "E2e-Verify-2026!";
 
 const failures = [];
 const check = (ok, label, detail = "") => {
@@ -63,14 +59,13 @@ async function main() {
   console.log(`Verifying coach dashboard data path against ${env.SUPABASE_URL}\n`);
   const coachSource = fs.readFileSync(path.join(__dirname, "coach.js"), "utf8");
   const coachPage = fs.readFileSync(path.join(__dirname, "coach.html"), "utf8");
-  check(coachSource.includes("YCACAuth.requireCoach") && !coachSource.includes("YCACAuth.requireTeam"),
-    "coach dashboard uses the single coach gate");
+  check(!coachSource.includes("YCACAuth.requireCoach") && !coachSource.includes("YCACAuth.requireTeam") && !coachSource.includes("YCACAuth.isCoach"),
+    "coach dashboard has no login gate (public since wave 33)");
   check(coachPage.includes('id="tactics-map"') && coachPage.includes('src="tactics.js"')
     && coachSource.includes("YCACTactics.coverage") && coachSource.includes("secondary_positions")
     && coachSource.includes("slot.bestCount") && coachSource.includes("slot.capableCount"),
   "coach dashboard wires best-position + can-play counts into the formation map");
 
-  let userId = null;
   try {
     // --- 0. pending-fixture probe (all real matches may have results) ------
     // Keeps the fixtures checks meaningful regardless of schedule state;
@@ -78,37 +73,26 @@ async function main() {
     await call(`${BASE}/matches?id=eq.e2e-fixture`, { method: "DELETE", headers: adminHeaders });
     await call(`${BASE}/matches`, { method: "POST", headers: adminHeaders, body: [{ id: "e2e-fixture", date: "2099-12-01", competition: "Friendly Match", opponent: "E2E Probe FC" }] });
 
-    // slate: remove leftovers, then create + roster the ephemeral coach
-    await call(`${BASE}/coach_roster?email=eq.${E2E_EMAIL}`, { method: "DELETE", headers: adminHeaders });
-    const existing = await call(`${AUTH}/admin/users`, { headers: adminHeaders });
-    for (const user of existing.users || []) {
-      if (user.email === E2E_EMAIL) await call(`${AUTH}/admin/users/${user.id}`, { method: "DELETE", headers: adminHeaders });
-    }
-    const created = await call(`${AUTH}/admin/users`, { method: "POST", headers: adminHeaders, body: { email: E2E_EMAIL, password: E2E_PASSWORD, email_confirm: true } });
-    userId = created.id;
-    check(Boolean(userId), "ephemeral coach user created", E2E_EMAIL);
-    await call(`${BASE}/coach_roster`, { method: "POST", headers: adminHeaders, body: [{ email: E2E_EMAIL }] });
-    check(true, "ephemeral user added to coach_roster");
-
-    const grant = await call(`${AUTH}/token?grant_type=password`, { method: "POST", headers: anonHeaders, body: { email: E2E_EMAIL, password: E2E_PASSWORD } });
-    const token = grant.access_token;
-    check(Boolean(token), "password grant (coach session)");
-
-    // --- 1. RLS: this page needs the session --------------------------------
-    const anonCount = await fetch(`${BASE}/signups?select=match_id`, { headers: { ...anonHeaders, Prefer: "count=exact" } })
+    // --- 1. RLS: the anon role reads the whole dashboard data set ----------
+    const countOf = async (table, headers) => fetch(`${BASE}/${table}?select=*`, { headers: { ...headers, Prefer: "count=exact" } })
       .then((res) => Number(res.headers.get("content-range")?.split("/")[1] ?? "NaN"));
-    check(anonCount === 0, "anon sees 0 signups (page must gate on login)", `anon ${anonCount}`);
+    const [anonSignups, allSignups, anonNotes, allNotes] = await Promise.all([
+      countOf("signups", anonHeaders), countOf("signups", adminHeaders),
+      countOf("coach_notes", anonHeaders), countOf("coach_notes", adminHeaders),
+    ]);
+    check(anonSignups === allSignups, "anon reads every signups row", `anon ${anonSignups} of ${allSignups}`);
+    check(anonNotes === allNotes, "anon reads every coach_notes row", `anon ${anonNotes} of ${allNotes}`);
 
-    // --- 2. the dashboard's queries, with the session ------------------------
+    // --- 2. the dashboard's exact queries, as ANON (the page sends no token)
     const [players, matches, appearances, goals, signups, coachNotes] = await Promise.all(
-      Object.entries(QUERIES).map(([table, query]) => call(`${BASE}/${table}?${query}`, { headers: bearerHeaders(token) })),
+      Object.entries(QUERIES).map(([table, query]) => call(`${BASE}/${table}?${query}`, { headers: anonHeaders })),
     );
     check(Array.isArray(players) && players.length >= 30, "players query", `${players.length} rows`);
     check(Array.isArray(matches) && matches.length >= 10, "matches query", `${matches.length} rows`);
     check(Array.isArray(appearances) && appearances.length >= 100, "appearances query", `${appearances.length} rows`);
     check(Array.isArray(goals) && goals.length >= 30, "goals query", `${goals.length} rows`);
-    check(Array.isArray(signups) && signups.length > 0, "signups query (private table)", `${signups.length} rows`);
-    check(Array.isArray(coachNotes), "coach_notes query runs for coach session", `${coachNotes.length} rows`);
+    check(Array.isArray(signups) && signups.length > 0, "signups query (public since wave 33)", `${signups.length} rows`);
+    check(Array.isArray(coachNotes), "coach_notes query runs for anon", `${coachNotes.length} rows`);
 
     // --- 3. the engine, exactly as coach.js calls it -------------------------
     const overrides = Object.fromEntries(coachNotes.filter((note) => note.squad_status).map((note) => [note.player_id, { squad_status: note.squad_status }]));
@@ -166,12 +150,11 @@ async function main() {
     check(Number.isInteger(duplicates.length + missingPhotos.length + friendlyOnly.length + declinedButPlayed.length), "flag inputs computed without errors");
   } finally {
     await call(`${BASE}/matches?id=eq.e2e-fixture`, { method: "DELETE", headers: adminHeaders }).catch(() => {});
-    await call(`${BASE}/coach_roster?email=eq.${E2E_EMAIL}`, { method: "DELETE", headers: adminHeaders }).catch(() => {});
-    if (userId) await call(`${AUTH}/admin/users/${userId}`, { method: "DELETE", headers: adminHeaders }).catch(() => {});
-    const users = await call(`${AUTH}/admin/users`, { headers: adminHeaders }).catch(() => null);
-    const leftover = users?.users?.some((user) => user.email === E2E_EMAIL);
-    check(!leftover, "ephemeral user deleted");
   }
+
+  // --- post-cleanup ---------------------------------------------------------
+  const leftovers = await call(`${BASE}/matches?id=eq.e2e-fixture`, { headers: adminHeaders }).catch(() => null);
+  check(Array.isArray(leftovers) && leftovers.length === 0, "e2e fixture probe removed");
 
   console.log("");
   if (failures.length) {

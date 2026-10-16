@@ -4,13 +4,19 @@
    is deterministic: no credentials, no network, no dependence on whatever
    matches the coach has entered today.
 
-   Anything that is NOT one of the five public tables (players, matches,
-   appearances, goals, injuries) — team tables, rpc, storage — is rejected with
-   401 and recorded in `denied`, which the specs assert is empty: the public
-   pages must never ask for data the anon role cannot read. */
+   Since wave 33 every site table — including signups, match_notes,
+   saved_squads, coach_notes and team_content — is publicly readable and
+   writable (migration 0004_public_access.sql), so the mock answers them for
+   everyone. Anything outside that set (coach_roster, unknown tables,
+   rpc/is_coach without the coach flag) is rejected with 401 and recorded in
+   `denied`, which the specs assert is empty: the public pages must never ask
+   for data the anon role cannot read. */
 const { tables: fixtures, signups: signupsFixture } = require("../fixtures/public-data");
 
-const PUBLIC_TABLES = new Set(Object.keys(fixtures));
+const PUBLIC_TABLES = new Set([
+  ...Object.keys(fixtures), // players, matches, appearances, goals, injuries
+  "signups", "match_notes", "saved_squads", "coach_notes", "team_content",
+]);
 const DENY_BODY = JSON.stringify({ message: "E2E mock: request outside the public read set" });
 
 const clone = (rows) => JSON.parse(JSON.stringify(rows));
@@ -32,9 +38,9 @@ function applyOr(rows, expression) {
 
 async function mockSupabase(page, options = {}) {
   const log = { rest: [], requestedTables: [], denied: [], hosts: new Set() };
-  // Coach pages can edit signups (add / change status / remove) — keep a
-  // mutable in-memory copy so writes stick for later reads in the same test.
-  const coachState = { signups: clone(signupsFixture) };
+  // The signups store is mutable — edits stick for later reads in the same
+  // test (wave 33: anyone may add / move / remove signups on the match page).
+  const store = { signups: clone(signupsFixture) };
 
   await page.route("**/rest/v1/**", async (route) => {
     const url = new URL(route.request().url());
@@ -43,12 +49,22 @@ async function mockSupabase(page, options = {}) {
     log.rest.push(`${tail}${url.search}`);
 
     const table = tail.split("/")[0];
-    if (options.coach && tail === "rpc/is_coach") {
-      return route.fulfill({ status: 200, contentType: "application/json", body: "true" });
+    if (tail === "rpc/is_coach") {
+      // is_coach() is EXECUTE'd only for authenticated accounts in Supabase;
+      // only a post-login check asks for it (options.coach simulates that).
+      if (options.coach) return route.fulfill({ status: 200, contentType: "application/json", body: "true" });
+      log.denied.push(tail);
+      return route.fulfill({ status: 401, contentType: "application/json", body: DENY_BODY });
     }
-    if (options.coach && table === "signups") { // team table — coach-editable on the match page
+    if (!PUBLIC_TABLES.has(table)) { // coach_roster, unknown tables
+      log.denied.push(tail);
+      return route.fulfill({ status: 401, contentType: "application/json", body: DENY_BODY });
+    }
+    log.requestedTables.push(table);
+
+    if (table === "signups") { // mutable — the match page's signup editor
       const method = route.request().method();
-      const slice = () => coachState.signups.filter((row) => ["match_id", "player_id"].every((field) => {
+      const slice = () => store.signups.filter((row) => ["match_id", "player_id"].every((field) => {
         const filter = url.searchParams.get(field);
         return !filter || !filter.startsWith("eq.") || String(row[field]) === filter.slice(3);
       }));
@@ -57,9 +73,9 @@ async function mockSupabase(page, options = {}) {
         const body = route.request().postDataJSON() || [];
         const rows = Array.isArray(body) ? body : [body];
         rows.forEach((row) => {
-          const existing = coachState.signups.find((signup) => signup.match_id === row.match_id && signup.player_id === row.player_id);
+          const existing = store.signups.find((signup) => signup.match_id === row.match_id && signup.player_id === row.player_id);
           if (existing) Object.assign(existing, row);
-          else coachState.signups.push(row);
+          else store.signups.push(row);
         });
         return json(201, rows);
       }
@@ -71,7 +87,7 @@ async function mockSupabase(page, options = {}) {
       }
       if (method === "DELETE") {
         const targets = slice();
-        coachState.signups = coachState.signups.filter((row) => !targets.includes(row));
+        store.signups = store.signups.filter((row) => !targets.includes(row));
         return json(200, targets);
       }
       let rows = slice();
@@ -81,21 +97,11 @@ async function mockSupabase(page, options = {}) {
       }
       return json(200, rows);
     }
-    if (options.coach && table === "coach_notes") {
+    if (table === "coach_notes" || table === "match_notes" || table === "saved_squads" || table === "team_content") {
+      // no fixture rows for these — reads answer empty, writes acknowledge.
       return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
-    }
-    if (options.coach && table === "match_notes") {
-      return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
-    }
-    if (options.coach && table === "saved_squads") {
-      return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
-    }
-    if (tail.startsWith("rpc/") || !PUBLIC_TABLES.has(table)) {
-      log.denied.push(tail);
-      return route.fulfill({ status: 401, contentType: "application/json", body: DENY_BODY });
     }
 
-    log.requestedTables.push(table);
     let rows = clone(fixtures[table]);
 
     // Common PostgREST equality filters used across public pages.

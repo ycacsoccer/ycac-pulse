@@ -1,11 +1,12 @@
 // Data-path + contract check for injury tracking (revamp wave 15):
 //   node verify-injuries.cjs
-// Requires supabase/migrations/0002_injuries.sql applied first (README →
-// "Apply a migration" — paste into the Supabase SQL Editor). Verifies:
-//   1. the migration contract on disk (table, RLS policies, four seed rows)
+// Requires supabase/migrations/0002_injuries.sql AND 0004_public_access.sql
+// applied first (README → "Apply a migration" — paste into the Supabase SQL
+// Editor). Verifies:
+//   1. the migration contract on disk (table, seed rows, 0004's open policies)
 //   2. anon public read of the four seeded injuries with embedded player names
-//   3. anon writes cannot touch the seed rows (POST denied, PATCH/DELETE no-op)
-//   4. team session: reads allowed, writes denied
+//   3. anon writes (public since wave 33): probe insert → read back → delete
+//   4. authenticated session: reads + writes the same rows
 //   5. rostered coach: create → update → delete an ephemeral probe injury
 //   6. static wiring on index/players/player/coach/admin pages + i18n keys ×3
 // Everything ephemeral is removed in finally; the seed must read back exactly.
@@ -89,8 +90,10 @@ async function main() {
     const sql = fs.readFileSync(path.join(__dirname, "supabase", "migrations", "0002_injuries.sql"), "utf8");
     check(/create table( if not exists)? injuries/.test(sql), "0002 creates the injuries table");
     check(/policy "public read injuries"[\s\S]*?for select using \(true\)/.test(sql), "0002 grants public read");
-    check(/policy "coach manage injuries"[\s\S]*?is_coach\(\)/.test(sql), "0002 gates writes behind is_coach()");
     check(EXPECTED.every((row) => sql.includes(`('${row.id}'`)), "0002 seeds the four current injuries");
+    const sql4 = fs.readFileSync(path.join(__dirname, "supabase", "migrations", "0004_public_access.sql"), "utf8");
+    check(sql4.includes('drop policy if exists "coach manage injuries"') && /"open injuries"\s+on injuries\s+for all to anon, authenticated/.test(sql4),
+      "0004 opens injuries read + write to anon (public since wave 33)");
 
     // --- 2. anon public read (the query app.js runs) ------------------------
     const rows = await seedRead();
@@ -102,39 +105,37 @@ async function main() {
     check(rows.every((row) => row.players?.display_name), "embedded player name resolves for every injury",
       rows.map((row) => row.players?.display_name).join(", "));
 
-    // --- 3. anon writes cannot touch the seed rows --------------------------
-    const anonInsert = await fetch(`${BASE}/injuries`, {
-      method: "POST", headers: repHeaders(publishable), body: JSON.stringify([{ player_id: PROBE_PLAYER, detail: "anon", since_date: "2026-10-01" }]),
+    // --- 3. anon writes (wave 33): probe insert → read back → delete ---------
+    const anonInsert = await call(`${BASE}/injuries`, {
+      method: "POST", headers: { ...anonHeaders, Prefer: "return=representation" }, body: [{ player_id: PROBE_PLAYER, detail: "anon probe", since_date: "2026-10-01" }],
     });
-    check(anonInsert.status >= 400, "anon insert denied", `status ${anonInsert.status}`);
-    const anonPatch = await call(`${BASE}/injuries?player_id=eq.${PROBE_PLAYER}`, {
-      method: "PATCH", headers: { ...anonHeaders, Prefer: "return=representation" }, body: { detail: "anon" },
-    });
+    check(Array.isArray(anonInsert) && anonInsert.length === 1, "anon inserts an injury (public write)", `${anonInsert?.length} row`);
+    const withAnon = await seedRead();
+    check(withAnon.length === EXPECTED.length + 1, "anon sees its own new row", `${withAnon.length} rows`);
     const anonDelete = await call(`${BASE}/injuries?player_id=eq.${PROBE_PLAYER}`, {
       method: "DELETE", headers: { ...anonHeaders, Prefer: "return=representation" },
     });
-    check(Array.isArray(anonPatch) && anonPatch.length === 0, "anon update affects 0 rows", `${anonPatch?.length} rows`);
-    check(Array.isArray(anonDelete) && anonDelete.length === 0, "anon delete affects 0 rows", `${anonDelete?.length} rows`);
+    check(Array.isArray(anonDelete) && anonDelete.length === 1, "anon deletes its own probe row", `${anonDelete?.length} row`);
     const afterAnon = await seedRead();
     const stillSeeded = Object.fromEntries(afterAnon.map((row) => [row.player_id, row]));
     check(afterAnon.length === EXPECTED.length && stillSeeded.kosei?.detail === "Minor knee injury",
-      "seed rows intact after anon write attempts", `${afterAnon.length} rows`);
+      "seed rows intact after anon probe cycle", `${afterAnon.length} rows`);
 
-    // --- 4. team session: reads allowed, writes denied ----------------------
+    // --- 4. authenticated session: reads + writes the same way ---------------
     await call(`${AUTH}/admin/users`, {
       method: "POST", headers: adminHeaders, body: { email: TEAM_EMAIL, email_confirm: true, password: E2E_PASSWORD },
     }).catch(() => {});
     const teamSession = await signIn(TEAM_EMAIL);
     const teamRead = await call(`${BASE}/injuries?select=player_id`, { headers: bearerHeaders(teamSession.access_token) });
-    check(teamRead.length === EXPECTED.length, "team session reads injuries", `${teamRead.length} rows`);
-    const teamInsert = await fetch(`${BASE}/injuries`, {
-      method: "POST", headers: repHeaders(teamSession.access_token), body: JSON.stringify([{ player_id: PROBE_PLAYER, detail: "team", since_date: "2026-10-01" }]),
+    check(teamRead.length === EXPECTED.length, "authenticated session reads injuries", `${teamRead.length} rows`);
+    const teamInsert = await call(`${BASE}/injuries`, {
+      method: "POST", headers: repHeaders(teamSession.access_token), body: [{ player_id: PROBE_PLAYER, detail: "auth probe", since_date: "2026-10-01" }],
     });
-    check(teamInsert.status >= 400, "team session cannot insert injuries", `status ${teamInsert.status}`);
-    const teamPatch = await call(`${BASE}/injuries?player_id=eq.${PROBE_PLAYER}`, {
-      method: "PATCH", headers: { ...repHeaders(teamSession.access_token), Prefer: "return=representation" }, body: { detail: "team" },
+    check(Array.isArray(teamInsert) && teamInsert.length === 1, "authenticated session inserts too", `${teamInsert?.length} row`);
+    const teamDelete = await call(`${BASE}/injuries?player_id=eq.${PROBE_PLAYER}`, {
+      method: "DELETE", headers: repHeaders(teamSession.access_token),
     });
-    check(Array.isArray(teamPatch) && teamPatch.length === 0, "team session update affects 0 rows", `${teamPatch?.length} rows`);
+    check(Array.isArray(teamDelete) && teamDelete.length === 1, "authenticated session deletes its probe", `${teamDelete?.length} row`);
 
     // --- 5. rostered coach: create → update → delete ------------------------
     await call(`${AUTH}/admin/users`, {
@@ -203,7 +204,7 @@ async function main() {
     console.log(`${failures.length} FAILURE(S): ${failures.join(" | ")}`);
     process.exit(1);
   }
-  console.log("Injuries verified: migration contract, public read, anon/team writes denied, coach CRUD, site wiring.");
+  console.log("Injuries verified: migration contract, public read + write (anon + auth), coach CRUD, site wiring.");
 }
 
 main().catch((error) => { console.error(`ERROR ${error.message}`); process.exit(1); });

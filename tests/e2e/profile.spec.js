@@ -43,9 +43,18 @@ test.describe("profile — Chris Ito (scored in both competitions)", () => {
     await expect(page.locator("#profile-goals .h-comp.friendly")).toHaveCount(expected.chris.fndGoals);
   });
 
-  test("public view: pitch diagram without editor controls", async ({ page }) => {
+  test("public view: pitch diagram with the position editor controls", async ({ page }) => {
     await expect(page.locator("#profile-positions svg")).toHaveCount(1);
-    await expect(page.locator('[data-pos-action], [data-pos-mode]')).toHaveCount(0);
+    // wave 33: the Edit control + photo upload + age editor are public
+    await expect(page.locator('[data-pos-action="edit"]')).toHaveCount(1);
+    await expect(page.locator("#photo-upload")).toHaveCount(1);
+    await expect(page.locator("#age-band-select")).toHaveCount(1);
+    // the full editor (mode toggles + save/cancel) opens without a login
+    await page.locator('[data-pos-action="edit"]').click();
+    await expect(page.locator("[data-pos-mode]")).not.toHaveCount(0);
+    await expect(page.locator('[data-pos-action="save"]')).toHaveCount(1);
+    await page.locator('[data-pos-action="cancel"]').click();
+    await expect(page.locator("[data-pos-mode]")).toHaveCount(0);
   });
 
   test("reads only public tables and logs no errors", async ({ page }) => {
