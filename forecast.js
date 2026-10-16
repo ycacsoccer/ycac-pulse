@@ -30,6 +30,18 @@ const YCACForecast = (() => {
     return record;
   }
 
+  /* The display-shaped season statistics over any list of finals. */
+  function statsOf(list) {
+    const record = recordOf(list);
+    return {
+      played: record.played, w: record.w, d: record.d, l: record.l, gf: record.gf, ga: record.ga,
+      gfPerGame: record.played ? round1(record.gf / record.played) : 0,
+      gaPerGame: record.played ? round1(record.ga / record.played) : 0,
+      cleanSheets: record.cleanSheets,
+      winPct: record.played ? Math.round((record.w / record.played) * 100) : null,
+    };
+  }
+
   const factorial = (n) => { let value = 1; for (let i = 2; i <= n; i += 1) value *= i; return value; };
   const poisson = (goals, lambda) => (Math.exp(-lambda) * lambda ** goals) / factorial(goals);
 
@@ -72,13 +84,10 @@ const YCACForecast = (() => {
       ? { us: { row: standingsRows[ourRowIndex], pos: ourRowIndex + 1 }, them: { row: standingsRows[themRowIndex], pos: themRowIndex + 1 } }
       : null;
 
-    const record = recordOf(ourFinals);
-    const stats = {
-      played: record.played, w: record.w, d: record.d, l: record.l, gf: record.gf, ga: record.ga,
-      gfPerGame: record.played ? round1(record.gf / record.played) : 0,
-      gaPerGame: record.played ? round1(record.ga / record.played) : 0,
-      cleanSheets: record.cleanSheets,
-      winPct: record.played ? Math.round((record.w / record.played) * 100) : null,
+    const stats = statsOf(ourFinals);
+    const venueSplit = {
+      home: recordOf(ourFinals.filter((row) => /home/i.test(row.venue || ""))),
+      away: recordOf(ourFinals.filter((row) => /away/i.test(row.venue || ""))),
     };
     const form = ourFinals.slice(-5).map((row) => ({
       date: row.date, opponent: row.opponent, venue: row.venue,
@@ -112,6 +121,7 @@ const YCACForecast = (() => {
       bucket,
       table,
       stats,
+      venueSplit,
       form,
       h2h: { rows: h2h.slice(0, 5), record: recordOf(h2h) },
       lambdas: probs ? { us: round1(lambdas.us), them: round1(lambdas.them) } : null,
@@ -122,7 +132,58 @@ const YCACForecast = (() => {
     };
   }
 
-  return { build, outcomeOf, normName, bucketOf };
+  /* Wave 35 — how a PLAYED result sits in its own season:
+     · entering      the up-to-five finals played before this one (oldest → newest)
+     · enteringRecord the record across exactly those matches
+     · recordToDate  season record (same competition) through this match, incl. it
+     · run           the same-outcome run this match belongs to (null below two)
+     · flags         clean sheet + any GF/GA records the match SET against earlier
+                     games (first games set no records, so nothing is flagged)
+     `finals` must already contain only finals; the match should be one of them. */
+  function context(match, finals = []) {
+    const byDate = (a, b) => String(a.date).localeCompare(String(b.date));
+    const bucket = bucketOf(match.competition);
+    const scoped = [...finals].sort(byDate).filter((row) => bucketOf(row.competition) === bucket);
+    const upTo = scoped.filter((row) => String(row.date) <= String(match.date));
+    const before = upTo.filter((row) => row.id !== match.id);
+    const entering = before.slice(-5);
+    const gf = Number(match.ycac_goals) || 0;
+    const ga = Number(match.opponent_goals) || 0;
+
+    const index = scoped.findIndex((row) => row.id === match.id);
+    const outcome = outcomeOf(match);
+    let start = index, end = index;
+    if (index > -1) {
+      while (start > 0 && outcomeOf(scoped[start - 1]) === outcome) start -= 1;
+      while (end < scoped.length - 1 && outcomeOf(scoped[end + 1]) === outcome) end += 1;
+    }
+    const run = index > -1 && end - start + 1 >= 2 ? { outcome, length: end - start + 1 } : null;
+
+    const priorGf = before.map((row) => Number(row.ycac_goals) || 0);
+    const priorGa = before.map((row) => Number(row.opponent_goals) || 0);
+    return {
+      entering,
+      enteringRecord: recordOf(entering),
+      recordToDate: statsOf(upTo),
+      run,
+      flags: {
+        cleanSheet: ga === 0,
+        biggestWin: gf > ga && priorGf.length > 0 && gf > Math.max(...priorGf),
+        biggestLoss: ga > gf && priorGa.length > 0 && ga > Math.max(...priorGa),
+      },
+    };
+  }
+
+  /* Wave 35 — the head-to-head series against this opponent up to and including
+     a played match (newest first, the match itself included). */
+  function series(match, finals = []) {
+    const rows = finals
+      .filter((row) => normName(row.opponent) === normName(match.opponent) && String(row.date) <= String(match.date))
+      .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    return { rows, record: recordOf(rows) };
+  }
+
+  return { build, context, series, outcomeOf, normName, bucketOf };
 })();
 if (typeof module !== "undefined" && module.exports) module.exports = YCACForecast;
 if (typeof window !== "undefined") window.YCACForecast = YCACForecast;

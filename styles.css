@@ -782,6 +782,27 @@ svg.timing-svg, svg.trajectory-svg { display: block; width: 100%; height: auto; 
 .standings-scorers .ss-name { color: var(--navy); font-weight: 700; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .standings-scorers .ss-club { color: var(--muted); font-size: .72rem; }
 .standings-scorers .ss-goals { color: var(--gold); font-family: 'Libre Baskerville', Georgia, serif; font-variant-numeric: tabular-nums; }
+.standings-scorers li.is-us .ss-name { color: #7a5f16; }
+.standings-scorers li.is-them .ss-name { text-decoration: underline; text-decoration-color: var(--gold); text-underline-offset: 3px; }
+
+/* ---- Wave 35: match-page statistics — countdown, neighbour nav, result
+   context, series, lineup season lines, signup coverage ---- */
+.hero-nav { display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem 1rem; margin-top: .7rem; }
+.hero-nav a { color: #cad7e9; font-size: .72rem; font-weight: 700; text-decoration: none; }
+.hero-nav a:hover { color: #fff; text-decoration: underline; }
+.hero-nav .hn-next { margin-left: auto; }
+.match-hero .match-meta .hero-count { color: var(--gold); }
+.mp-name.mp-name-stat { white-space: normal; overflow: visible; display: flex; flex-direction: column; gap: .12rem; padding: .1rem 0; }
+.mp-stat { color: var(--muted); font-size: .62rem; font-weight: 600; letter-spacing: .02em; }
+.signup-coverage { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .85rem; padding: .55rem .7rem; margin-bottom: .9rem; border: 1px solid var(--line); border-radius: 8px; background: #f7f8fc; font-size: .74rem; color: var(--muted); }
+.signup-coverage .sc-main { color: var(--navy); font-weight: 700; }
+.signup-coverage .sc-band { color: var(--navy); font-weight: 700; font-variant-numeric: tabular-nums; }
+.signup-coverage .sc-injured { color: #a23b2e; font-weight: 700; }
+.mc-run { margin: .6rem 0 0; color: var(--navy); font-size: .78rem; font-weight: 700; }
+.mc-flags { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
+.mc-flag { padding: .2rem .6rem; border: 1px solid #e6dcc0; border-radius: 999px; background: #f7f2e2; color: #7a5f16; font-size: .66rem; font-weight: 700; letter-spacing: .03em; }
+.mc-series { margin: 0 0 .35rem; color: var(--muted); font-size: .72rem; font-weight: 700; }
+.fc-meeting.is-this { background: #f7f0df; box-shadow: inset 2px 0 0 var(--gold); }
 
 /* ---- Wave 26: competition-first player data + simplified public shell ---- */
 .pc-tot { display: grid; gap: .38rem; }

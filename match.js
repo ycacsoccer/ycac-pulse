@@ -22,7 +22,7 @@
 
   const state = {
     mode: "loading", // loading | ok | missing | error
-    match: null, allMatches: [], apps: [], allAppearances: [], goals: [], allGoals: [], signups: [], notes: [], savedSquad: [],
+    match: null, allMatches: [], apps: [], allAppearances: [], goals: [], allGoals: [], signups: [], notes: [], savedSquad: [], injuries: [],
     playersById: new Map(), seasonIndex: new Map(),
   };
 
@@ -38,6 +38,19 @@
   const monogram = (name) => String(name || "?").split(/\s+/).map((word) => word[0]).slice(0, 2).join("").toUpperCase();
   const empty = (key) => `<p class="empty">${esc(t(key))}</p>`;
   const isFinal = (match) => match.ycac_goals != null && match.opponent_goals != null;
+
+  // ---- shared display helpers (wave 35: countdown, context, series) --------
+  const outcomeLetter = (outcome) => t(outcome === "win" ? "vizWin" : outcome === "draw" ? "vizDraw" : "vizLoss");
+  const outcomeWord = (outcome) => t(outcome === "win" ? "outcomeWin" : outcome === "draw" ? "outcomeDraw" : "outcomeLoss");
+  const recordLine = (record) => `${record.w}${t("vizWin")} ${record.d}${t("vizDraw")} ${record.l}${t("vizLoss")} · ${record.gf}–${record.ga}`;
+  // Whole local days from today to a YYYY-MM-DD fixture: 0 = matchday, null = past.
+  const dayCount = (date) => {
+    const parts = String(date || "").split("-").map(Number);
+    if (parts.length !== 3 || parts.some((value) => !value)) return null;
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return Math.round((new Date(parts[0], parts[1] - 1, parts[2]) - today) / 86400000);
+  };
 
   function photoCell(player) {
     const initials = `<span class="monogram" aria-hidden="true">${esc(monogram(player.display_name))}</span>`;
@@ -64,17 +77,31 @@
     const score = final
       ? `YC&amp;AC <span class="match-score">${m.ycac_goals}–${m.opponent_goals}</span> ${esc(m.opponent)}`
       : `YC&amp;AC ${esc(t("versus"))} ${esc(m.opponent)}`;
+    const days = final ? null : dayCount(m.date);
+    const countdown = days === 0 ? esc(t("matchCountdownToday"))
+      : days > 0 ? `<strong class="hero-count">${esc(t("matchCountdown", { n: days }))}</strong>` : "";
     const meta = [
       esc(formatDate(m.date)),
       m.venue ? esc(m.venue) : "",
       m.kickoff ? `${esc(t("kickoff"))} ${esc(m.kickoff)}` : "",
       m.home_away ? esc(t(m.home_away === "home" ? "adminHome" : "adminAway")) : "",
+      countdown,
     ].filter(Boolean).join(" · ");
+    // wave 35 — step to the neighbouring fixture or result (chronological)
+    const ordered = state.allMatches.filter((row) => row && row.date).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    const at = ordered.findIndex((row) => row.id === m.id);
+    const neighbour = (row, side) => {
+      const text = `${esc(formatDate(row.date))} · ${esc(row.opponent)}`;
+      return `<a class="hn-${side}" href="match.html?id=${encodeURIComponent(row.id)}" aria-label="${esc(t(side === "prev" ? "matchPrev" : "matchNext"))}">${side === "prev" ? `‹ ${text}` : `${text} ›`}</a>`;
+    };
+    const nav = at > -1 && (at > 0 || at < ordered.length - 1)
+      ? `<nav class="hero-nav">${at > 0 ? neighbour(ordered[at - 1], "prev") : ""}${at < ordered.length - 1 ? neighbour(ordered[at + 1], "next") : ""}</nav>`
+      : "";
     target.innerHTML = `
       <p class="eyebrow">${esc(m.competition)}</p>
       <h1>${score}</h1>
       <p class="match-meta">${meta}</p>
-      <span class="badge">${esc(t(final ? "results" : "upcoming"))}</span>`;
+      <span class="badge">${esc(t(final ? "results" : "upcoming"))}</span>${nav}`;
   }
 
   function renderLineup() {
@@ -89,11 +116,26 @@
       || String(a.players?.display_name || "").localeCompare(String(b.players?.display_name || ""));
     const starters = state.apps.filter((app) => app.role === "starter").sort(byShirt);
     const subs = state.apps.filter((app) => app.role !== "starter").sort(byShirt);
+    // wave 35 — each row carries the player's season line THROUGH this match
+    // (own competition bucket, dates up to the match — a review shows what the
+    // player had built by then, not what came after).
+    const bucketOf = (window.YCACForecast && YCACForecast.bucketOf) || ((competition) => /friendly/i.test(competition || "") ? "friendly" : /tml/i.test(competition || "") ? "tml" : "other");
+    const bucket = bucketOf(state.match.competition);
+    const scopeIds = new Set(state.allMatches
+      .filter((row) => isFinal(row) && bucketOf(row.competition) === bucket && String(row.date) <= String(state.match.date))
+      .map((row) => row.id));
+    const seasonLine = (playerId) => {
+      const apps = state.allAppearances.filter((row) => row.player_id === playerId && scopeIds.has(row.match_id)).length;
+      const goals = state.allGoals.filter((row) => row.scorer_id === playerId && scopeIds.has(row.match_id)).length;
+      const app = apps === 1 ? t("matchAppOne", { n: apps }) : t("matchAppMany", { n: apps });
+      const goal = goals === 1 ? t("matchGoalOne", { n: goals }) : t("matchGoalMany", { n: goals });
+      return `${esc(app)} · ${esc(goal)}`;
+    };
     const row = (app) => {
       const p = app.players || {};
       return `<a class="match-player" href="player.html?id=${encodeURIComponent(p.id || app.player_id)}">
         ${photoCell(p)}
-        <span class="mp-name">${esc(p.display_name || app.player_id)}</span>
+        <span class="mp-name mp-name-stat">${esc(p.display_name || app.player_id)}<small class="mp-stat">${seasonLine(p.id || app.player_id)}</small></span>
         <span class="mp-num">${p.shirt_number != null ? `#${p.shirt_number}` : ""}</span>
         <span class="mp-pos">${esc(app.position || p.primary_position || "")}</span>
       </a>`;
@@ -120,6 +162,71 @@
       </div>`).join("");
   }
 
+  /* Wave 35 — a played result in its season: the form that entered it, the
+     W/D/L run it belongs to, the record at that point, and any records it set
+     (clean sheet, biggest win, heaviest defeat). All computed by the pure
+     forecast.context() so the unit tests own the logic. */
+  function renderContext() {
+    const panel = $("context-panel");
+    const target = $("match-context");
+    const visible = state.mode === "ok" && isFinal(state.match) && Boolean(window.YCACForecast);
+    panel.hidden = !visible;
+    if (!visible) { target.innerHTML = ""; return; }
+    const c = YCACForecast.context(state.match, state.allMatches.filter(isFinal));
+    const blocks = [];
+
+    if (c.entering.length) {
+      const pills = c.entering.map((row) => {
+        const outcome = YCACForecast.outcomeOf(row);
+        const title = `${row.ycac_goals}–${row.opponent_goals} ${t("versus")} ${row.opponent} · ${formatDate(row.date)}`;
+        return `<i class="form-pill ${outcome}" title="${esc(title)}">${esc(outcomeLetter(outcome))}</i>`;
+      }).join("");
+      blocks.push(`<div class="match-group mc-entering"><h4>${esc(t("matchContextForm"))} <small>${esc(recordLine(c.enteringRecord))}</small></h4><div class="form-pills">${pills}</div></div>`);
+    }
+
+    const s = c.recordToDate;
+    const cells = [
+      [`${s.w}–${s.d}–${s.l}`, t("record")],
+      [s.gfPerGame.toFixed(1), t("kpiGoalsPerGame")],
+      [s.gaPerGame.toFixed(1), t("kpiConcededPerGame")],
+      [s.cleanSheets, t("cleanSheets")],
+      [s.winPct == null ? "–" : `${s.winPct}%`, t("kpiWinRate")],
+    ];
+    const run = c.run
+      ? `<p class="mc-run">${esc(t("matchContextRun", { outcome: outcomeWord(c.run.outcome), n: c.run.length }))}</p>`
+      : "";
+    const chip = (on, key) => (on ? `<span class="mc-flag">${esc(t(key))}</span>` : "");
+    const flags = [
+      chip(c.flags.cleanSheet, "matchContextClean"),
+      chip(c.flags.biggestWin, "matchContextBigWin"),
+      chip(c.flags.biggestLoss, "matchContextBigLoss"),
+    ].join("");
+    blocks.push(`<div class="match-group mc-season"><h4>${esc(t("matchContextSeason"))} <small>${esc(state.match.competition)}</small></h4>
+      <div class="fc-stats">${cells.map(([value, label]) => `<div class="fc-stat"><strong>${value}</strong><span>${esc(label)}</span></div>`).join("")}</div>
+      ${run}${flags ? `<div class="mc-flags">${flags}</div>` : ""}</div>`);
+
+    target.innerHTML = blocks.join("");
+  }
+
+  /* Wave 35 — every club series against this opponent up to and including this
+     result (newest first, this match highlighted). One meeting is no history,
+     so the panel stays closed until there are at least two. */
+  function renderH2H() {
+    const panel = $("h2h-panel");
+    const target = $("match-h2h");
+    const visible = state.mode === "ok" && isFinal(state.match) && Boolean(window.YCACForecast);
+    panel.hidden = !visible;
+    if (!visible) { target.innerHTML = ""; return; }
+    const s = YCACForecast.series(state.match, state.allMatches.filter(isFinal));
+    if (s.rows.length < 2) { panel.hidden = true; target.innerHTML = ""; return; }
+    const rows = s.rows.map((row) => {
+      const outcome = YCACForecast.outcomeOf(row);
+      const cls = row.id === state.match.id ? "fc-meeting is-this" : "fc-meeting";
+      return `<div class="${cls}"><span class="fc-date">${esc(formatDate(row.date))}</span><span class="fc-score">${row.ycac_goals}–${row.opponent_goals}</span><i class="form-pill ${outcome}">${esc(outcomeLetter(outcome))}</i></div>`;
+    }).join("");
+    target.innerHTML = `<div class="match-group"><p class="mc-series">${esc(t("matchForecastMeetings", { n: s.rows.length }))} · ${esc(recordLine(s.record))}</p><div class="fc-meetings">${rows}</div></div>`;
+  }
+
   // Wave 30 — public pre-match forecast for upcoming fixtures: league position,
   // head-to-head, form, season rates and a Poisson probability card.
   function renderForecast() {
@@ -137,7 +244,6 @@
     });
 
     const letter = (outcome) => (outcome === "win" ? t("vizWin") : outcome === "draw" ? t("vizDraw") : t("vizLoss"));
-    const recordLine = (record) => `${record.w}${t("vizWin")} ${record.d}${t("vizDraw")} ${record.l}${t("vizLoss")} · ${record.gf}–${record.ga}`;
     const blocks = [];
 
     if (f.probs) {
@@ -196,12 +302,15 @@
     }
 
     const s = f.stats;
+    const v = (record) => `${record.w}–${record.d}–${record.l}`;
     const cells = [
       [`${s.w}–${s.d}–${s.l}`, t("record")],
       [s.gfPerGame.toFixed(1), t("kpiGoalsPerGame")],
       [s.gaPerGame.toFixed(1), t("kpiConcededPerGame")],
       [s.cleanSheets, t("cleanSheets")],
       [s.winPct == null ? "–" : `${s.winPct}%`, t("kpiWinRate")],
+      [v(f.venueSplit.home), t("statHomeRecord")], // wave 35: where this fixture is played
+      [v(f.venueSplit.away), t("statAwayRecord")],
     ];
     blocks.push(`<div class="match-group"><h4>${esc(t("seasonStats"))} <small>${esc(state.match.competition)}</small></h4>
       <div class="fc-stats">${cells.map(([value, label]) => `<div class="fc-stat"><strong>${value}</strong><span>${esc(label)}</span></div>`).join("")}</div></div>`);
@@ -213,6 +322,22 @@
       watch.push(`${esc(t("matchForecastVsThem", { opponent: state.match.opponent }))}: ${link(f.h2hScorer.playerId)} <strong>${f.h2hScorer.count}</strong>`);
     }
     if (watch.length) blocks.push(`<div class="match-group"><h4>${esc(t("matchForecastWatch"))}</h4><p class="fc-watch">${watch.join(" · ")}</p></div>`);
+
+    // wave 35 — the published D3 top scorers, with our players and this
+    // opponent's players marked so the fixture's threats read at a glance.
+    const divisionScorers = (window.YCACStandings && YCACStandings.topScorers) || [];
+    if (f.bucket === "tml" && divisionScorers.length) {
+      const norm = YCACForecast.normName;
+      const usClub = (((window.YCACStandings || {}).rows || []).find((row) => row.us) || {}).team || "";
+      const rows = divisionScorers.map((row, index) => {
+        const isUs = Boolean(usClub) && norm(row.club) === norm(usClub);
+        const isThem = norm(row.club) === norm(state.match.opponent);
+        const cls = `${isUs ? "is-us " : ""}${isThem ? "is-them" : ""}`.trim();
+        return `<li class="${cls}"><span class="ss-rank">${index + 1}</span><span class="ss-name">${esc(row.name)}</span><span class="ss-club">${esc(row.club)}</span><strong class="ss-goals">${row.goals}</strong></li>`;
+      }).join("");
+      const asOf = window.YCACStandings && YCACStandings.updated ? esc(t("standingsAsOf", { date: formatDate(YCACStandings.updated) })) : "";
+      blocks.push(`<div class="match-group"><h4>${esc(t("standingsScorers"))} <small>${asOf}</small></h4><div class="standings-scorers"><ol>${rows}</ol></div></div>`);
+    }
 
     if (f.table && window.YCACStandings && YCACStandings.updated) {
       blocks.push(`<p class="standings-updated">${esc(t("standingsAsOf", { date: formatDate(YCACStandings.updated) }))}</p>`);
@@ -271,7 +396,30 @@
           </div>`;
       }).join("")
       : empty("matchNoSignups");
-    target.innerHTML = addRow + body;
+    // wave 35 — coverage first: who's coming, who answered, each position band
+    // (active squad) and who's out. Same "every injury row counts" rule as the
+    // coach board — rows are removed when a player returns.
+    const active = [...state.playersById.values()].filter((player) => player.active !== false);
+    const confirmed = state.signups.filter((signup) => signup.status === "confirmed").length;
+    const responsePct = active.length ? Math.round((state.signups.length / active.length) * 100) : 0;
+    const byPlayer = new Map(state.signups.map((signup) => [signup.player_id, signup]));
+    const bands = ["GK", "DF", "MF", "AT"].map((code) => {
+      const inBand = active.filter((player) => window.YCACStats && YCACStats.positionGroup(player.primary_position) === code);
+      if (!inBand.length) return "";
+      const ready = inBand.filter((player) => (byPlayer.get(player.id) || {}).status === "confirmed").length;
+      return `<span class="sc-band">${code} ${ready}/${inBand.length}</span>`;
+    }).filter(Boolean).join("");
+    const activeIds = new Set(active.map((player) => player.id));
+    const hurt = state.injuries.filter((row) => activeIds.has(row.player_id));
+    const injuryNote = hurt.length
+      ? `<span class="sc-injured" title="${esc(hurt.map((row) => playerName(row.player_id)).join(", "))}">${esc(t("signupInjured", { n: hurt.length }))}</span>`
+      : "";
+    const coverage = `<div class="signup-coverage" role="group" aria-label="${esc(t("signupCoverage"))}">
+        <span class="sc-main">${esc(t("signupConfirmedN", { n: confirmed, m: active.length }))}</span>
+        <span class="sc-response">${esc(t("signupResponse", { pct: responsePct }))}</span>
+        ${bands}${injuryNote}
+      </div>`;
+    target.innerHTML = coverage + addRow + body;
   }
 
   const signupNotice = (text) => { const el = $("signup-notice"); if (el) el.textContent = text; };
@@ -704,6 +852,8 @@
     renderSquad();
     renderLineup();
     renderGoals();
+    renderContext();
+    renderH2H();
     renderSignups();
     renderNotes();
   }
@@ -768,7 +918,7 @@
     if (!VALID_ID.test(id)) { showMissing(); return; }
 
     try {
-      const [matches, apps, goals, signups, notes, players, savedSquad] = await Promise.all([
+      const [matches, apps, goals, signups, notes, players, savedSquad, injuries] = await Promise.all([
         YCACData.select("matches", "select=*"), // all fixtures: the forecast needs history + standings context
         YCACData.select("appearances", "select=*,players(id,display_name,shirt_number,photo_path,primary_position)"), // all: lineup by match + Suggest weighs history
         YCACData.select("goals", "select=*"), // all goals: form scorers + head-to-head scorers
@@ -776,6 +926,7 @@
         YCACData.select("match_notes", `select=*&match_id=eq.${id}`), // public: notes panel
         YCACData.select("players", "select=*"),
         YCACData.select("saved_squads", `select=*&match_id=eq.${id}&order=saved_at`), // public: saved squad for the picker
+        YCACData.select("injuries", "select=*"), // public (wave 33): the coverage line's injury note
       ]);
       const match = matches.find((row) => row.id === id);
       if (!match) { showMissing(); return; }
@@ -788,6 +939,7 @@
       state.signups = signups;
       state.notes = notes;
       state.savedSquad = savedSquad;
+      state.injuries = injuries;
       state.playersById = new Map(players.map((player) => [player.id, player]));
       if (window.YCACStats) {
         // tiers for the core-weighted "Suggest squad" (same engine as the coach dashboard)

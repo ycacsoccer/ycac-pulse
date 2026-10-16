@@ -81,16 +81,18 @@ async function main() {
     check(anonNotes.length === svcNotes.length, "anon sees every match note", `${anonNotes.length} of ${svcNotes.length}`);
 
     // --- 3. the page's exact queries for the played match (as anon) ---------
-    const [matches, apps, goals, signups, notes, players] = await Promise.all([
+    const [matches, apps, goals, signups, notes, players, injuries] = await Promise.all([
       call(`${BASE}/matches?select=*&id=eq.${played.id}`, { headers: anonHeaders }),
       call(`${BASE}/appearances?select=*,players(id,display_name,shirt_number,photo_path,primary_position)&match_id=eq.${played.id}`, { headers: anonHeaders }),
       call(`${BASE}/goals?select=*&match_id=eq.${played.id}`, { headers: anonHeaders }),
       call(`${BASE}/signups?select=*,players(id,display_name,shirt_number,photo_path)&match_id=eq.${played.id}`, { headers: anonHeaders }),
       call(`${BASE}/match_notes?select=*&match_id=eq.${played.id}`, { headers: anonHeaders }),
       call(`${BASE}/players?select=*`, { headers: anonHeaders }),
+      call(`${BASE}/injuries?select=*`, { headers: anonHeaders }), // wave 35: coverage line's injury note
     ]);
     check(matches.length === 1 && matches[0].id === played.id, "match query returns the fixture", `${matches[0]?.id} vs ${matches[0]?.opponent}`);
     check(Array.isArray(notes), "match_notes query runs for anon", `${notes.length} rows`);
+    check(Array.isArray(injuries) && injuries.every((row) => row.player_id), "injuries load for the coverage note", `${injuries.length} rows`);
     check(Array.isArray(signups) && signups.every((signup) => signup.players?.display_name),
       "that fixture's signups run with embedded names", `${signups.length} rows`);
 
@@ -143,6 +145,9 @@ async function main() {
       "match page loads signups + notes + saved squads unconditionally (public since wave 33)");
     check(page.includes('name="robots" content="index, follow"') && page.includes('id="signups-panel"') && page.includes('id="notes-panel"'),
       "match.html is public/indexable with the signups + notes panels present");
+    check(page.includes('id="context-panel"') && page.includes('id="h2h-panel"'),
+      "wave 35 panels (result context + head-to-head series) present");
+    check(source.includes('YCACData.select("injuries"'), "match.js loads injuries for the coverage note (anon, wave 33)");
   } finally {
     await call(`${BASE}/matches?id=eq.e2e-fixture`, { method: "DELETE", headers: adminHeaders }).catch(() => {});
     if (state.noteProbe) {

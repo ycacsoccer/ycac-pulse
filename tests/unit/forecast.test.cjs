@@ -124,3 +124,65 @@ test("top scorers come from the season bucket and the head-to-head", () => {
   assert.deepEqual(f.topScorer, { playerId: "rick", count: 3 });
   assert.deepEqual(f.h2hScorer, { playerId: "rick", count: 2 });
 });
+
+test("wave 35: venue split reports the bucket's Home and Away records", () => {
+  const finals = [
+    M("t1", "2026-03-01", "TML Division 3", "A", 2, 0, "Home"),
+    M("t2", "2026-03-10", "TML Division 3", "B", 1, 2, "Away"),
+    M("t3", "2026-04-01", "TML Division 3", "C", 0, 0, "Home"),
+    M("f1", "2026-04-10", "Friendly Match", "D", 9, 0, "Home"), // other bucket — excluded
+  ];
+  const f = forecast.build({ match: fixture, finals, standingsRows: [], goals: [] });
+  assert.equal(f.venueSplit.home.played, 2, "friendlies stay out of the split");
+  assert.deepEqual([f.venueSplit.home.w, f.venueSplit.home.d, f.venueSplit.home.l], [1, 1, 0]);
+  assert.equal(f.venueSplit.away.played, 1);
+  assert.deepEqual([f.venueSplit.away.w, f.venueSplit.away.d, f.venueSplit.away.l], [0, 0, 1]);
+});
+
+test("wave 35: context() reports entering form, the run, season-to-date and records set", () => {
+  const finals = [
+    M("t1", "2026-03-01", "TML Division 3", "A", 2, 0, "Home"),
+    M("t2", "2026-03-15", "TML Division 3", "B", 1, 1, "Away"),
+    M("t3", "2026-04-01", "TML Division 3", "C", 0, 1, "Home"),
+    M("t4", "2026-04-15", "TML Division 3", "D", 0, 3, "Away"),
+    M("t5", "2026-05-01", "TML Division 3", "E", 4, 1, "Home"),
+    M("f1", "2026-05-10", "Friendly Match", "F", 7, 0, "Home"), // other bucket — ignored
+  ];
+  const c = forecast.context(finals[4], finals);
+  assert.deepEqual(c.entering.map((row) => row.id), ["t1", "t2", "t3", "t4"]);
+  assert.deepEqual([c.enteringRecord.w, c.enteringRecord.d, c.enteringRecord.l], [1, 1, 2]);
+  assert.equal(c.recordToDate.played, 5, "season-to-date includes this match, own bucket only");
+  assert.deepEqual([c.recordToDate.w, c.recordToDate.d, c.recordToDate.l], [2, 1, 2]);
+  assert.equal(c.recordToDate.gf, 7);
+  assert.equal(c.recordToDate.ga, 6);
+  assert.equal(c.recordToDate.winPct, 40);
+  assert.equal(c.run, null, "a win between a loss and a friendly is isolated");
+  assert.deepEqual(c.flags, { cleanSheet: false, biggestWin: true, biggestLoss: false });
+
+  // the season opener sets no records, but its clean sheet still stands
+  const c1 = forecast.context(finals[0], finals);
+  assert.deepEqual(c1.entering, [], "nothing played before the opener");
+  assert.equal(c1.flags.cleanSheet, true);
+  assert.equal(c1.flags.biggestWin, false, "a first match is nobody's record");
+
+  // two losses in a row form the run containing the second one, which also
+  // sets the season's heaviest-defeat mark (3 > the prior worst of 1)
+  const c4 = forecast.context(finals[3], finals);
+  assert.deepEqual(c4.run, { outcome: "loss", length: 2 });
+  assert.deepEqual(c4.flags, { cleanSheet: false, biggestWin: false, biggestLoss: true });
+});
+
+test("wave 35: series() lists the opponent's meetings through the played match", () => {
+  const finals = [
+    M("a", "2025-11-01", "Friendly Match", "Nomads", 1, 0),
+    M("b", "2026-03-01", "TML Division 3", "Titans FC", 3, 1),
+    M("c", "2026-05-01", "TML Division 3", "Titans FC", 1, 2),
+    M("d", "2026-06-01", "TML Division 3", "Jetro FC", 2, 0),
+    M("e", "2026-07-01", "TML Division 3", "Titans FC", 0, 0), // after the match — excluded
+  ];
+  const s = forecast.series(finals[2], finals);
+  assert.deepEqual(s.rows.map((row) => row.id), ["c", "b"], "newest first, this match included");
+  assert.deepEqual([s.record.played, s.record.w, s.record.d, s.record.l], [2, 1, 0, 1]);
+  assert.equal(s.record.gf, 4);
+  assert.equal(s.record.ga, 3);
+});

@@ -230,9 +230,10 @@ path exists for the service key, so `0002_injuries.sql` and `0004_public_access.
 into the Supabase SQL Editor once (README workflow).
 
 Phases ship independently. Phase 3 needs no Supabase and can start immediately; phases 4–11 need
-the project to exist. **All phases are complete** (through README row 33 — wave 34's published
-league-table refresh + confirmed-default squad filter); the `verify-*.cjs` suite (14 scripts) plus
-`npm run verify` (syntax, 54 unit tests, 51 E2E) guard each area.
+the project to exist. **All phases are complete** (through README row 34 — wave 35's match-page
+statistics: countdown/nav, venue records, league scorers in the forecast, result context + H2H
+series panels, lineup season lines, signup coverage); the `verify-*.cjs` suite (14 scripts) plus
+`npm run verify` (syntax, 57 unit tests, 55 E2E) guard each area.
 
 ---
 

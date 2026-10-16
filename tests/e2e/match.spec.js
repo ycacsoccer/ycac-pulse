@@ -5,6 +5,7 @@
    stay read-only. */
 const { test, expect } = require("@playwright/test");
 const { mockSupabase, watchErrors, publicOnly, fitsViewport } = require("./mocks");
+const standingsData = require("../../standings.js");
 
 test("public visitor gets the full squad picker on an upcoming fixture", async ({ page }) => {
   const api = await mockSupabase(page);
@@ -151,6 +152,13 @@ test("a visitor edits signups on the match page and the picker stays aligned", a
   const panel = page.locator("#signups-panel");
   await expect(panel).toBeVisible();
   await expect(panel.locator(".signup-group")).toHaveCount(3); // confirmed / declined / unavailable
+  // wave 35: coverage answers "who's coming" before the groups — confirmed,
+  // response rate, position bands and the injury note
+  const coverage = panel.locator(".signup-coverage");
+  await expect(coverage).toContainText("3 of 5 confirmed"); // five active players, three confirmed
+  await expect(coverage).toContainText("Response 100%"); // every active player has answered
+  await expect(coverage).toContainText("GK 1/1"); // band chips: GK/DF confirmed, MF none, AT 1 of 2
+  await expect(coverage.locator(".sc-injured")).toContainText("1 injured"); // Evan's hamstring row
   // this test watches every roster badge (incl. no-response), so open the
   // default Confirmed filter to All — badge state, not filtering, is under test
   await page.locator("#squad-availability").selectOption("");
@@ -217,6 +225,68 @@ test("forecast panel hides on a played match", async ({ page }) => {
   await mockSupabase(page);
   await page.goto("/match.html?id=m1");
   await expect(page.locator("#forecast-panel")).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+/* ---- wave 35: richer statistics on match.html --------------------------- */
+
+test("the forecast gains venue records, league scorers and the neighbour nav", async ({ page }) => {
+  await mockSupabase(page);
+  const errors = watchErrors(page);
+  await page.goto("/match.html?id=x1");
+  // season cells + this fixture's Home/Away records
+  const stats = page.locator("#match-forecast .fc-stats");
+  await expect(stats.locator(".fc-stat")).toHaveCount(7);
+  await expect(stats).toContainText("Home record");
+  await expect(stats).toContainText("Away record");
+  // the published D3 top scorers, our own striker's row accented
+  const scorers = page.locator("#match-forecast .standings-scorers");
+  await expect(scorers.locator("li")).toHaveCount(standingsData.topScorers.length);
+  await expect(scorers.locator("li.is-us")).toHaveCount(1);
+  await expect(scorers.locator("li.is-us .ss-name")).toHaveText(standingsData.topScorers[0].name);
+  // x1 is the newest fixture → only a Previous link, to the last result
+  const nav = page.locator(".hero-nav");
+  await expect(nav.locator("a")).toHaveCount(1);
+  await expect(nav.locator("a.hn-prev")).toContainText("Comets SC");
+  expect(errors).toEqual([]);
+});
+
+test("the hero counts down to kickoff (fixed clock)", async ({ page }) => {
+  await mockSupabase(page);
+  await page.clock.install({ time: new Date("2026-06-04T09:00:00") }); // x1 is 2026-06-06
+  await page.goto("/match.html?id=x1");
+  await expect(page.locator("#match-hero .match-meta")).toContainText("Matchday in 2 days");
+});
+
+test("a played opener shows its season context, clean-sheet flag and season lines", async ({ page }) => {
+  await mockSupabase(page);
+  const errors = watchErrors(page);
+  await page.goto("/match.html?id=m1"); // 2–0, the first league result
+  const context = page.locator("#context-panel");
+  await expect(context).toBeVisible();
+  await expect(context.locator(".mc-season")).toContainText("1–0–0"); // record through this match
+  await expect(context.locator(".mc-flag")).toHaveCount(1);
+  await expect(context.locator(".mc-flag")).toContainText("Clean sheet");
+  await expect(context.locator(".mc-entering")).toHaveCount(0); // nothing played before the opener
+  // every lineup row carries the player's season line through this match
+  await expect(page.locator("#match-lineup .mp-stat")).toHaveCount(4);
+  await expect(page.locator("#match-lineup .mp-stat").first()).toContainText("1 app");
+  await expect(page.locator("#h2h-panel")).toBeHidden(); // one meeting is no history
+  expect(errors).toEqual([]);
+});
+
+test("a later result reports the form entering it and the record it set", async ({ page }) => {
+  await mockSupabase(page);
+  const errors = watchErrors(page);
+  await page.goto("/match.html?id=m4"); // 4–1 away win over the prior 1–1–1
+  const context = page.locator("#context-panel");
+  const entering = context.locator(".mc-entering");
+  await expect(entering).toBeVisible();
+  await expect(entering.locator(".form-pill")).toHaveCount(3); // m1 W · m2 D · m3 L
+  await expect(entering.locator("h4 small")).toContainText("1W 1D 1L"); // record across those three
+  await expect(context.locator(".mc-season")).toContainText("2–1–1"); // W D L W through m4
+  await expect(context.locator(".mc-flag")).toHaveCount(1);
+  await expect(context.locator(".mc-flag")).toContainText("Biggest win of the season"); // 4 > prior best 2
   expect(errors).toEqual([]);
 });
 

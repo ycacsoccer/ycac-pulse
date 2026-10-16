@@ -193,12 +193,16 @@ function render(data) {
     }).join("");
     document.querySelector("#standings-updated").textContent = table && table.updated ? t("standingsAsOf", { date: formatDate(table.updated) }) : "";
     // Wave 34: the published D3 top scorers ship in the same data file; the
-    // list hides itself when the page has no scorer rows to show.
+    // list hides itself when the page has no scorer rows to show. Wave 35
+    // accents our own players' rows (forecast.js isn't loaded here, so the
+    // club-name normalisation is a two-liner).
     const scorers = (table && table.topScorers) || [];
     const scorersBox = document.querySelector("#standings-scorers");
     if (scorersBox) {
       scorersBox.hidden = !scorers.length;
-      document.querySelector("#standings-scorers-list").innerHTML = scorers.map((row, index) => `<li><span class="ss-rank">${index + 1}</span><span class="ss-name">${esc(row.name)}</span><span class="ss-club">${esc(row.club)}</span><strong class="ss-goals">${row.goals}</strong></li>`).join("");
+      const norm = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const usClub = (rows.find((row) => row.us) || {}).team || "";
+      document.querySelector("#standings-scorers-list").innerHTML = scorers.map((row, index) => `<li class="${usClub && norm(row.club) === norm(usClub) ? "is-us" : ""}"><span class="ss-rank">${index + 1}</span><span class="ss-name">${esc(row.name)}</span><span class="ss-club">${esc(row.club)}</span><strong class="ss-goals">${row.goals}</strong></li>`).join("");
     }
   }
 }
