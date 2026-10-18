@@ -26,18 +26,19 @@ async function grab(table) {
 }
 
 const EXPECTED = {
-  rows: { players: 41, matches: 13, appearances: 165, goals: 42 },
-  counts: { all: 11, tml: 4, friendly: 7, players: 41, used: 33 },
+  rows: { players: 41, matches: 13, appearances: 182, goals: 44 },
+  counts: { all: 12, tml: 5, friendly: 7, players: 41, used: 36 },
   players: {
-    rick: { tml: "4/4", friendly: "7/7", all: "11/11", tier: "core", reliability: 100 },
-    urabe: { tml: "4/4", friendly: "7/7", all: "11/11", tier: "core" },
-    hitoshi: { tml: "4/4", friendly: "6/7", all: "10/11", tier: "core" },
+    rick: { tml: "5/5", friendly: "7/7", all: "12/12", tier: "core", reliability: 100 },
+    urabe: { tml: "5/5", friendly: "7/7", all: "12/12", tier: "core" },
+    hitoshi: { tml: "4/5", friendly: "6/7", all: "10/12", tier: "core" },
     // Core is TML-only (>= 67% of TML matches): friendly attendance never demotes.
-    sun: { tml: "3/4", friendly: "2/7", all: "5/11", tier: "core" },
-    kouhei: { tml: "3/4", friendly: "2/7", all: "5/11", tier: "core" },
-    yuto: { tml: "0/4", friendly: "7/7", all: "7/11", tier: "rotation" },
-    masashi: { tml: "4/4", friendly: "1/7", all: "5/11", tier: "core" },
-    liu_hantang: { tml: "1/4", friendly: "0/7", all: "1/11", tier: "depth" }, // added 06 Oct (first TML appearance)
+    sun: { tml: "4/5", friendly: "2/7", all: "6/12", tier: "core" },
+    // 17 Oct: kouhei missed m006 → 3/5 TML (60%) drops him out of core.
+    kouhei: { tml: "3/5", friendly: "2/7", all: "5/12", tier: "rotation" },
+    yuto: { tml: "0/5", friendly: "7/7", all: "7/12", tier: "rotation" },
+    masashi: { tml: "5/5", friendly: "1/7", all: "6/12", tier: "core" },
+    liu_hantang: { tml: "1/5", friendly: "0/7", all: "1/12", tier: "depth" }, // added 06 Oct (first TML appearance)
     ryuji: { tier: "inactive" },
     micah: { tier: "inactive" },
   },
