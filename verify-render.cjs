@@ -64,12 +64,21 @@ const check = (ok, label, detail = "") => {
   }
   check(unknownIds.length === 0, "every querySelector id exists in index.html", unknownIds.join(", ") || "none unknown");
 
+  // One chip per played match of each bucket — derived from the same live rows
+  // the render consumed, so a newly recorded match grows the chart instead of
+  // failing a stale hardcoded count (m006 broke `=== 4` in CI).
+  const played = await YCACData.select("matches", "select=*&order=date")
+    .then((rows) => rows.filter((row) => YCACStats.isFinal(row)))
+    .catch(() => null);
+  const countFor = (competition) => (played || []).filter((row) => row.competition === competition).length;
   const trend = el("perf-tml-trend").innerHTML;
   const tmlChips = (trend.match(/tv-chip tv-chip-/g) || []).length;
-  check(trend.includes("<svg") && tmlChips === 4, "TML trend chart rendered", `${tmlChips} chips`);
+  check(!!played && trend.includes("<svg") && tmlChips === countFor("TML Division 3"),
+    "TML trend chart rendered", `${tmlChips}/${countFor("TML Division 3")} chips`);
   const fndTrend = el("perf-friendly-trend").innerHTML;
   const fndChips = (fndTrend.match(/tv-chip tv-chip-/g) || []).length;
-  check(fndTrend.includes("<svg") && fndChips === 7, "friendly trend chart rendered", `${fndChips} chips`);
+  check(!!played && fndTrend.includes("<svg") && fndChips === countFor("Friendly Match"),
+    "friendly trend chart rendered", `${fndChips}/${countFor("Friendly Match")} chips`);
   check(el("perf-tml-scorers").innerHTML.includes("goal-bar"), "TML scorer bars rendered");
   check(el("perf-friendly-scorers").innerHTML.includes("goal-bar"), "friendly scorer bars rendered");
   // wave 17 → 21: the KPI rate strip under each trend chart — three tiles per
