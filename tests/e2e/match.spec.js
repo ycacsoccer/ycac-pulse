@@ -6,6 +6,8 @@
 const { test, expect } = require("@playwright/test");
 const { mockSupabase, watchErrors, publicOnly, fitsViewport } = require("./mocks");
 const standingsData = require("../../standings.js");
+const feedData = require("../../fixtures.js");
+const league = require("../../league.js");
 
 test("public visitor gets the full squad picker on an upcoming fixture", async ({ page }) => {
   const api = await mockSupabase(page);
@@ -336,4 +338,48 @@ test("played match: the substitutes heading keeps its gap below the starters", a
     return next.getBoundingClientRect().top - players.getBoundingClientRect().bottom;
   });
   expect(gap).toBeGreaterThan(6);
+});
+
+/* ---- wave 36: the published Division 3 feed on match.html ----------------- */
+
+test("wave 36: an upcoming fixture shows both clubs' published league form", async ({ page }) => {
+  const api = await mockSupabase(page);
+  const errors = watchErrors(page);
+  await page.goto("/match.html?id=x1");
+  const panel = page.locator("#league-panel");
+  await expect(panel).toBeVisible();
+  await expect(panel.locator("h2")).toContainText("League form");
+
+  // our column: the feed's last five results as a form strip + recent-results
+  // list, all counts derived from the shipped feed so a new round can't stale them
+  const rows = league.resultsFor(feedData, "YCAC Pulse");
+  const record = league.recordOf(rows);
+  const next = league.fixturesFor(feedData, "YC&AC Pulse", {
+    from: "2026-06-06", skip: { date: "2026-06-06", opponent: "Titans FC" },
+  });
+  const ours = panel.locator(".lf-col.is-us");
+  await expect(ours.locator(".fc-form .form-pill")).toHaveCount(rows.length);
+  await expect(ours.locator(".fc-meeting")).toHaveCount(rows.length + next.length); // results list + next-up list
+  await expect(ours.locator(".lf-next .fc-meeting")).toHaveCount(next.length); // the next-up block alone
+  await expect(ours.locator(".fc-form .form-pill").first()).toHaveClass(new RegExp(rows[0].outcome));
+  await expect(ours.locator(".lf-record")).toHaveText(`${record.w}W ${record.d}D ${record.l}L · ${record.gf}–${record.ga}`);
+  const scored = [...rows].reverse().find((row) => row.scorers.length);
+  if (scored) await expect(ours.locator(".lf-scorers").first()).toContainText(scored.scorers[0]);
+
+  // opponent column: Titans FC has no Division 3 rows in the feed → honest empty state
+  const theirs = panel.locator(".lf-col:not(.is-us)");
+  await expect(theirs.locator(".empty")).toContainText("Titans FC");
+  await expect(theirs.locator(".fc-meeting")).toHaveCount(0);
+
+  await expect(panel.locator(".standings-updated")).toContainText("Feed fetched");
+  expect(publicOnly(api)).toBe(true); // the panel reads the shipped feed file, not new tables
+  expect(errors).toEqual([]);
+});
+
+test("wave 36: a review reads league form only through the match date", async ({ page }) => {
+  const errors = watchErrors(page);
+  await mockSupabase(page);
+  await page.goto("/match.html?id=m1"); // March 2026 — before the feed's published window
+  await expect(page.locator("#league-panel")).toBeHidden();
+  expect(errors).toEqual([]);
 });

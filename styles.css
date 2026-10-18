@@ -456,6 +456,21 @@ table.fc-compare { width: 100%; border-collapse: collapse; font-size: .84rem; }
 .fc-watch a:hover { text-decoration: underline; }
 .fc-watch strong { color: var(--gold); font-variant-numeric: tabular-nums; }
 .fc-note { margin: 0; padding: .6rem .75rem; background: var(--gold-pale); border-left: 3px solid var(--gold); color: var(--ink); font-size: .8rem; }
+/* wave 36 — league-form panel: both clubs side by side from the published feed */
+.lf-cols { display: grid; gap: 1.4rem; grid-template-columns: 1fr; }
+@media (min-width: 761px) { .lf-cols { grid-template-columns: 1fr 1fr; gap: 1.8rem; } }
+.lf-col.is-us { box-shadow: inset 2px 0 0 var(--gold); padding-left: .7rem; }
+.lf-head { display: flex; align-items: baseline; justify-content: space-between; gap: .8rem; margin-bottom: .5rem; }
+.lf-head h4 { margin: 0; font-size: .95rem; }
+.lf-record { color: var(--muted); font-size: .75rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lf-col .fc-meeting { flex-wrap: wrap; } /* scorers / kickoff+venue sit on their own muted line */
+.lf-col .fc-form { flex-wrap: wrap; margin-bottom: .45rem; }
+.lf-opp { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lf-scorers { flex: 1 0 100%; color: var(--muted); font-size: .68rem; line-height: 1.35; }
+.lf-meta { flex: 1 0 100%; color: var(--muted); font-size: .7rem; }
+.lf-meta strong { color: var(--navy); font-variant-numeric: tabular-nums; }
+.lf-label { margin: .8rem 0 .1rem; color: var(--muted); font-size: .64rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.lf-next { margin-top: .4rem; border-top: 1px solid var(--line); }
 @media (max-width: 640px) {
   .match-players { grid-template-columns: 1fr; }
   .fc-date { min-width: 5.2rem; }

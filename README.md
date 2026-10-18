@@ -43,6 +43,7 @@ Live at https://ycacsoccer.github.io/ycac-pulse/
 | 32 | Full public access + build badge | done — every login gate removed: migration `0004_public_access.sql` opens all site tables (view + write) to anon while `coach_roster` stays locked, the optional login remains only for write attribution (`entered_by`/`updated_by`/`saved_by`), and every page footer shows a build-info badge (commit + age); live suite reworked to public/anon probes; mobile layout pass on `match.html` (picker overflow + heading/bench/signup fixes, substitutes heading spacing) with 7 new layout tests — E2E **50 tests** |
 | 33 | League table refresh + confirmed-default squad | done — `update-standings.cjs` (`npm run update:standings`, `-- --dry-run` previews) fetches the published Division 3 table **and league top scorers** from footyjapancompetitions.com into the now-generated `standings.js`, refusing anything the shipped contract can't represent (P = W+D+L, 3-1-0 points, points-then-GD order, exactly one us row; a point deduction stops the run for a human); the index gains a **League top scorers** list under the table (new key ×3, **389 total**), and the match squad's availability filter **defaults to Confirmed**; parser tested against a real HTML capture — +6 unit tests (**54**), +1 E2E (**51**) |
 | 34 | Match page statistics | done — match.html gets much richer on both sides of kickoff: hero **matchday countdown + prev/next neighbour nav**; forecast gains **Home/Away record cells** and the **published D3 top scorers** (our players and this opponent's players accented); results gain a **Result in context** panel (form entering the match, its W/D/L run, season-to-date record, clean-sheet/biggest-win/heaviest-defeat chips) and a **Head-to-head series** panel (2+ meetings, this result highlighted); lineup rows carry each player's **season apps/goals through the match**; signups open with a **coverage strip** (confirmed · response % · GK/DF/MF/AT bands · injuries). New pure `forecast.context()`/`series()`/`venueSplit` engine — +3 unit tests (**57**), +4 E2E (**55**), +24 keys ×3 (**413 total**) |
+| 35 | Published fixtures feed + opponent form | done — `update-fixtures.cjs` (`npm run update:fixtures`, `-- --dry-run` previews, `-- --no-sync` skips the DB step) scrapes every page of **footyjapancompetitions.com/fixtures-results**, keeps the `<h3>Division 3</h3>` sections (dates, kickoffs, venues, scores, scorer actions; refuses unparseable scores, markers that contradict a score, and layouts yielding no D3 rows) and regenerates the shipped `fixtures.js`; the same run **auto-inserts upcoming YC&AC fixtures the site has never seen** into `matches` (deduped by date + normalised opponent, ids continue the mNNN series) while reschedules, orientation/score mismatches and unentered results are **report-only warnings** — the script never edits a match row. `match.html` gains a **League form** panel showing both clubs side by side: form pills, W-D-L record, run, recent results with scorers, next fixtures — reviews read only **through the match date**, upcoming fixtures read today's feed (new pure `league.js`); parser tested against a real capture of six date-groupings across all divisions — +15 unit tests (**72**), +2 E2E (**57**), +5 keys ×3 (**418 total**) |
 
 The plan (10 requirements mapped to screens) and the reasoning behind it live in [`PLAN.md`](PLAN.md).
 
@@ -99,6 +100,7 @@ Do not rename table or column names without updating `stats.js` and the pages th
 | `npm run test:verify` / `test:verify:live` | the verifiers alone, `--group=anon` / `live` | `.env` for live |
 | `npm run build:site` | whitelist copy of the publishable files → `_site/` + `build-info.json` | git |
 | `npm run update:standings` | pull the published D3 table + top scorers into `standings.js` (`-- --dry-run` previews the diff) | network |
+| `npm run update:fixtures` | pull the published D3 fixtures + results into `fixtures.js` and add missing upcoming YC&AC fixtures to Supabase (`-- --dry-run` previews both, `-- --no-sync` skips the DB step) | network, `.env` for sync |
 | `npm run serve` | local static server on port 4319 | nothing |
 
 ## Verify
@@ -109,9 +111,9 @@ failure:
 | # | Gate | Command | What it checks |
 |---|---|---|---|
 | 1 | Syntax | `node scripts/check-syntax.js` | every git-tracked `.js`/`.cjs` parses (`node --check`), every `.json` is valid; skips `node_modules`, `_site`, `playwright-report`, `test-results`, `*.gs` |
-| 2 | Unit | `node --test tests/unit/*.test.cjs` | 57 tests on the frontend logic with plain `node:test` (no framework): tier/reliability/coverage rules and the season split in `stats.js`, chart geometry + KPI maths + the wave-24 goal-timing/trajectory charts in `charts.js`, key parity, interpolation and the wave-21 key removals in `i18n.js`, the wave-25 standings table arithmetic + published order in `standings.js`, the wave-35 context/series/venue helpers in `forecast.js`, and the footyjapancompetitions.com parser/renderer in `update-standings.cjs` (a real-HTML fixture) |
+| 2 | Unit | `node --test tests/unit/*.test.cjs` | 72 tests on the frontend logic with plain `node:test` (no framework): tier/reliability/coverage rules and the season split in `stats.js`, chart geometry + KPI maths + the wave-24 goal-timing/trajectory charts in `charts.js`, key parity, interpolation and the wave-21 key removals in `i18n.js`, the wave-25 standings table arithmetic + published order in `standings.js`, the wave-35 context/series/venue helpers in `forecast.js`, the footyjapancompetitions.com parser/renderer in `update-standings.cjs` (a real-HTML fixture), and the wave-36 fixtures-results parser + sync plan in `update-fixtures.cjs` (a real-HTML capture) with the form/fixture helpers in `league.js` |
 | 3 | Verifiers | `node scripts/run-verifiers.js --group=anon` | the live contract suites that need only the publishable key: `verify-i18n`, `verify-stats`, `verify-index`, `verify-render`, `verify-profile-render` |
-| 4 | E2E | `playwright test` | 55 tests in `tests/e2e/` against `scripts/serve-static.js` with **every Supabase call mocked** (`page.route` → `tests/fixtures/public-data.js`): deterministic, no credentials, no network |
+| 4 | E2E | `playwright test` | 57 tests in `tests/e2e/` against `scripts/serve-static.js` with **every Supabase call mocked** (`page.route` → `tests/fixtures/public-data.js`): deterministic, no credentials, no network |
 
 ```powershell
 npm run verify        # gates 1–4
@@ -174,3 +176,13 @@ The league table is the one piece from outside Supabase: cross-fixtures aren't i
 **footyjapancompetitions.com/standings** into the shipped `standings.js` (generated, never hand-edited
 — the script validates the unit-test contract before writing and prints the round's diff). Run it
 after each round completes and commit the result.
+
+The fixtures/results feed comes from the same site: **`npm run update:fixtures`** pulls every
+published Division 3 match (fixtures with kickoff/venue, results with scores and scorer actions) from
+**footyjapancompetitions.com/fixtures-results** into the shipped `fixtures.js` (generated, likewise
+never hand-edited) — the match page's League form panel reads both clubs from it. The same run
+compares the feed's upcoming YC&AC fixtures with `matches` and **inserts any fixture the site doesn't
+have yet** (deduped by date + opponent; ids continue the mNNN series — bump `verify-stats.cjs` in the
+same commit when rows land). Reschedules, orientation/score mismatches and unentered results are
+printed as warnings for a human; the script never edits or deletes a match row. Run it together with
+`update:standings` and commit the result.

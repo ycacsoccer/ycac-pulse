@@ -251,6 +251,12 @@ const YCACI18n = (() => {
     matchForecastWatch: "Players to watch",
     matchForecastVsThem: "vs {opponent}",
     matchForecastNoData: "Not enough matchup data for a win forecast — first meeting, and no league table entry. Our season numbers are below.",
+    // wave 36 — the published Division 3 feed panel on the match page
+    leagueFormTitle: "League form",
+    leagueFormIntro: "Both clubs' recent TML Division 3 results and next fixtures, from the competition's published page.",
+    leagueFormNoRows: "No published Division 3 results for {club} yet.",
+    leagueFormAt: "at {opponent}",
+    leagueFormAsOf: "Feed fetched {date}",
     // team page (Phase 9)
     navTeam: "Team",
     teamTitle: "Team guidelines | YC&AC Pulse",
@@ -497,6 +503,12 @@ const YCACI18n = (() => {
     matchForecastWatch: "注目選手",
     matchForecastVsThem: "{opponent}戦",
     matchForecastNoData: "対戦データ不足のため勝敗予想はできません（初対戦・順位表に該当なし）。今シーズンの成績は下記のとおりです。",
+    // wave 36 — リーグ公式試合情報パネル（match ページ）
+    leagueFormTitle: "リーグ戦の成績",
+    leagueFormIntro: "リーグ公式発表ページから、両チームの直近のTMLディビジョン3の結果と次の試合をまとめています。",
+    leagueFormNoRows: "{club} のディビジョン3の結果はまだ発表されていません。",
+    leagueFormAt: "アウェイ：{opponent}",
+    leagueFormAsOf: "最終取得日：{date}",
     // team page (Phase 9)
     navTeam: "チーム",
     teamTitle: "チームガイドライン | YC&AC Pulse",
@@ -743,6 +755,12 @@ const YCACI18n = (() => {
     matchForecastWatch: "值得关注",
     matchForecastVsThem: "对阵 {opponent}",
     matchForecastNoData: "交锋数据不足，暂无法预测赛果（首次交手且无积分榜数据）。本赛季数据如下。",
+    // wave 36 — 联赛官方赛程面板（比赛页）
+    leagueFormTitle: "联赛战绩",
+    leagueFormIntro: "根据联赛官方发布页，汇总两队近期的TML第三级别赛果与接下来的比赛。",
+    leagueFormNoRows: "暂无 {club} 已发布的第三级别赛果。",
+    leagueFormAt: "客场 vs {opponent}",
+    leagueFormAsOf: "数据获取于 {date}",
     // team page (Phase 9)
     navTeam: "球队",
     teamTitle: "球队准则 | YC&AC Pulse",

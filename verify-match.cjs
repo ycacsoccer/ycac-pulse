@@ -147,6 +147,10 @@ async function main() {
       "match.html is public/indexable with the signups + notes panels present");
     check(page.includes('id="context-panel"') && page.includes('id="h2h-panel"'),
       "wave 35 panels (result context + head-to-head series) present");
+    check(page.includes('id="league-panel"') && page.includes('src="fixtures.js"') && page.includes('src="league.js"'),
+      "wave 36 league-form panel present with the feed + helper scripts");
+    check(source.includes("YCACFixtures") && source.includes("YCACLeague"),
+      "match.js renders the published Division 3 feed for both clubs when it exists");
     check(source.includes('YCACData.select("injuries"'), "match.js loads injuries for the coverage note (anon, wave 33)");
   } finally {
     await call(`${BASE}/matches?id=eq.e2e-fixture`, { method: "DELETE", headers: adminHeaders }).catch(() => {});

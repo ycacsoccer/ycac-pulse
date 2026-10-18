@@ -14,6 +14,7 @@
     "test:smoke": "playwright test --config=playwright.smoke.config.js",
     "build:site": "node scripts/build-site.js",
     "update:standings": "node update-standings.cjs",
+    "update:fixtures": "node update-fixtures.cjs",
     "verify:fast": "npm run check:syntax && npm run test:unit",
     "verify": "npm run verify:fast && npm run test:verify && npm run test:e2e",
     "verify:live": "npm run verify && npm run test:verify:live"
