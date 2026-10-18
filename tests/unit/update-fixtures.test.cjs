@@ -9,7 +9,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const {
-  parseDate, parsePage, canonicalise, renderFile, diff, planSync, nextMatchId, todayISO,
+  parseDate, parsePage, canonicalise, renderFile, diff, planSync, nextMatchId, clubReport, todayISO,
 } = require("../../update-fixtures.cjs");
 const fixture = fs.readFileSync(path.join(__dirname, "../fixtures/footy-fixtures-d3.html"), "utf8");
 
@@ -221,6 +221,19 @@ test("nextMatchId continues the mNNN series", () => {
   assert.equal(nextMatchId([]), "m001");
   assert.equal(nextMatchId([{ id: "m006" }, { id: "m007" }, { id: "f001" }]), "m008");
   assert.equal(nextMatchId([{ id: "m104" }, { id: "m002" }]), "m105");
+});
+
+test("clubReport points out table/feed disagreements without failing", () => {
+  assert.deepEqual(
+    clubReport(["YCAC Pulse", "VJ Bridge FC", "Zion FC"], ["YCAC Pulse", "BFC Tokyo"]),
+    [
+      "note: on the feed but not in the league table: VJ Bridge FC",
+      "note: on the feed but not in the league table: Zion FC",
+      "note: in the league table but no feed rows: BFC Tokyo",
+    ],
+  );
+  assert.deepEqual(clubReport(["YC&AC Pulse"], ["YCAC Pulse"]), [], "spellings of one club are not a disagreement");
+  assert.deepEqual(clubReport([], []), []);
 });
 
 test("the shipped fixtures.js holds only rows the panels can render", () => {

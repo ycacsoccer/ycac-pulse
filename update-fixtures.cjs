@@ -340,6 +340,19 @@ function planSync(feed, matches, today) {
   return { inserts, warnings, feedFixtures: feedFixtures.length, feedResults: feedResults.length };
 }
 
+/* Which clubs the feed and the league table disagree about — report-only, by
+   normalised name. The site has listed VJ Bridge FC / Zion FC under a
+   Division 3 heading with no table row; trust the site's own labels and just
+   say it out loud rather than failing the run over someone else's data. */
+function clubReport(feedClubs, tableTeams) {
+  const listed = new Set(tableTeams.map(norm));
+  const known = new Set(feedClubs.map(norm));
+  const lines = [];
+  for (const club of feedClubs) if (!listed.has(norm(club))) lines.push(`note: on the feed but not in the league table: ${club}`);
+  for (const team of tableTeams) if (!known.has(norm(team))) lines.push(`note: in the league table but no feed rows: ${team}`);
+  return lines;
+}
+
 // Local credentials: a .env file next to this script (git-ignored).
 function loadLocalEnv() {
   const file = path.join(__dirname, ".env");
@@ -424,6 +437,11 @@ async function main() {
   console.log(`  Division 3:     ${feed.results.length} results + ${feed.fixtures.length} fixtures, ${feed.clubs.length} clubs`);
   console.log(`  our feed lines: ${ourResults.length} results, ${ourFixtures.length} fixtures (next: ${nextUp ? `${nextUp.date} ${isUs(nextUp.home) ? "vs" : "at"} ${isUs(nextUp.home) ? nextUp.away : nextUp.home}${nextUp.time ? ` ${nextUp.time}` : ""}` : "none published"})`);
   console.log(`  feed as of:     ${updated}`);
+  // feed clubs vs the shipped league table: a note, never a failure
+  try {
+    const table = require("./standings.js");
+    for (const line of clubReport(feed.clubs, (table.rows || []).map((row) => row.team))) console.log(`  ${line}`);
+  } catch (error) { /* standings.js unreadable — the table check just doesn't run */ }
   if (changes.length) { console.log("  changes:"); for (const line of changes) console.log(line); }
   else console.log("  changes: none since the last update");
 
@@ -445,5 +463,5 @@ if (require.main === module) {
 }
 
 module.exports = {
-  parseDate, parsePage, canonicalise, renderFile, diff, planSync, nextMatchId, todayISO, norm,
+  parseDate, parsePage, canonicalise, renderFile, diff, planSync, nextMatchId, clubReport, todayISO, norm,
 };
