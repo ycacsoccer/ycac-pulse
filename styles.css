@@ -456,6 +456,26 @@ table.fc-compare { width: 100%; border-collapse: collapse; font-size: .84rem; }
 .fc-watch a:hover { text-decoration: underline; }
 .fc-watch strong { color: var(--gold); font-variant-numeric: tabular-nums; }
 .fc-note { margin: 0; padding: .6rem .75rem; background: var(--gold-pale); border-left: 3px solid var(--gold); color: var(--ink); font-size: .8rem; }
+/* wave 37 — scoring distribution beside the league table: each club's goals
+   per game as a 0 / 1 / 2 / 3+ share bar. One navy ramp, light → dark, reads
+   as "quiet day → big day" for either side; the is-us gold rail keeps the
+   house "this is us" accent. */
+.fc-spread { display: grid; gap: .9rem; }
+.fcs-side.is-us { box-shadow: inset 2px 0 0 var(--gold); padding-left: .7rem; }
+.fcs-who { display: flex; flex-wrap: wrap; align-items: baseline; gap: .15rem .6rem; margin: 0 0 .3rem; }
+.fcs-who strong { color: var(--navy); font-size: .85rem; }
+.fcs-who span { color: var(--muted); font-size: .7rem; }
+.fcs-bar { margin: 0 0 .35rem; }
+.fcs-seg-0 { background: #d8dce3; }
+.fcs-seg-1 { background: #9fb2cb; }
+.fcs-seg-2 { background: #5f7ba3; }
+.fcs-seg-3 { background: var(--navy); }
+.fcs-legend { margin-bottom: 0; gap: .2rem .9rem; }
+.fcs-swatch { display: inline-block; width: .6rem; height: .6rem; margin-right: .3rem; vertical-align: baseline; }
+.fcs-swatch-0 { background: #d8dce3; }
+.fcs-swatch-1 { background: #9fb2cb; }
+.fcs-swatch-2 { background: #5f7ba3; }
+.fcs-swatch-3 { background: var(--navy); }
 /* wave 36 — league-form panel: both clubs side by side from the published feed */
 .lf-cols { display: grid; gap: 1.4rem; grid-template-columns: 1fr; }
 @media (min-width: 761px) { .lf-cols { grid-template-columns: 1fr 1fr; gap: 1.8rem; } }

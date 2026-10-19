@@ -151,6 +151,8 @@ async function main() {
       "wave 36 league-form panel present with the feed + helper scripts");
     check(source.includes("YCACFixtures") && source.includes("YCACLeague"),
       "match.js renders the published Division 3 feed for both clubs when it exists");
+    check(source.includes("scoreSpread") && source.includes("matchForecastSpread") && source.includes("matchForecastPlayed"),
+      "wave 37: the forecast reads the feed's scoring spread and the table's games-played row");
     check(source.includes('YCACData.select("injuries"'), "match.js loads injuries for the coverage note (anon, wave 33)");
   } finally {
     await call(`${BASE}/matches?id=eq.e2e-fixture`, { method: "DELETE", headers: adminHeaders }).catch(() => {});

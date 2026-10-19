@@ -383,3 +383,33 @@ test("wave 36: a review reads league form only through the match date", async ({
   await expect(page.locator("#league-panel")).toBeHidden();
   expect(errors).toEqual([]);
 });
+
+/* ---- wave 37: league games played + scoring distribution in the forecast -- */
+
+test("wave 37: the forecast shows each side's goals-per-game spread from the feed", async ({ page }) => {
+  const errors = watchErrors(page);
+  await mockSupabase(page);
+  await page.goto("/match.html?id=x1");
+
+  // the spread block renders when either club has published games — ours do
+  const spread = page.locator("#match-forecast .fc-spread");
+  await expect(spread).toBeVisible();
+  const ours = spread.locator(".fcs-side.is-us");
+  await expect(ours.locator(".fcs-who strong")).toHaveText("YC&AC Pulse");
+  await expect(ours.locator(".fcs-who span")).toContainText(String(league.scoreSpread(feedData, "YCAC Pulse").games));
+
+  // four share segments sum to the whole bar, one legend count per bucket
+  await expect(ours.locator(".fcs-bar .fc-seg")).toHaveCount(4);
+  const buckets = league.scoreSpread(feedData, "YCAC Pulse").buckets;
+  await expect(ours.locator(".fcs-legend span")).toHaveCount(4);
+  for (let i = 0; i < 4; i += 1) {
+    await expect(ours.locator(".fcs-legend span").nth(i)).toContainText(`${i >= 3 ? "3+" : i}:${buckets[i]}`);
+  }
+
+  // Titans FC has no Division 3 rows in the feed → honest empty side, no bar
+  const theirs = spread.locator(".fcs-side:not(.is-us)");
+  await expect(theirs.locator(".fcs-who strong")).toHaveText("Titans FC");
+  await expect(theirs.locator(".empty")).toContainText("Titans FC");
+  await expect(theirs.locator(".fcs-bar")).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

@@ -54,6 +54,19 @@
     return { outcome, length };
   };
 
+  /* Wave 37 — how a club's goals are spread across its published league
+     results: buckets [0, 1, 2, 3+] count the games in which they scored that
+     many. The forecast renders it next to the league table for both clubs, so
+     it deliberately ignores `limit` — a spread is a season view, not a form
+     strip. `through` behaves exactly like resultsFor's (a review never sees
+     what came later). */
+  const scoreSpread = (feed, club, { through = null } = {}) => {
+    const rows = resultsFor(feed, club, { through, limit: Number.MAX_SAFE_INTEGER });
+    const buckets = [0, 0, 0, 0];
+    for (const row of rows) buckets[Math.min(row.gf, 3)] += 1;
+    return { games: rows.length, buckets };
+  };
+
   /* Upcoming fixtures from `from` (inclusive), soonest first. `skip` drops the
      page's own fixture — { date, opponent } evaluated from this club's side,
      so both columns can exclude the same match. */
@@ -72,7 +85,7 @@
       .slice(0, limit);
   };
 
-  const api = { norm, perspective, resultsFor, recordOf, streakOf, fixturesFor };
+  const api = { norm, perspective, resultsFor, recordOf, streakOf, scoreSpread, fixturesFor };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (typeof window !== "undefined") window.YCACLeague = api;
 })();

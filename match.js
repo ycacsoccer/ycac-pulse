@@ -347,6 +347,7 @@
       const better = (a, b, lowerWins) => (a === b ? null : (a < b) === Boolean(lowerWins) ? "us" : "them");
       const rows = [
         [String(us.pos), String(them.pos), t("position"), better(us.pos, them.pos, true)],
+        [us.row.p, them.row.p, t("matchForecastPlayed"), null], // wave 37: league games played
         [`${us.row.w}–${us.row.d}–${us.row.l}`, `${them.row.w}–${them.row.d}–${them.row.l}`, t("record"), null],
         [us.row.pts, them.row.pts, t("matchForecastPoints"), better(Number(us.row.pts), Number(them.row.pts))],
         [us.row.gf, them.row.gf, t("goalsFor"), better(Number(us.row.gf), Number(them.row.gf))],
@@ -358,6 +359,31 @@
           <thead><tr><th>YC&amp;AC</th><th aria-hidden="true"></th><th>${esc(state.match.opponent)}</th></tr></thead>
           <tbody>${rows.map(([ours, theirs, label, side]) => `<tr><td class="${side === "us" ? "fc-better" : ""}">${ours}</td><th scope="row">${esc(label)}</th><td class="${side === "them" ? "fc-better" : ""}">${theirs}</td></tr>`).join("")}</tbody>
         </table></div>`);
+    }
+
+    /* Wave 37 — the scoring distribution beside that table: over every
+       published league game, how often each side scored 0 / 1 / 2 / 3+ goals.
+       Reads today's feed (an upcoming fixture has no history of its own) and
+       renders whenever either club has published games — a table-less
+       opponent still gets our bars, their side staying honest. */
+    if (window.YCACFixtures && window.YCACLeague) {
+      const feed = window.YCACFixtures;
+      const usClub = "YC&AC Pulse"; // the feed's norm-equivalent spelling, shown as our brand (as in renderLeague)
+      const spreadUs = YCACLeague.scoreSpread(feed, usClub, { through: todayISO() });
+      const spreadThem = YCACLeague.scoreSpread(feed, state.match.opponent, { through: todayISO() });
+      if (spreadUs.games || spreadThem.games) {
+        const bin = (n) => (n >= 3 ? "3+" : String(n));
+        const side = (club, isUs, { games, buckets }) => {
+          const bar = games ? `<div class="fc-bar fcs-bar" aria-hidden="true">${buckets.map((count, i) => `<i class="fc-seg fcs-seg-${i}" style="width:${((count / games) * 100).toFixed(1)}%"></i>`).join("")}</div>
+            <div class="fc-legend fcs-legend">${buckets.map((count, i) => `<span><i class="fcs-swatch fcs-swatch-${i}"></i>${bin(i)}:<strong>${count}</strong></span>`).join("")}</div>`
+            : `<p class="empty">${esc(t("leagueFormNoRows", { club: isUs ? usClub : club }))}</p>`;
+          return `<div class="fcs-side${isUs ? " is-us" : ""}">
+            <p class="fcs-who"><strong>${esc(isUs ? usClub : club)}</strong> <span>${games ? esc(t("matchForecastGames", { n: games })) : ""}</span></p>
+            ${bar}</div>`;
+        };
+        blocks.push(`<div class="match-group"><h4>${esc(t("matchForecastSpread"))}</h4>
+          <div class="fc-spread">${side(usClub, true, spreadUs)}${side(state.match.opponent, false, spreadThem)}</div></div>`);
+      }
     }
 
     if (f.h2h.rows.length) {

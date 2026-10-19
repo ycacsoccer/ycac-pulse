@@ -89,6 +89,25 @@ test("recordOf and streakOf summarise a run of results", () => {
   assert.equal(league.streakOf([]), null, "no results → no run");
 });
 
+test("scoreSpread buckets a club's goals per game across every published result", () => {
+  // seven results: 8, 4, 2, 0, 2, then away 0 and home 1
+  // → [0:2, 1:1, 2:2, 3+:2], all season
+  const ours = league.scoreSpread(feed, "YCAC Pulse");
+  assert.deepEqual(ours, { games: 7, buckets: [2, 1, 2, 2] });
+  assert.equal(ours.buckets.reduce((a, b) => a + b, 0), ours.games, "buckets always sum to games");
+
+  // their two rows: 1 and 7 → [0:0, 1:1, 2:0, 3+:1] — a 3+ caps, never overflows
+  assert.deepEqual(league.scoreSpread(feed, "Kilimanjaro FC"), { games: 2, buckets: [0, 1, 0, 1] });
+
+  // through cuts off like resultsFor — nothing later than the review date
+  const toSep = league.scoreSpread(feed, "YCAC Pulse", { through: "2026-09-05" });
+  assert.deepEqual(toSep, { games: 2, buckets: [0, 0, 0, 2] }, "8 and 4 goals both land in 3+");
+
+  assert.deepEqual(league.scoreSpread(feed, "Nobody FC"), { games: 0, buckets: [0, 0, 0, 0] },
+    "a club outside the feed gets empty buckets, not a crash");
+  assert.deepEqual(league.scoreSpread(null, "YCAC Pulse"), { games: 0, buckets: [0, 0, 0, 0] });
+});
+
 test("fixturesFor lists next games from a date, skipping this page's own", () => {
   const upcoming = league.fixturesFor(feed, "YCAC Pulse");
   assert.equal(upcoming.length, 3, "default three, the non-ours row excluded");
