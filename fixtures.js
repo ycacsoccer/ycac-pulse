@@ -9,7 +9,7 @@
 (() => {
   const fixtures = {
     competition: "TML Division 3",
-    updated: "2026-10-19",
+    updated: "2026-10-20",
     clubs: ["Albion Old Boys FC", "BFC Tokyo", "Corinthians Harbour FC", "F. Lions FC", "Inter Tokyo FC", "Jetro FC", "Kilimanjaro FC", "Saitama JETS FC", "VJ Bridge FC", "Votty SC", "YCAC Pulse", "Zion FC"],
     results: [
       { date: "2026-08-23", home: "Jetro FC", away: "Kilimanjaro FC", hg: 4, ag: 1, venue: "BST Nagasawa Sports Ground", scorers: { home: ["Raito Yamamoto","Daichi Katsuno","Christopher Ray","Kenyu Konishi"], away: [] } },
@@ -34,17 +34,21 @@
       { date: "2026-10-11", home: "Corinthians Harbour FC", away: "Saitama JETS FC", hg: 5, ag: 4, venue: "Redsland", scorers: { home: [], away: ["Masaru Kanai","Masaru Kanai","Kouki Ebina"] } },
       { date: "2026-10-12", home: "BFC Tokyo", away: "Inter Tokyo FC", hg: 5, ag: 5, venue: "BST Nagasawa Sports Ground", scorers: { home: ["Michal Aurstad","Michal Aurstad","Koki Tanaka","Koki Tanaka","Kai Watanabe"], away: ["Amir Hazem","Amir Hazem","Kikka Maeda","Toui Kamikage","Jeffrey Abdul Kadir"] } },
       { date: "2026-10-12", home: "Votty SC", away: "Jetro FC", hg: 0, ag: 0, venue: "BST Nagasawa Sports Ground", scorers: { home: [], away: [] } },
+      { date: "2026-10-17", home: "Inter Tokyo FC", away: "F. Lions FC", hg: 3, ag: 4, venue: "Niijuku Mirai Athletic Park", scorers: { home: ["Kikka Maeda","Kaito Takahashi","Toui Kamikage"], away: ["Devin Martin","Taro Tasaki"] } },
       { date: "2026-10-17", home: "YCAC Pulse", away: "Corinthians Harbour FC", hg: 2, ag: 2, venue: "YC&AC", scorers: { home: ["Ryu Sato","Shinnosuke Kitagawa"], away: ["Masaki Sato","Kosuke Hirano"] } },
       { date: "2026-10-18", home: "Albion Old Boys FC", away: "Kilimanjaro FC", hg: 0, ag: 7, venue: "BST Nagasawa Sports Ground", scorers: { home: [], away: ["Kalifa Diabate","Kalifa Diabate","Kalifa Diabate","Kalifa Diabate","Aboubakar Diabi"] } },
     ],
     fixtures: [
-      { date: "2026-10-17", home: "Inter Tokyo FC", away: "F. Lions FC", time: "18:05", venue: "Niijuku Mirai Athletic Park" },
       { date: "2026-10-24", home: "BFC Tokyo", away: "Albion Old Boys FC", time: "18:05", venue: "Koshikiya Ground" },
       { date: "2026-10-31", home: "YCAC Pulse", away: "Kilimanjaro FC", time: "18:00", venue: "YC&AC" },
       { date: "2026-11-01", home: "VJ Bridge FC", away: "Zion FC", time: "19:15", venue: "Horisaki Koen" },
       { date: "2026-11-03", home: "Corinthians Harbour FC", away: "Inter Tokyo FC", time: "16:15", venue: "YC&AC" },
       { date: "2026-11-03", home: "Jetro FC", away: "Votty SC", time: "12:15", venue: "BST Nagasawa Sports Ground" },
       { date: "2026-11-08", home: "Albion Old Boys FC", away: "Jetro FC", time: "16:35", venue: "BST Nagasawa Sports Ground" },
+      { date: "2026-11-14", home: "Albion Old Boys FC", away: "Votty SC", time: "12:05", venue: "Koshikiya Ground" },
+      { date: "2026-11-14", home: "Corinthians Harbour FC", away: "BFC Tokyo", time: "16:30", venue: "Koshikiya Ground" },
+      { date: "2026-11-14", home: "Inter Tokyo FC", away: "F. Lions FC", time: "11:20", venue: "Fukuda Denshi Square" },
+      { date: "2026-11-15", home: "Jetro FC", away: "YCAC Pulse", time: "11:00", venue: "YC&AC" },
     ],
   };
   if (typeof module !== "undefined" && module.exports) module.exports = fixtures;
