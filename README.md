@@ -208,8 +208,12 @@ league. The goals panel falls back to published scorer names when no local goal 
 
 Upcoming `match.html` pages also include **BAND sign-up drafts**: separate editable, copy-ready
 STANDARD and YC&AC Priority + Starting GK descriptions using the supplied Japanese/English
-templates. Match date, opponent, venue and competition come from the fixture; meeting and warm-up
+templates, with separate editable/copyable bilingual event titles. Match date, opponent, venue and competition come from the fixture; meeting and warm-up
 default to 60 and 40 minutes before kickoff, with 11-a-side / 40-minute halves. Unknown details
-remain TBC. Priority closes 14 days before match day. STANDARD alone includes the participation
+remain TBC. STANDARD closes 2 days before match day at 21:00 JST; Priority closes 15 days before
+at 21:00 JST. Both descriptions include exact deadline dates. Each draft also shows manual BAND
+settings instructions for its deadline, an alert at 21:00 JST one day before that deadline, and a
+match alert at 21:00 JST the day before the match. No notifications are scheduled automatically.
+STANDARD alone includes the participation
 fee and waiver. Draft edits survive language changes but are not saved across reloads, written to
 Supabase, or posted to BAND. If clipboard access is denied, the text is selected for manual copying.

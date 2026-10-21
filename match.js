@@ -73,17 +73,26 @@
     panel.hidden = state.mode !== "ok" || isFinal(state.match) || !window.YCACBandTemplates;
     if (panel.hidden) return;
     if (state.bandDrafts?.id !== state.match.id) state.bandDrafts = { id: state.match.id, ...YCACBandTemplates.generate(state.match) };
-    $("band-deadline").textContent = t("bandDeadline", { date: state.bandDrafts.deadline });
+    $("band-deadline").textContent = t("bandSetupIntro");
     $("match-band").innerHTML = ["standard", "priority"].map((kind) => {
       const label = t(kind === "standard" ? "bandStandard" : "bandPriority");
-      return `<div class="band-draft"><div class="band-draft-heading"><label for="band-${kind}">${esc(label)}</label><button type="button" class="quiet-button small" data-band-copy="${kind}">${esc(t("bandCopy"))}</button></div>
+      return `<div class="band-draft"><h3>${esc(label)}</h3>
+        <div class="band-draft-heading"><label for="band-${kind}Title">${esc(t("bandEventTitle"))}</label><button type="button" class="quiet-button small" data-band-copy="${kind}Title">${esc(t("bandCopyTitle"))}</button></div>
+        <textarea id="band-${kind}Title" class="band-event-title" data-band-draft="${kind}Title" rows="3" spellcheck="false">${esc(state.bandDrafts[`${kind}Title`])}</textarea>
+        <div class="band-settings">
+          <h4>${esc(t("bandSettings"))}</h4>
+          <p data-band-setting="deadline">${esc(t("bandDeadline", { date: state.bandDrafts.deadlines[kind] }))}</p>
+          <p data-band-setting="deadline-alert">${esc(t("bandDeadlineAlert", { date: state.bandDrafts.alerts[kind] }))}</p>
+          <p data-band-setting="match-alert">${esc(t("bandMatchAlert", { date: state.bandDrafts.alerts.match }))}</p>
+        </div>
+        <div class="band-draft-heading"><label for="band-${kind}">${esc(t("bandDescription"))}</label><button type="button" class="quiet-button small" data-band-copy="${kind}">${esc(t("bandCopy"))}</button></div>
         <textarea id="band-${kind}" data-band-draft="${kind}" rows="16" spellcheck="false">${esc(state.bandDrafts[kind])}</textarea></div>`;
     }).join("");
     $("band-status").textContent = "";
   }
 
   async function copyBand(kind) {
-    if (!["standard", "priority"].includes(kind) || !state.bandDrafts) return;
+    if (!["standard", "priority", "standardTitle", "priorityTitle"].includes(kind) || !state.bandDrafts) return;
     const field = $(`band-${kind}`);
     try {
       await navigator.clipboard.writeText(field.value);
@@ -1032,7 +1041,7 @@
 
   $("band-panel").addEventListener("input", (event) => {
     const kind = event.target.dataset.bandDraft;
-    if (["standard", "priority"].includes(kind) && state.bandDrafts) state.bandDrafts[kind] = event.target.value;
+    if (["standard", "priority", "standardTitle", "priorityTitle"].includes(kind) && state.bandDrafts) state.bandDrafts[kind] = event.target.value;
   });
   $("band-panel").addEventListener("click", (event) => {
     const button = event.target.closest && event.target.closest("[data-band-copy]");

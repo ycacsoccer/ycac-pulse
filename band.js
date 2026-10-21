@@ -17,11 +17,20 @@
     const year = date.getUTCFullYear(), month = date.getUTCMonth(), day = date.getUTCDate(), weekday = date.getUTCDay();
     return `${year}年${month + 1}月${day}日（${weekdaysJA[weekday]}） / ${weekdaysEN[weekday]}, ${pad(day)} ${months[month]} ${year}`;
   }
-  function priorityDeadline(value) {
+  function daysBefore(value, days) {
     const date = dateOf(value);
-    if (!date) return TBC;
-    date.setUTCDate(date.getUTCDate() - 14);
-    return formatDate(date.toISOString().slice(0, 10));
+    if (!date) return null;
+    date.setUTCDate(date.getUTCDate() - days);
+    return date.toISOString().slice(0, 10);
+  }
+  function atNine(value) {
+    return dateOf(value) ? `${formatDate(value)} · 21:00 JST（日本時間 / Japan time）` : TBC;
+  }
+  function priorityDeadline(value) {
+    return atNine(daysBefore(value, 15));
+  }
+  function standardDeadline(value) {
+    return atNine(daysBefore(value, 2));
   }
   function schedule(kickoff) {
     const parts = /^(\d{1,2}):(\d{2})(?::00)?$/.exec(String(kickoff || "").trim());
@@ -35,8 +44,17 @@
   }
   function generate(match) {
     const times = schedule(match.kickoff);
-    const competition = match.competition === "TML Division 3" ? "TMLディビジョン3 / TML Division 3"
-      : /friendly/i.test(match.competition || "") ? "親善試合 / Friendly Match" : match.competition || TBC;
+    const competitionJA = match.competition === "TML Division 3" ? "TMLディビジョン3"
+      : /friendly/i.test(match.competition || "") ? "親善試合" : match.competition || TBC;
+    const competitionEN = /friendly/i.test(match.competition || "") ? "Friendly Match" : match.competition || TBC;
+    const competition = `${competitionJA} / ${competitionEN}`;
+    const title = (ja, en) => `${competitionJA} vs ${match.opponent || TBC} [${ja}] / ${competitionEN} vs ${match.opponent || TBC} [${en}]`;
+    const deadlines = { standard: standardDeadline(match.date), priority: priorityDeadline(match.date) };
+    const alerts = {
+      standard: atNine(daysBefore(match.date, 3)),
+      priority: atNine(daysBefore(match.date, 16)),
+      match: atNine(daysBefore(match.date, 1)),
+    };
     const common = `⚽ 試合情報 / Match Information
 
 📅 ${formatDate(match.date)}
@@ -82,21 +100,28 @@ If we are unable to arrange 30 minutes or more of playing time, the participatio
 
 先着順 / First-come, first-served
 
-YC&AC優先サインアップは試合日の2週間前に締め切ります。締切後、STANDARD枠が増え、ウェイティングリストから繰り上がる場合があります。
+STANDARDサインアップは試合日の2日前の21:00（日本時間）に締め切ります。
+📅 STANDARD締切 / STANDARD deadline: ${deadlines.standard}
 
-YC&AC Priority Sign-Up closes 2 weeks before match day. After it closes, additional STANDARD places may become available and waiting-list players may move into the confirmed list.`;
+STANDARD sign-up closes 2 days before match day at 9pm Japan time.
+
+YC&AC優先サインアップは試合日の15日前の21:00（日本時間）に締め切ります。締切後、STANDARD枠が増え、ウェイティングリストから繰り上がる場合があります。
+📅 YC&AC優先締切 / YC&AC Priority deadline: ${deadlines.priority}
+
+YC&AC Priority Sign-Up closes 15 days before match day at 9pm Japan time. After it closes, additional STANDARD places may become available and waiting-list players may move into the confirmed list.`;
     const priority = `${common}
 
 ===== YC&AC Priority + Starting GK Sign-Up / YC&AC優先 + スターティングGK サインアップ =====
 
 YC&ACメンバー＋スターティングGK対象です。
-優先サインアップは試合日の2週間前に締め切ります。
+優先サインアップは試合日の15日前の21:00（日本時間）に締め切ります。
+📅 YC&AC優先締切 / YC&AC Priority deadline: ${deadlines.priority}
 
 For YC&AC Members + Starting GK.
-Priority sign-up closes 2 weeks before the match day.`;
-    return { standard, priority, deadline: priorityDeadline(match.date) };
+Priority sign-up closes 15 days before match day at 9pm Japan time.`;
+    return { standard, priority, standardTitle: title("STANDARD", "STANDARD"), priorityTitle: title("YC&AC 優先", "YC&AC Priority"), deadlines, alerts };
   }
-  const api = { generate, formatDate, schedule, priorityDeadline };
+  const api = { generate, formatDate, schedule, priorityDeadline, standardDeadline };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (typeof window !== "undefined") window.YCACBandTemplates = api;
 })();
