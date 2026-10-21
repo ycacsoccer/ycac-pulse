@@ -23,7 +23,7 @@
   const state = {
     mode: "loading", // loading | ok | missing | error
     match: null, allMatches: [], apps: [], allAppearances: [], goals: [], allGoals: [], signups: [], notes: [], savedSquad: [], injuries: [],
-    playersById: new Map(), seasonIndex: new Map(),
+    playersById: new Map(), seasonIndex: new Map(), discipline: [], bandDrafts: null,
   };
 
   // Coach-only draft of the match squad for an upcoming fixture: formation
@@ -67,6 +67,33 @@
   const playerName = (id) => state.playersById.get(id)?.display_name || id;
 
   // ---- renderers ------------------------------------------------------------
+
+  function renderBand() {
+    const panel = $("band-panel");
+    panel.hidden = state.mode !== "ok" || isFinal(state.match) || !window.YCACBandTemplates;
+    if (panel.hidden) return;
+    if (state.bandDrafts?.id !== state.match.id) state.bandDrafts = { id: state.match.id, ...YCACBandTemplates.generate(state.match) };
+    $("band-deadline").textContent = t("bandDeadline", { date: state.bandDrafts.deadline });
+    $("match-band").innerHTML = ["standard", "priority"].map((kind) => {
+      const label = t(kind === "standard" ? "bandStandard" : "bandPriority");
+      return `<div class="band-draft"><div class="band-draft-heading"><label for="band-${kind}">${esc(label)}</label><button type="button" class="quiet-button small" data-band-copy="${kind}">${esc(t("bandCopy"))}</button></div>
+        <textarea id="band-${kind}" data-band-draft="${kind}" rows="16" spellcheck="false">${esc(state.bandDrafts[kind])}</textarea></div>`;
+    }).join("");
+    $("band-status").textContent = "";
+  }
+
+  async function copyBand(kind) {
+    if (!["standard", "priority"].includes(kind) || !state.bandDrafts) return;
+    const field = $(`band-${kind}`);
+    try {
+      await navigator.clipboard.writeText(field.value);
+      $("band-status").textContent = t("bandCopied");
+    } catch {
+      field.focus();
+      field.select();
+      $("band-status").textContent = t("bandCopyManual");
+    }
+  }
 
   function renderHero() {
     const target = $("match-hero");
@@ -159,7 +186,15 @@
     const goals = [...state.goals].sort((a, b) => (a.minute ?? 999) - (b.minute ?? 999));
     if (!goals.length && !isFinal(state.match)) { panel.hidden = true; return; } // fixture: nothing to review yet
     panel.hidden = false;
-    if (!goals.length) { target.innerHTML = empty("matchNoGoals"); return; }
+    if (!goals.length) {
+      const m = state.match;
+      const norm = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const official = m.competition === window.YCACFixtures?.competition && YCACFixtures.results.find((row) => row.date === m.date &&
+        norm(m.opponent) === norm(norm(row.home) === "ycacpulse" ? row.away : row.home) && [row.home, row.away].some((name) => norm(name) === "ycacpulse"));
+      const names = official ? official.scorers[norm(official.home) === "ycacpulse" ? "home" : "away"] : [];
+      target.innerHTML = names.length ? `<p class="admin-note">${esc(t("disciplinePublished"))}</p>${names.map((name) => `<div class="match-goal"><span class="mg-scorer">${esc(name)}</span></div>`).join("")}` : empty("matchNoGoals");
+      return;
+    }
     target.innerHTML = goals.map((goal) => `
       <div class="match-goal">
         <span class="mg-min">${goal.minute != null ? `${goal.minute}′` : ""}</span>
@@ -167,6 +202,33 @@
         ${goal.assist_id ? `<span class="mg-assist">· ${esc(t("matchAssist"))} <a href="player.html?id=${encodeURIComponent(goal.assist_id)}">${esc(playerName(goal.assist_id))}</a></span>` : ""}
       </div>`).join("");
   }
+
+  function renderDiscipline() {
+    const panel = $("discipline-panel");
+    const target = $("match-discipline");
+    const feed = window.YCACFixtures;
+    panel.hidden = state.mode !== "ok" || !window.YCACDiscipline || state.match.competition !== feed?.competition;
+    if (panel.hidden) { state.discipline = []; return; }
+    state.discipline = YCACDiscipline.ledger(feed, {
+      date: state.match.date, upcoming: !isFinal(state.match), matches: state.allMatches, today: todayISO(),
+    });
+    const rows = state.discipline.map((row) => {
+      const status = row.suspended ? "disciplineSuspended" : row.pending ? "disciplinePending" : row.cycle === 2 ? "disciplineRisk" : "disciplineCycle";
+      const history = row.history.map((card) => `<li>${esc(formatDate(card.date))} · ${esc(card.opponent)}</li>`).join("");
+      const bans = row.suspensions.map((ban) => `<li>${esc(t(ban.served ? "disciplineServed" : "disciplineBan"))}: ${ban.date ? `${esc(formatDate(ban.date))} · ${esc(ban.opponent)}` : esc(t("disciplinePending"))}</li>`).join("");
+      return `<article class="discipline-player ${row.suspended ? "is-suspended" : row.cycle === 2 ? "is-at-risk" : ""}">
+        <div class="discipline-heading"><strong>${esc(row.name)}</strong><span>${esc(t("disciplineTotal", { n: row.total }))}</span><span class="discipline-status">${esc(t(status, { n: row.cycle }))}</span></div>
+        <details><summary>${esc(t("disciplineHistory"))}</summary><ul>${history}</ul>${bans ? `<ul>${bans}</ul>` : ""}</details>
+      </article>`;
+    }).join("");
+    target.innerHTML = `<p class="fc-intro">${esc(t("disciplineRule"))}</p><p class="admin-note">${esc(t("disciplineSource", { date: formatDate(feed.updated) }))}</p>${rows || empty("disciplineEmpty")}`;
+  }
+
+  const suspendedPlayer = (id) => {
+    if (!window.YCACDiscipline) return false;
+    const player = state.playersById.get(id);
+    return Boolean(player && state.discipline.some((row) => row.suspended && [player.display_name, player.display_name_full].filter(Boolean).some((name) => YCACDiscipline.norm(name) === YCACDiscipline.norm(row.name))));
+  };
 
   /* Wave 35 — a played result in its season: the form that entered it, the
      W/D/L run it belongs to, the record at that point, and any records it set
@@ -679,7 +741,7 @@
   function refreshBench() {
     const startingIds = new Set(squad.slots.map((slot) => slot.playerId).filter(Boolean));
     squad.subs = rosterSorted()
-      .filter((player) => !startingIds.has(player.id))
+      .filter((player) => !startingIds.has(player.id) && !suspendedPlayer(player.id))
       .sort((a, b) => tierRank(a) - tierRank(b)
         || historicalScore(b, YCACStats.positionGroup(b.primary_position)) - historicalScore(a, YCACStats.positionGroup(a.primary_position)))
       .slice(0, MAX_SUBS)
@@ -689,7 +751,7 @@
 
   function suggestSquad() {
     resetFormation();
-    const roster = rosterSorted();
+    const roster = rosterSorted().filter((player) => !suspendedPlayer(player.id));
     squad.slots.forEach((slot) => {
       const candidate = roster
         .filter((player) => !squad.slots.some((item) => item.playerId === player.id) && YCACStats.positionGroup(player.primary_position) === slot.role)
@@ -703,6 +765,7 @@
   }
 
   function assignPlayer(playerId) {
+    if (suspendedPlayer(playerId)) { setSquadStatus("disciplineSquadBlocked"); return; }
     squad.slots.forEach((slot) => { if (slot.playerId === playerId) slot.playerId = null; });
     squad.subs = squad.subs.map((id) => (id === playerId ? null : id));
     const player = squadPlayer(playerId);
@@ -794,11 +857,11 @@
         <div class="pk-list">${members.map((player) => {
           const pickedState = starting.has(player.id) ? "xi" : bench.has(player.id) ? "sub" : "";
           const label = starting.has(player.id) ? "XI" : bench.has(player.id) ? t("pickerSubsOutput") : player.primary_position || group;
-          return `<button class="pk-card ${pickedState}" type="button" data-squad-add="${esc(player.id)}">
+          return `<button class="pk-card ${pickedState}" type="button" data-squad-add="${esc(player.id)}" ${suspendedPlayer(player.id) ? "disabled" : ""}>
             ${photoCell(player)}
             <span class="pk-card-num">${player.shirt_number || "–"}</span>
             <span class="pk-card-name">${esc(player.display_name)}</span>
-            ${signupBadge(player.id)}
+            ${suspendedPlayer(player.id) ? `<span class="discipline-status">${esc(t("disciplineSuspended"))}</span>` : signupBadge(player.id)}
             <span class="pk-card-pos">${esc(label)}</span>
           </button>`;
         }).join("")}</div></section>`;
@@ -819,6 +882,7 @@
     const starters = squad.slots.map((slot) => slot.playerId).filter(Boolean);
     const subs = squad.subs.filter(Boolean);
     if (!starters.length) { setSquadStatus("pickerStatusNeedXI"); return; }
+    if ([...starters, ...subs].some(suspendedPlayer)) { setSquadStatus("disciplineSquadBlocked"); return; }
     const button = $("squad-save");
     squad.saving = true;
     button.disabled = true;
@@ -948,7 +1012,9 @@
     renderHero();
     document.querySelectorAll(".match-panel").forEach((panel) => { panel.hidden = state.mode !== "ok"; });
     if (state.mode !== "ok") { $("goals-panel").hidden = true; return; }
+    renderBand();
     renderForecast();
+    renderDiscipline();
     renderSquad();
     renderLineup();
     renderGoals();
@@ -963,6 +1029,15 @@
   function showError() { state.mode = "error"; state.match = null; renderAll(); }
 
   // ---- squad picker events --------------------------------------------------
+
+  $("band-panel").addEventListener("input", (event) => {
+    const kind = event.target.dataset.bandDraft;
+    if (["standard", "priority"].includes(kind) && state.bandDrafts) state.bandDrafts[kind] = event.target.value;
+  });
+  $("band-panel").addEventListener("click", (event) => {
+    const button = event.target.closest && event.target.closest("[data-band-copy]");
+    if (button) copyBand(button.dataset.bandCopy);
+  });
 
   $("squad-formation").addEventListener("change", (event) => {
     squad.formation = event.target.value;

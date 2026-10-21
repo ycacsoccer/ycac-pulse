@@ -100,7 +100,7 @@ Do not rename table or column names without updating `stats.js` and the pages th
 | `npm run test:smoke` | Playwright against the **published** site (`SMOKE_COMMIT=` optional) | network |
 | `npm run test:verify` / `test:verify:live` | the verifiers alone, `--group=anon` / `live` | `.env` for live |
 | `npm run build:site` | whitelist copy of the publishable files → `_site/` + `build-info.json` | git |
-| `npm run update:standings` | pull the published D3 table + top scorers into `standings.js` (`-- --dry-run` previews the diff) | network |
+| `npm run update:standings` | refresh D3 standings, scorers, results and yellow cards (`-- --dry-run` previews; `-- --no-sync` skips DB writes) | network |
 | `npm run update:fixtures` | pull the published D3 fixtures + results into `fixtures.js` and add missing upcoming YC&AC fixtures to Supabase (`-- --dry-run` previews both, `-- --no-sync` skips the DB step) | network, `.env` for sync |
 | `npm run serve` | local static server on port 4319 | nothing |
 
@@ -172,7 +172,7 @@ Google Sheets any more. The two original workbooks are a read-only archive: keep
 **Anyone with the link: Viewer**. `migrate-from-sheets.cjs` (the one-time Phase 1 import) is the
 only script that still knows their gviz URL.
 
-The league table is the one piece from outside Supabase: cross-fixtures aren't in our database, so
+League-wide data comes from the competition: cross-fixtures aren't in our database, so
 **`npm run update:standings`** pulls the published Division 3 standings + top scorers from
 **footyjapancompetitions.com/standings** into the shipped `standings.js` (generated, never hand-edited
 — the script validates the unit-test contract before writing and prints the round's diff). Run it
@@ -181,9 +181,35 @@ after each round completes and commit the result.
 The fixtures/results feed comes from the same site: **`npm run update:fixtures`** pulls every
 published Division 3 match (fixtures with kickoff/venue, results with scores and scorer actions) from
 **footyjapancompetitions.com/fixtures-results** into the shipped `fixtures.js` (generated, likewise
-never hand-edited) — the match page's League form panel reads both clubs from it. The same run
+never hand-edited) — the match page's League form panel reads both clubs from it. Results also
+carry `yellowCards.home` / `yellowCards.away`, preserving every booking with its match date and
+opponent. The same run
 compares the feed's upcoming YC&AC fixtures with `matches` and **inserts any fixture the site doesn't
 have yet** (deduped by date + opponent; ids continue the mNNN series — bump `verify-stats.cjs` in the
-same commit when rows land). Reschedules, orientation/score mismatches and unentered results are
-printed as warnings for a human; the script never edits or deletes a match row. Run it together with
-`update:standings` and commit the result.
+same commit when rows land). Missing scores on uniquely matched league games are filled in;
+goal rows are imported only when the full published scorer list matches unique roster names and
+the match has no existing goals. Existing scores, assists and minutes are never overwritten.
+Reschedules, score conflicts, incomplete scorer lists and ambiguous player names are reported for
+manual review. Historical matches absent from the database are still report-only.
+
+**Either update command now refreshes both feeds**, including top scorers and yellow cards.
+Both accept `-- --dry-run` (no file/database writes) and `-- --no-sync` (generate the published
+files without touching Supabase). Commit the generated files to publish; review the console's
+warnings and update the live verifier row counts if database records were added.
+
+`match.html` shows each booked player's season total, dates/opponents, one-card-away warnings and
+suspension history. Every third league yellow earns a one-game league suspension; friendlies do
+not serve bans. Seasons reset in August. Past reviews stop at the match date. Future suspensions
+are projected onto the next scheduled league match and move with reschedules; only completed
+league results count as served. Suspended players (exact display/full-name match) are flagged in
+the roster, excluded from suggestions/bench refresh, and cannot be added or saved in the squad.
+Counts cover **published bookings only**, not unreported cards; confirm projected bans with the
+league. The goals panel falls back to published scorer names when no local goal rows exist.
+
+Upcoming `match.html` pages also include **BAND sign-up drafts**: separate editable, copy-ready
+STANDARD and YC&AC Priority + Starting GK descriptions using the supplied Japanese/English
+templates. Match date, opponent, venue and competition come from the fixture; meeting and warm-up
+default to 60 and 40 minutes before kickoff, with 11-a-side / 40-minute halves. Unknown details
+remain TBC. Priority closes 14 days before match day. STANDARD alone includes the participation
+fee and waiver. Draft edits survive language changes but are not saved across reloads, written to
+Supabase, or posted to BAND. If clipboard access is denied, the text is selected for manual copying.

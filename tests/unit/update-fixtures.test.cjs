@@ -9,7 +9,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const {
-  parseDate, parsePage, canonicalise, renderFile, diff, planSync, nextMatchId, clubReport, todayISO,
+  parseDate, parsePage, canonicalise, renderFile, diff, planSync, planScoring, nextMatchId, clubReport, todayISO,
 } = require("../../update-fixtures.cjs");
 const fixture = fs.readFileSync(path.join(__dirname, "../fixtures/footy-fixtures-d3.html"), "utf8");
 
@@ -62,6 +62,8 @@ test("parses fixtures and results from the real capture, Division 3 only", () =>
   assert.equal(m006.venue, "YC&AC");
   assert.deepEqual(m006.scorers.home, ["Ryu Sato", "Shinnosuke Kitagawa"]);
   assert.deepEqual(m006.scorers.away, ["Masaki Sato", "Kosuke Hirano"]);
+  assert.deepEqual(m006.yellowCards.home, ["Umit Ay", "Qingguo Meng"]);
+  assert.deepEqual(m006.yellowCards.away, ["Sora Matsuura", "Naoya Takahashi"]);
 
   // a big away win carries both the marker and the scorer list
   const rout = feed.results.find((row) => row.date === "2026-10-18");
@@ -223,6 +225,51 @@ test("nextMatchId continues the mNNN series", () => {
   assert.equal(nextMatchId([{ id: "m104" }, { id: "m002" }]), "m105");
 });
 
+test("action corrections are reported even when the score is unchanged", () => {
+  const data = canonicalise(parsePage(fixture));
+  const previous = structuredClone(data);
+  previous.results[0].scorers.home = [];
+  previous.results[0].yellowCards.home = [];
+  const changes = diff(previous, data.results, data.fixtures);
+  assert.equal(changes.length, 2);
+  assert.match(changes[0], /scorers updated/);
+  assert.match(changes[1], /yellowCards updated/);
+});
+
+const scoringFeed = { results: [{ date: "2026-10-17", home: "YCAC Pulse", away: "Opponent", hg: 2, ag: 0, scorers: { home: ["Rick Li", "Rick Li"], away: [] } }] };
+const scoringMatch = { id: "m001", date: "2026-10-17", competition: "TML Division 3", home_away: "home", opponent: "Opponent", ycac_goals: null, opponent_goals: null };
+const roster = [{ id: "rick", display_name: "Rick", display_name_full: "Rick Li" }];
+
+test("scoring fills missing scores and a complete scorer list; repeats are idempotent", () => {
+  const plan = planScoring(scoringFeed, [scoringMatch], roster, []);
+  assert.deepEqual(plan.updates, [{ id: "m001", ycac_goals: 2, opponent_goals: 0 }]);
+  assert.equal(plan.inserts.length, 2, "two goals by the same scorer are retained");
+  assert.ok(plan.inserts.every((row) => row.scorer_id === "rick"));
+  const again = planScoring(scoringFeed, [{ ...scoringMatch, ycac_goals: 2, opponent_goals: 0 }], roster, plan.inserts);
+  assert.deepEqual(again, { updates: [], inserts: [], warnings: [] });
+});
+
+test("scoring preserves existing scores, assists and minutes; ambiguous or incomplete goals are not guessed", () => {
+  assert.equal(planScoring(scoringFeed, [{ ...scoringMatch, ycac_goals: 1 }], roster, []).updates.length, 0);
+  assert.equal(planScoring(scoringFeed, [{ ...scoringMatch, ycac_goals: 1 }], roster, []).inserts.length, 0);
+  const existing = [{ match_id: "m001", scorer_id: "rick", assist_id: "other", minute: 42 }];
+  const before = structuredClone(existing);
+  assert.equal(planScoring(scoringFeed, [scoringMatch], roster, existing).inserts.length, 0);
+  assert.deepEqual(existing, before);
+  for (const players of [[], [...roster, { id: "duplicate", display_name: "Rick Li" }]]) {
+    const plan = planScoring(scoringFeed, [scoringMatch], players, []);
+    assert.equal(plan.inserts.length, 0);
+    assert.ok(plan.warnings.length);
+  }
+  const incomplete = structuredClone(scoringFeed);
+  incomplete.results[0].scorers.home.pop();
+  assert.equal(planScoring(incomplete, [scoringMatch], roster, []).inserts.length, 0);
+  assert.equal(planScoring(scoringFeed, [{ ...scoringMatch, competition: "Friendly Match" }], roster, []).updates.length, 0);
+  const wrongScorers = planScoring(scoringFeed, [scoringMatch], roster, [{ match_id: "m001", scorer_id: "other" }, { match_id: "m001", scorer_id: "other" }]);
+  assert.equal(wrongScorers.inserts.length, 0);
+  assert.ok(wrongScorers.warnings.some((line) => line.includes("scorer names differ")));
+});
+
 test("clubReport points out table/feed disagreements without failing", () => {
   assert.deepEqual(
     clubReport(["YCAC Pulse", "VJ Bridge FC", "Zion FC"], ["YCAC Pulse", "BFC Tokyo"]),
@@ -250,6 +297,8 @@ test("the shipped fixtures.js holds only rows the panels can render", () => {
     assert.ok(Number.isInteger(row.hg) && row.hg >= 0, `${row.date}: home score`);
     assert.ok(Number.isInteger(row.ag) && row.ag >= 0, `${row.date}: away score`);
     assert.ok(Array.isArray(row.scorers.home) && Array.isArray(row.scorers.away), `${row.date}: scorer lists`);
+    assert.ok(Array.isArray(row.yellowCards.home) && Array.isArray(row.yellowCards.away), `${row.date}: yellow-card lists`);
+    assert.ok([...row.yellowCards.home, ...row.yellowCards.away].every((name) => typeof name === "string" && name.trim()), `${row.date}: every booking names a player`);
     assert.ok(known.has(row.home) && known.has(row.away), `${row.date}: teams listed in clubs`);
   }
   for (const row of feed.fixtures) {

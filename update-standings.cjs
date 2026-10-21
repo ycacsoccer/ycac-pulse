@@ -3,6 +3,8 @@
 // file, replacing the hand-edit round this table used to need:
 //   npm run update:standings            fetch, validate, rewrite standings.js
 //   npm run update:standings -- --dry-run   preview the diff, write nothing
+// Both commands also refresh fixtures, scoring and yellow-card history;
+// --no-sync skips Supabase changes, not generated-file updates.
 // The published page (footyjapancompetitions.com/standings) is Drupal-marked
 // up with semantic cell classes, so parsing is class-based and fails loudly
 // if the site ever restructures. Everything the unit tests enforce (P = W+D+L,
@@ -169,7 +171,7 @@ async function build({ fetchImpl = fetch } = {}) {
   return { rows, topScorers, updated: todayISO() };
 }
 
-async function main() {
+async function main({ refreshFixtures = true } = {}) {
   const dryRun = process.argv.includes("--dry-run");
   const previous = require(TARGET);
   const { rows, topScorers, updated } = await build();
@@ -182,9 +184,12 @@ async function main() {
   if (changes.length) { console.log("  changes:"); for (const line of changes) console.log(line); }
   else console.log("  changes: none since the last update");
 
-  if (dryRun) { console.log("dry run — standings.js not written"); return; }
-  fs.writeFileSync(TARGET, renderFile({ updated, rows, topScorers }));
-  console.log(`standings.js rewritten (${rows.length} rows, ${topScorers.length} scorers) — commit it to publish`);
+  if (dryRun) console.log("dry run — standings.js not written");
+  else {
+    fs.writeFileSync(TARGET, renderFile({ updated, rows, topScorers }));
+    console.log(`standings.js rewritten (${rows.length} rows, ${topScorers.length} scorers) — commit it to publish`);
+  }
+  if (refreshFixtures) await require("./update-fixtures.cjs").main({ refreshStandings: false });
 }
 
 if (require.main === module) {
@@ -194,4 +199,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { parseStandings, parseTopScorers, canonicalise, renderFile, todayISO, diff };
+module.exports = { parseStandings, parseTopScorers, canonicalise, renderFile, todayISO, diff, build, main };

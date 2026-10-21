@@ -1,7 +1,7 @@
 /* YC&AC Pulse — TML Division 3 fixtures + results feed (update-fixtures.cjs):
      npm run update:fixtures                 fetch → parse → write fixtures.js + sync
      npm run update:fixtures -- --dry-run    preview everything, write nothing
-     npm run update:fixtures -- --no-sync    skip the Supabase fixture sync
+     npm run update:fixtures -- --no-sync    skip the Supabase fixture/scoring sync
 
    Scrapes every page of footyjapancompetitions.com/fixtures-results and keeps
    the <h3>Division 3</h3> sections only: every club's fixtures (date, kickoff,
@@ -12,8 +12,9 @@
    The Supabase step (credentials from .env) compares the feed's upcoming
    YC&AC fixtures with the matches table: a fixture the site doesn't have yet
    is INSERTED (deduped by date + normalised opponent, ids continue the mNNN
-   series); reschedules, missing results and score mismatches are only ever
-   reported for a human — this script never edits or deletes a match row. */
+   series). Missing scores and complete, unambiguous scorer lists are filled
+   in; existing scores/goals are never overwritten. Reschedules and conflicts
+   are reported for a human. Both update commands refresh all league feeds. */
 const fs = require("fs");
 const path = require("path");
 
@@ -33,6 +34,7 @@ const decode = (text) => String(text == null ? "" : text)
 const norm = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
 const US = norm("YCAC Pulse"); // "ycacpulse" — matches both "YCAC Pulse" and "YC&AC Pulse"
 const isUs = (name) => norm(name) === US;
+const playerNorm = require("./discipline.js").norm;
 
 const pad = (value) => String(value).padStart(2, "0");
 function todayISO() {
@@ -62,10 +64,9 @@ function venueOf(body) {
   return match ? decode(match[1]) : null;
 }
 
-// Goal scorer names for one side of a result (own goals/cards are not
-// scorers; count is never validated against the score — the feed's action
-// feed is supplementary detail, the score itself is validated separately).
-function scorersOf(body, side) {
+// Published action names for one side of a result. Repeated names matter:
+// multiple goals/bookings are separate events, not a set of players.
+function actionsOf(body, side, wanted) {
   const mark = side === "home" ? 'class="actions actions-home"' : 'class="actions actions-away"';
   const start = body.indexOf(mark);
   if (start < 0) return [];
@@ -79,7 +80,10 @@ function scorersOf(body, side) {
   while ((match = action.exec(segment))) {
     const type = /action-icon action-([\w-]+)/.exec(match[1]);
     const player = /class="action-player">([^<]+)<\/span>/.exec(match[1]);
-    if (type && player && type[1] === "goal") goals.push(decode(player[1]));
+    if (type && type[1] === wanted) {
+      if (!player || !decode(player[1])) throw new Error(`${wanted} action has no player — inspect the published page`);
+      goals.push(decode(player[1]));
+    }
   }
   return goals;
 }
@@ -124,7 +128,8 @@ function parseArticle(body, meta) {
   return {
     ...meta, home, away, hg, ag,
     venue: venueOf(body),
-    scorers: { home: scorersOf(body, "home"), away: scorersOf(body, "away") },
+    scorers: { home: actionsOf(body, "home", "goal"), away: actionsOf(body, "away", "goal") },
+    yellowCards: { home: actionsOf(body, "home", "yellow_card"), away: actionsOf(body, "away", "yellow_card") },
   };
 }
 
@@ -164,7 +169,7 @@ function canonicalise(rows) {
   const byMatch = (a, b) => a.date.localeCompare(b.date) || a.home.localeCompare(b.home) || a.away.localeCompare(b.away);
   const results = d3.filter((row) => row.kind === "result").map((row) => ({
     date: row.date, home: row.home, away: row.away, hg: row.hg, ag: row.ag,
-    venue: row.venue, scorers: row.scorers,
+    venue: row.venue, scorers: row.scorers, yellowCards: row.yellowCards,
   })).sort(byMatch);
   const fixtures = d3.filter((row) => row.kind === "fixture").map((row) => ({
     date: row.date, home: row.home, away: row.away, time: row.time, venue: row.venue,
@@ -179,7 +184,7 @@ function canonicalise(rows) {
 // The shipped module, byte-compatible with the standings generator's shape.
 function renderFile({ updated, clubs, results, fixtures: scheduled }) {
   const quoted = (value) => JSON.stringify(value);
-  const resultRow = (row) => `      { date: ${quoted(row.date)}, home: ${quoted(row.home)}, away: ${quoted(row.away)}, hg: ${row.hg}, ag: ${row.ag}, venue: ${quoted(row.venue)}, scorers: { home: ${JSON.stringify(row.scorers.home)}, away: ${JSON.stringify(row.scorers.away)} } },`;
+  const resultRow = (row) => `      { date: ${quoted(row.date)}, home: ${quoted(row.home)}, away: ${quoted(row.away)}, hg: ${row.hg}, ag: ${row.ag}, venue: ${quoted(row.venue)}, scorers: ${JSON.stringify(row.scorers)}, yellowCards: ${JSON.stringify(row.yellowCards)} },`;
   const fixtureRow = (row) => `      { date: ${quoted(row.date)}, home: ${quoted(row.home)}, away: ${quoted(row.away)}, time: ${quoted(row.time)}, venue: ${quoted(row.venue)} },`;
   return `/* YC&AC Pulse — TML Division 3 fixtures + results, as published by the
    competition. GENERATED by \`npm run update:fixtures\` (update-fixtures.cjs)
@@ -188,7 +193,8 @@ function renderFile({ updated, clubs, results, fixtures: scheduled }) {
    what the unit tests enforce (scores are integers, a result marker agrees with
    the score, Division 3 rows only). The match page's League form panel reads
    both clubs from here: results feed form pills + recent results, fixtures the
-   next-up lists (pure logic in league.js). */
+   next-up lists (pure logic in league.js). Yellow-card actions retain every
+   booking; discipline.js derives player totals, history and three-card bans. */
 (() => {
   const fixtures = {
     competition: ${quoted(COMPETITION)},
@@ -216,6 +222,11 @@ function diff(previous, results, scheduled) {
     if (!before) changes.push(`  + result ${row.date} ${row.home} ${row.hg}–${row.ag} ${row.away}`);
     else if (before.hg !== row.hg || before.ag !== row.ag) {
       changes.push(`  ! score changed ${row.date} ${row.home} ${before.hg}–${before.ag} → ${row.hg}–${row.ag} ${row.away} — inspect by hand`);
+    }
+    if (before) for (const field of ["scorers", "yellowCards"]) {
+      if (JSON.stringify(before[field]) !== JSON.stringify(row[field])) {
+        changes.push(`  ~ ${field} updated ${row.date} ${row.home} vs ${row.away}: ${JSON.stringify(row[field])}`);
+      }
     }
     oldResults.delete(keyOf(row));
   }
@@ -245,6 +256,7 @@ async function fetchPages(fetchImpl = fetch) {
     const html = await res.text();
     pages.push(html);
     last = Math.max(last, ...[...html.matchAll(/\?page=(\d+)/g)].map((m) => Number(m[1])));
+    if (last >= MAX_PAGES) throw new Error(`feed exceeds ${MAX_PAGES} pages — increase MAX_PAGES rather than losing booking history`);
     if (!html.includes("match-teaser")) break;
   }
   return pages;
@@ -318,7 +330,7 @@ function planSync(feed, matches, today) {
     if (!present) {
       warnings.push(`published result missing from the site: ${row.date} vs ${opponent} ${ourGoals}–${theirGoals} — enter it in the admin tool`);
     } else if (present.ycac_goals == null) {
-      warnings.push(`published result, still unplayed on the site: ${present.id} (${row.date} vs ${opponent} ${ourGoals}–${theirGoals}) — enter the score`);
+      warnings.push(`published result, still unplayed on the site: ${present.id} (${row.date} vs ${opponent} ${ourGoals}–${theirGoals}) — scoring sync will fill it if unambiguous`);
     } else if (Number(present.ycac_goals) !== ourGoals || Number(present.opponent_goals) !== theirGoals) {
       warnings.push(`${present.id} score differs from the feed: site ${present.ycac_goals}–${present.opponent_goals}, feed ${ourGoals}–${theirGoals} (${row.date} vs ${opponent}) — inspect by hand`);
     }
@@ -365,6 +377,40 @@ function loadLocalEnv() {
   }
 }
 
+// Fill gaps only: no fuzzy player matching, no replacing coach-entered
+// assists/minutes, and no importing a partial scorer list as a complete one.
+function planScoring(feed, matches, players, goals) {
+  const updates = [], inserts = [], warnings = [];
+  for (const result of feed.results.filter((row) => isUs(row.home) || isUs(row.away))) {
+    const home = isUs(result.home);
+    const opponent = home ? result.away : result.home;
+    const candidates = matches.filter((row) => row.competition === COMPETITION && row.date === result.date && norm(row.opponent) === norm(opponent));
+    if (candidates.length !== 1) continue;
+    const match = candidates[0];
+    if ((match.home_away === "home") !== home) { warnings.push(`${match.id}: orientation differs — scoring not imported`); continue; }
+    const ourGoals = home ? result.hg : result.ag, theirGoals = home ? result.ag : result.hg;
+    if ((match.ycac_goals != null && Number(match.ycac_goals) !== ourGoals) || (match.opponent_goals != null && Number(match.opponent_goals) !== theirGoals)) continue;
+    if (match.ycac_goals == null || match.opponent_goals == null) updates.push({ id: match.id, ycac_goals: ourGoals, opponent_goals: theirGoals });
+    const names = result.scorers[home ? "home" : "away"];
+    const mapped = names.map((name) => {
+      const candidates = players.filter((player) => [player.display_name, player.display_name_full].filter(Boolean).some((value) => playerNorm(value) === playerNorm(name)));
+      if (candidates.length !== 1) warnings.push(`${match.id}: scorer "${name}" has ${candidates.length} exact roster matches — no goal rows imported`);
+      return candidates.length === 1 ? candidates[0].id : null;
+    });
+    const existing = goals.filter((row) => row.match_id === match.id);
+    if (existing.length) {
+      if (existing.length !== ourGoals) warnings.push(`${match.id}: ${existing.length}/${ourGoals} goal rows already entered — reconcile manually (assists/minutes preserved)`);
+      else if (names.length === ourGoals && mapped.every(Boolean) && JSON.stringify([...mapped].sort()) !== JSON.stringify(existing.map((row) => row.scorer_id).sort())) {
+        warnings.push(`${match.id}: scorer names differ from existing goal rows — reconcile manually (assists/minutes preserved)`);
+      }
+      continue;
+    }
+    if (names.length !== ourGoals) { warnings.push(`${match.id}: published scorers incomplete (${names.length}/${ourGoals}) — no goal rows imported`); continue; }
+    if (mapped.every(Boolean)) inserts.push(...mapped.map((scorer_id) => ({ match_id: match.id, scorer_id, assist_id: null, minute: null })));
+  }
+  return { updates, inserts, warnings };
+}
+
 async function sync(feed, { dryRun }) {
   loadLocalEnv();
   const baseUrl = process.env.SUPABASE_URL;
@@ -378,6 +424,13 @@ async function sync(feed, { dryRun }) {
   });
   if (!res.ok) throw new Error(`reading matches failed: HTTP ${res.status}`);
   const matches = await res.json();
+  const headers = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" };
+  const [players, goals] = await Promise.all(["players?select=id,display_name,display_name_full", "goals?select=match_id,scorer_id"].map(async (query) => {
+    const response = await fetch(`${baseUrl}/rest/v1/${query}`, { headers });
+    if (!response.ok) throw new Error(`reading scoring data failed: HTTP ${response.status}`);
+    return response.json();
+  }));
+  const scoring = planScoring(feed, matches, players, goals);
   const plan = planSync(feed, matches, todayISO());
   console.log(`  sync: the feed lists ${plan.feedFixtures} upcoming + ${plan.feedResults} played YC&AC fixtures`);
   if (!plan.inserts.length && !plan.warnings.length) console.log("  sync: site and feed agree — nothing to add");
@@ -388,7 +441,30 @@ async function sync(feed, { dryRun }) {
     console.log("  sync warnings (look at these by hand):");
     for (const line of plan.warnings) console.log(`    ! ${line}`);
   }
+  for (const line of scoring.warnings) console.log(`    ! ${line}`);
+  console.log(`  scoring: ${scoring.updates.length} missing scores + ${scoring.inserts.length} goal rows ${dryRun ? "would be imported" : "to import"}`);
   if (dryRun) { if (plan.inserts.length) console.log("  dry run — nothing inserted"); return; }
+
+  const skippedScores = new Set();
+  for (const update of scoring.updates) {
+    const match = matches.find((row) => row.id === update.id);
+    // Compare-and-set: a coach editing after our read wins over the importer.
+    const guard = (field) => `${field}=${match[field] == null ? "is.null" : `eq.${match[field]}`}`;
+    const response = await fetch(`${baseUrl}/rest/v1/matches?id=eq.${update.id}&${guard("ycac_goals")}&${guard("opponent_goals")}`, {
+      method: "PATCH", headers: { ...headers, Prefer: "return=representation" }, body: JSON.stringify({ ycac_goals: update.ycac_goals, opponent_goals: update.opponent_goals }),
+    });
+    if (!response.ok) throw new Error(`importing score for ${update.id} failed: HTTP ${response.status}`);
+    if (!(await response.json()).length) {
+      skippedScores.add(update.id);
+      console.log(`    ! ${update.id}: changed during sync — score and scorers skipped; rerun to review`);
+    }
+  }
+  const goalInserts = scoring.inserts.filter((row) => !skippedScores.has(row.match_id));
+  if (goalInserts.length) {
+    const response = await fetch(`${baseUrl}/rest/v1/goals`, { method: "POST", headers, body: JSON.stringify(goalInserts) });
+    if (!response.ok) throw new Error(`importing scorers failed: HTTP ${response.status}`);
+    console.log(`  scoring: imported ${goalInserts.length} goal rows — review verify-stats.cjs EXPECTED.rows.goals`);
+  }
 
   let id = nextMatchId(matches);
   for (const insert of plan.inserts) {
@@ -419,7 +495,7 @@ async function build({ fetchImpl = fetch } = {}) {
   return { feed: canonicalise(rows), pages: pages.length, updated: todayISO() };
 }
 
-async function main() {
+async function main({ refreshStandings = true } = {}) {
   const dryRun = process.argv.includes("--dry-run");
   const noSync = process.argv.includes("--no-sync");
   let previous = null;
@@ -453,6 +529,7 @@ async function main() {
 
   if (noSync) console.log("  sync: skipped (--no-sync)");
   else await sync(feed, { dryRun });
+  if (refreshStandings) await require("./update-standings.cjs").main({ refreshFixtures: false });
 }
 
 if (require.main === module) {
@@ -463,5 +540,5 @@ if (require.main === module) {
 }
 
 module.exports = {
-  parseDate, parsePage, canonicalise, renderFile, diff, planSync, nextMatchId, clubReport, todayISO, norm,
+  parseDate, parsePage, canonicalise, renderFile, diff, planSync, planScoring, nextMatchId, clubReport, todayISO, norm, build, sync, main,
 };

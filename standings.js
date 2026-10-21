@@ -9,7 +9,7 @@
 (() => {
   const standings = {
     competition: "TML Division 3",
-    updated: "2026-10-20",
+    updated: "2026-10-21",
     rows: [
       { team: "BFC Tokyo", p: 5, w: 4, d: 1, l: 0, gf: 22, ga: 9, pts: 13 },
       { team: "Corinthians Harbour FC", p: 6, w: 4, d: 1, l: 1, gf: 25, ga: 14, pts: 13 },

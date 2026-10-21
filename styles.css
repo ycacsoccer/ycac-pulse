@@ -434,8 +434,8 @@ a.history-row:hover { background: var(--gold-pale); }
 .fc-legend .lg-draw { background: #9aa3b2; }
 .fc-legend .lg-them { background: #c44545; }
 .fc-legend strong { color: var(--navy); font-variant-numeric: tabular-nums; }
-table.fc-compare { width: 100%; border-collapse: collapse; font-size: .84rem; }
-.fc-compare th, .fc-compare td { padding: .42rem .5rem; border-bottom: 1px solid var(--line); text-align: center; font-variant-numeric: tabular-nums; }
+table.fc-compare { width: 100%; min-width: 0; table-layout: fixed; border-collapse: collapse; font-size: .84rem; }
+.fc-compare th, .fc-compare td { padding: .42rem .5rem; border-bottom: 1px solid var(--line); text-align: center; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .fc-compare thead th { color: var(--muted); font-size: .64rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 .fc-compare tbody th { width: 42%; color: var(--muted); font-size: .66rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
 .fc-compare tbody tr:last-child th, .fc-compare tbody tr:last-child td { border-bottom: 0; }
@@ -881,3 +881,17 @@ svg.timing-svg, svg.trajectory-svg { display: block; width: 100%; height: auto; 
   .profile-competition-head .comp-chip { grid-column: auto; margin: 0; }
   .profile-competition-head > small { align-self: center; }
 }
+.discipline-player { border-top: 1px solid var(--line, #ddd); padding: 1rem 0; }
+.discipline-heading { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; }
+.discipline-status { font-size: .8rem; font-weight: 700; }
+.discipline-player.is-suspended .discipline-status { color: #b42318; }
+.discipline-player.is-at-risk .discipline-status { color: #886100; }
+.discipline-player details { margin-top: .5rem; font-size: .85rem; }
+.discipline-player summary { cursor: pointer; }
+.pk-card:disabled { opacity: .6; cursor: not-allowed; }
+.band-drafts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
+.band-draft { min-width: 0; }
+.band-draft-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; margin-bottom: .65rem; }
+.band-draft-heading label { font-size: .85rem; font-weight: 700; color: var(--navy); }
+.band-draft textarea { display: block; width: 100%; min-height: 20rem; padding: .85rem; resize: vertical; border: 1px solid var(--line); background: var(--mist); color: var(--ink); font: .8rem/1.7 'DM Sans', Arial, sans-serif; }
+@media (max-width: 760px) { .band-drafts { grid-template-columns: 1fr; } }
