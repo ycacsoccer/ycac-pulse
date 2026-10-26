@@ -26,7 +26,7 @@ async function grab(table) {
 }
 
 const EXPECTED = {
-  rows: { players: 41, matches: 14, appearances: 182, goals: 44 },
+  rows: { players: 41, matches: 15, appearances: 182, goals: 44 },
   counts: { all: 12, tml: 5, friendly: 7, players: 41, used: 36 },
   players: {
     rick: { tml: "5/5", friendly: "7/7", all: "12/12", tier: "core", reliability: 100 },
