@@ -244,8 +244,10 @@ test("the forecast gains venue records, league scorers and the neighbour nav", a
   // the published D3 top scorers, our own striker's row accented
   const scorers = page.locator("#match-forecast .standings-scorers");
   await expect(scorers.locator("li")).toHaveCount(standingsData.topScorers.length);
-  await expect(scorers.locator("li.is-us")).toHaveCount(1);
-  await expect(scorers.locator("li.is-us .ss-name")).toHaveText(standingsData.topScorers[0].name);
+  const usClub = standingsData.rows.find((row) => row.us).team;
+  const ourScorers = standingsData.topScorers.filter((row) => league.norm(row.club) === league.norm(usClub));
+  await expect(scorers.locator("li.is-us")).toHaveCount(ourScorers.length);
+  await expect(scorers.locator("li.is-us .ss-name")).toHaveText(ourScorers.map((row) => row.name));
   // x1 is the newest fixture → only a Previous link, to the last result
   const nav = page.locator(".hero-nav");
   await expect(nav.locator("a")).toHaveCount(1);
