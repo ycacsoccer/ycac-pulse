@@ -81,7 +81,7 @@ test("a live fixture detail opens every panel for anonymous visitors", async ({ 
   await expect(page.locator("#notes-panel")).toBeVisible();
 });
 
-test("the standalone tactical foundation and both videos are published", async ({ page, request }) => {
+test("the standalone tactical foundation and all four videos are published", async ({ page, request }) => {
   const errors = watchErrors(page);
   await page.goto("./tactical-foundation.html");
   await expect(page.locator("h1")).toContainText("Our Tactical");
@@ -92,14 +92,20 @@ test("the standalone tactical foundation and both videos are published", async (
   await expect(page.locator("#page-title")).toContainText("戦術の土台");
   await expect(page.locator("#defence-title")).toContainText("守備の形");
   await expect(page.locator(".defence-focus")).toContainText("２人同時に出ない");
+  await expect(page.locator(".warmup-variation").first()).toContainText("上側 · 赤");
+  await expect(page.locator(".warmup-variation").last()).toContainText("下側 · 紫");
+  await expect(page.locator(".warmup-variation").first()).toContainText("ワンツー");
   await page.getByRole("button", { name: "简体中文" }).click();
   await expect(page.locator("#page-title")).toContainText("战术基础");
   await expect(page.locator("#defence-title")).toContainText("防守阵型");
   await expect(page.locator(".defence-focus")).toContainText("不能两人同时上抢");
+  await expect(page.locator(".warmup-variation").first()).toContainText("上半部分 · 红色");
+  await expect(page.locator(".warmup-variation").last()).toContainText("下半部分 · 紫色");
+  await expect(page.locator(".warmup-variation").first()).toContainText("二过一");
   await page.getByRole("button", { name: "English" }).click();
   const videos = page.locator("video");
-  await expect(videos).toHaveCount(2);
-  for (const [index, name] of ["defensive-shape", "attacking-buildup"].entries()) {
+  await expect(videos).toHaveCount(4);
+  for (const [index, name] of ["defensive-shape", "attacking-buildup", "defensive-warmup", "attacking-warmup"].entries()) {
     const video = videos.nth(index);
     await expect.poll(() => video.evaluate((element) => element.readyState)).toBeGreaterThanOrEqual(1);
     const response = await request.get(`media/tactical-foundation/${name}.mp4`, { headers: { Range: "bytes=0-31" } });

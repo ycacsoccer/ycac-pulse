@@ -1,14 +1,14 @@
 const { test, expect } = require("@playwright/test");
 const { fitsViewport, watchErrors } = require("./mocks");
 
-test("standalone tactical foundation explains both clips without linking to the app", async ({ page, request }) => {
+test("standalone tactical foundation explains all four clips without linking to the app", async ({ page, request }) => {
   const errors = watchErrors(page);
   await page.goto("/tactical-foundation.html");
   await expect(page.locator("h1")).toContainText("Our Tactical");
   await expect(page.locator("h1")).toContainText("Foundation");
   await expect(page.locator(".hero")).toContainText("Coach Sun");
-  await expect(page.locator(".team-key")).toContainText("purple team in both clips");
-  await expect(page.locator(".team-key")).toContainText("looks blue in the build-up clip");
+  await expect(page.locator(".team-key")).toContainText("two tactical foundation clips, we’re the purple team");
+  await expect(page.locator(".team-key")).toContainText("tactical build-up clip, our side looks blue");
   await expect(page.locator("#defence-title")).toContainText("Defensive shape");
   await expect(page.locator("#attack-title")).toContainText("Attacking");
   await expect(page.locator(".clip-card").first().locator(".clip-notes > ul > li")).toHaveCount(4);
@@ -18,16 +18,28 @@ test("standalone tactical foundation explains both clips without linking to the 
   await expect(focus.locator("li").nth(1)).toContainText("passing lanes to the opposition’s central holding midfielders");
   await expect(focus.locator("li").nth(2)).toContainText("Don’t both press at once");
   await expect(focus.locator("li").nth(3)).toContainText("tactical plan");
-  await expect(page.locator(".clip-card").last().locator("li")).toHaveCount(4);
+  await expect(page.locator(".clips .clip-card").last().locator("li")).toHaveCount(4);
+  await expect(page.locator(".warmup-jump")).toHaveAttribute("href", "#warmups");
+  await expect(page.locator("#warmup-defence-title")).toContainText("Press &");
+  await expect(page.locator(".warmup-grid .clip-card").first()).toContainText("pressing and blocking");
+  const variations = page.locator(".warmup-variation");
+  await expect(variations).toHaveCount(2);
+  await expect(variations.first()).toContainText("Top · Red");
+  await expect(variations.first()).toContainText("one-two to set up a cross");
+  await expect(variations.first()).toContainText("timing of both runs is important");
+  await expect(variations.last()).toContainText("Bottom · Purple");
+  await expect(variations.last()).toContainText("three attackers outside the box");
   await expect(page.locator(".foundation")).toContainText("defending together and building up together");
   await expect(page.locator('a[href$=".html"]')).toHaveCount(0);
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex, nofollow");
 
   const videos = page.locator("video");
-  await expect(videos).toHaveCount(2);
+  await expect(videos).toHaveCount(4);
   for (const [index, file, minDuration, maxDuration] of [
     [0, "defensive-shape", 23, 24],
     [1, "attacking-buildup", 10, 11],
+    [2, "defensive-warmup", 6, 7],
+    [3, "attacking-warmup", 13, 14],
   ]) {
     const video = videos.nth(index);
     await expect(video).toHaveAttribute("controls", "");
@@ -89,6 +101,13 @@ test("prominent language buttons translate the whole page and remember the choic
   await expect(page.locator(".defence-focus h3")).toContainText("２トップとボランチ");
   await expect(page.locator(".defence-focus li").nth(1)).toContainText("パスコースをまず消し");
   await expect(page.locator(".defence-focus li").nth(2)).toContainText("２人同時に出ない");
+  await expect(page.locator("#warmup-defence-title")).toContainText("プレス");
+  await expect(page.locator(".warmup-grid .clip-card").first()).toContainText("プレスとブロック");
+  await expect(page.locator(".warmup-variation").first().locator("h3")).toHaveText("上側 · 赤");
+  await expect(page.locator(".warmup-variation").last().locator("h3")).toHaveText("下側 · 紫");
+  await expect(page.locator(".warmup-variation").first()).toContainText("ワンツー");
+  await expect(page.locator(".warmup-variation").first()).toContainText("タイミング");
+  await expect(page.locator(".warmup-variation").last()).toContainText("３人のアタッカー");
   await expect(page.locator(".foundation-copy")).toContainText("全員で守ること");
   await expect(video).toHaveAttribute("aria-label", "守備の形と動きの動画");
   await expect(picker.getByRole("button", { name: "日本語" })).toHaveAttribute("aria-pressed", "true");
@@ -107,6 +126,13 @@ test("prominent language buttons translate the whole page and remember the choic
   await expect(page.locator(".defence-focus h3")).toContainText("前锋与双后腰");
   await expect(page.locator(".defence-focus li").nth(1)).toContainText("先封住对方中路后腰的接球路线");
   await expect(page.locator(".defence-focus li").nth(2)).toContainText("不能两人同时上抢");
+  await expect(page.locator("#warmup-defence-title")).toContainText("压迫");
+  await expect(page.locator(".warmup-grid .clip-card").first()).toContainText("压迫和封堵");
+  await expect(page.locator(".warmup-variation").first().locator("h3")).toHaveText("上半部分 · 红色");
+  await expect(page.locator(".warmup-variation").last().locator("h3")).toHaveText("下半部分 · 紫色");
+  await expect(page.locator(".warmup-variation").first()).toContainText("二过一");
+  await expect(page.locator(".warmup-variation").first()).toContainText("启动时机");
+  await expect(page.locator(".warmup-variation").last()).toContainText("三名进攻球员");
   await expect(page.locator(".foundation-copy")).toContainText("一起防守、一起组织进攻");
   await expect(picker.getByRole("button", { name: "简体中文" })).toHaveAttribute("aria-pressed", "true");
   await expect(page).toHaveURL(/lang=zh/);
@@ -127,7 +153,7 @@ for (const width of [320, 390, 1440]) {
   test(`standalone tactics page fits a ${width}px viewport`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/tactical-foundation.html");
-    await expect(page.locator("video")).toHaveCount(2);
+    await expect(page.locator("video")).toHaveCount(4);
     for (const name of ["English", "日本語", "简体中文"]) {
       await page.locator(".language-picker").getByRole("button", { name }).click();
       expect(await fitsViewport(page), `${name} at ${width}px`).toBe(true);

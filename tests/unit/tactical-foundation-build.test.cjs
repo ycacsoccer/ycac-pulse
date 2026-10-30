@@ -5,7 +5,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 
-test("site build publishes only the intended standalone clips and posters", (t) => {
+test("site build publishes only the intended tactical and warm-up clips and posters", (t) => {
   const project = path.resolve(__dirname, "../..");
   const preferred = path.join(os.tmpdir(), "opencode");
   const sandbox = fs.mkdtempSync(path.join(fs.existsSync(preferred) ? preferred : os.tmpdir(), "ycac-tactics-build-"));
@@ -14,7 +14,7 @@ test("site build publishes only the intended standalone clips and posters", (t) 
   fs.mkdirSync(path.join(sandbox, "media", "tactical-foundation"), { recursive: true });
   fs.copyFileSync(path.join(project, "scripts", "build-site.js"), path.join(sandbox, "scripts", "build-site.js"));
   for (const file of ["tactical-foundation.html", "tactical-foundation.css", "tactical-foundation.js", "i18n.js"]) fs.copyFileSync(path.join(project, file), path.join(sandbox, file));
-  for (const name of ["defensive-shape", "attacking-buildup"]) {
+  for (const name of ["defensive-shape", "attacking-buildup", "defensive-warmup", "attacking-warmup"]) {
     for (const extension of ["mp4", "jpg"]) {
       const file = path.join("media", "tactical-foundation", `${name}.${extension}`);
       fs.copyFileSync(path.join(project, file), path.join(sandbox, file));
@@ -26,7 +26,7 @@ test("site build publishes only the intended standalone clips and posters", (t) 
   for (const file of ["tactical-foundation.html", "tactical-foundation.css", "tactical-foundation.js", "i18n.js"]) assert.ok(fs.existsSync(path.join(sandbox, "_site", file)));
   const html = fs.readFileSync(path.join(sandbox, "_site", "tactical-foundation.html"), "utf8");
   for (const file of ["tactical-foundation.css", "tactical-foundation.js", "i18n.js"]) assert.ok(html.includes(`${file}?v=abcdef0`), `${file} is cache-busted`);
-  for (const name of ["defensive-shape", "attacking-buildup"]) {
+  for (const name of ["defensive-shape", "attacking-buildup", "defensive-warmup", "attacking-warmup"]) {
     for (const extension of ["mp4", "jpg"]) {
       const file = path.join("media", "tactical-foundation", `${name}.${extension}`);
       assert.deepEqual(fs.readFileSync(path.join(sandbox, "_site", file)), fs.readFileSync(path.join(project, file)));

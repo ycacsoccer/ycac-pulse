@@ -2,7 +2,7 @@
 // Copies ONLY the site's own files into _site/, which is what CI uploads as
 // the GitHub Pages artifact. Branch-based Pages published the whole repo tree
 // (verifier scripts, plan docs, tests …); this keeps the public site to:
-// pages, stylesheets, runtime scripts, favicon and the two tactical clips.
+// pages, stylesheets, runtime scripts, favicon and the tactical clips.
 //
 // HTML gets cache-busting: local <script src>/<link href> and tactical media
 // gain ?v=<short sha>,
@@ -24,7 +24,7 @@ const INCLUDE = [
   /\.(js|cjs)$/,              // runtime scripts + the verify-*.cjs? no: see ALLOW below
   /\.svg$/,
   /\.ico$/,
-  /^\/?media\/tactical-foundation\/(?:defensive-shape|attacking-buildup)\.(?:mp4|jpg)$/,
+  /^\/?media\/tactical-foundation\/(?:defensive-shape|attacking-buildup|defensive-warmup|attacking-warmup)\.(?:mp4|jpg)$/,
   /^\/?build-info\.json$/,
 ];
 // Explicit carve-outs: tooling that shares a .js/.cjs extension stays out.
