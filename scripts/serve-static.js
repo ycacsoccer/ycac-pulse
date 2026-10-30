@@ -33,6 +33,7 @@ const TYPES = {
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".webp": "image/webp",
+  ".mp4": "video/mp4",
   ".ico": "image/x-icon",
   ".txt": "text/plain; charset=utf-8",
 };
@@ -55,7 +56,31 @@ const server = http.createServer((req, res) => {
       res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" }).end("not found");
       return;
     }
-    res.writeHead(200, { "Content-Type": TYPES[path.extname(file).toLowerCase()] || "application/octet-stream" });
+    const extension = path.extname(file).toLowerCase();
+    const contentType = TYPES[extension] || "application/octet-stream";
+    // Browsers request byte ranges when loading and seeking video. GitHub
+    // Pages supports these; the local server should behave the same way.
+    if (extension === ".mp4") {
+      const size = fs.statSync(file).size;
+      res.setHeader("Accept-Ranges", "bytes");
+      if (req.headers.range) {
+        const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range);
+        const suffix = range && !range[1] ? Number(range[2]) : null;
+        const start = range ? (suffix != null ? Math.max(0, size - suffix) : Number(range[1])) : NaN;
+        const end = range ? (suffix != null || !range[2] ? size - 1 : Math.min(Number(range[2]), size - 1)) : NaN;
+        if (!range || (!range[1] && !range[2]) || suffix === 0 || !Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start >= size || start > end) {
+          res.writeHead(416, { "Content-Range": `bytes */${size}` }).end();
+          return;
+        }
+        res.writeHead(206, { "Content-Type": contentType, "Content-Range": `bytes ${start}-${end}/${size}`, "Content-Length": end - start + 1 });
+        if (req.method === "HEAD") res.end();
+        else fs.createReadStream(file, { start, end }).pipe(res);
+        return;
+      }
+      res.setHeader("Content-Length", size);
+    }
+    res.writeHead(200, { "Content-Type": contentType });
+    if (req.method === "HEAD") { res.end(); return; }
     fs.createReadStream(file).pipe(res);
   } catch (error) {
     res.writeHead(500).end(String(error.message));

@@ -2,9 +2,10 @@
 // Copies ONLY the site's own files into _site/, which is what CI uploads as
 // the GitHub Pages artifact. Branch-based Pages published the whole repo tree
 // (verifier scripts, plan docs, tests …); this keeps the public site to:
-// pages, stylesheets, runtime scripts, favicon.
+// pages, stylesheets, runtime scripts, favicon and the two tactical clips.
 //
-// HTML gets cache-busting: local <script src>/<link href> gain ?v=<short sha>,
+// HTML gets cache-busting: local <script src>/<link href> and tactical media
+// gain ?v=<short sha>,
 // so every deploy changes the asset URLs. GitHub Pages serves subresources with
 // max-age=600 — without this, a reload within those 10 minutes pairs the fresh
 // HTML with yesterday's JS (a half-updated page: new markup, old renderer).
@@ -23,6 +24,7 @@ const INCLUDE = [
   /\.(js|cjs)$/,              // runtime scripts + the verify-*.cjs? no: see ALLOW below
   /\.svg$/,
   /\.ico$/,
+  /^\/?media\/tactical-foundation\/(?:defensive-shape|attacking-buildup)\.(?:mp4|jpg)$/,
   /^\/?build-info\.json$/,
 ];
 // Explicit carve-outs: tooling that shares a .js/.cjs extension stays out.
@@ -61,7 +63,8 @@ const walk = (dir, prefix = "") => {
     const source = path.join(dir, entry.name);
     if (/\.html$/.test(entry.name)) {
       const busted = fs.readFileSync(source, "utf8")
-        .replace(/(src|href)="([^"?]+\.(?:js|css))"/g, `$1="$2?v=${sha.slice(0, 7)}"`);
+        .replace(/(src|href)="([^"?]+\.(?:js|css))"/g, `$1="$2?v=${sha.slice(0, 7)}"`)
+        .replace(/(src|href|poster)="(media\/tactical-foundation\/[^"?]+\.(?:mp4|jpg))"/g, `$1="$2?v=${sha.slice(0, 7)}"`);
       fs.writeFileSync(target, busted);
     } else {
       fs.copyFileSync(source, target);

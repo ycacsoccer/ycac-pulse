@@ -81,6 +81,26 @@ test("a live fixture detail opens every panel for anonymous visitors", async ({ 
   await expect(page.locator("#notes-panel")).toBeVisible();
 });
 
+test("the standalone tactical foundation and both videos are published", async ({ page, request }) => {
+  const errors = watchErrors(page);
+  await page.goto("./tactical-foundation.html");
+  await expect(page.locator("h1")).toContainText("Our Tactical");
+  await expect(page.locator(".team-key")).toContainText("purple team");
+  const videos = page.locator("video");
+  await expect(videos).toHaveCount(2);
+  for (const [index, name] of ["defensive-shape", "attacking-buildup"].entries()) {
+    const video = videos.nth(index);
+    await expect.poll(() => video.evaluate((element) => element.readyState)).toBeGreaterThanOrEqual(1);
+    const response = await request.get(`media/tactical-foundation/${name}.mp4`, { headers: { Range: "bytes=0-31" } });
+    expect([200, 206]).toContain(response.status());
+    expect(response.headers()["content-type"]).toContain("video/mp4");
+    await video.evaluate(async (element) => { element.muted = true; await element.play(); });
+    await expect.poll(() => video.evaluate((element) => element.currentTime)).toBeGreaterThan(0.1);
+    await video.evaluate((element) => element.pause());
+  }
+  expect(errors).toEqual([]);
+});
+
 test("the footer names the build: commit link and relative time", async ({ page }) => {
   await page.goto("./");
   const badge = page.locator("#build-info");
