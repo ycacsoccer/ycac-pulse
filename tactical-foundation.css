@@ -46,7 +46,7 @@ h1, h2 { font-family: Georgia, serif; font-weight: 400; letter-spacing: -.045em;
 .introduction h2, .foundation h2 { margin: .8rem 0 0; color: var(--navy); font-size: clamp(2rem, 4vw, 3.25rem); line-height: 1.08; }
 :lang(ja) .introduction h2, :lang(zh) .introduction h2 { font-size: clamp(1.7rem, 3.5vw, 3rem); line-height: 1.25; }
 .introduction > p { max-width: 31rem; margin: 0 0 .15rem; color: var(--muted); font-size: 1rem; line-height: 1.75; }
-.clips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; }
+.clips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 1.2rem; }
 .clip-card { min-width: 0; background: #fff; border: 1px solid var(--line); }
 .clip-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; min-height: 10.25rem; padding: 1.6rem; }
 .clip-number { color: #986f2c; }
@@ -61,6 +61,10 @@ h1, h2 { font-family: Georgia, serif; font-weight: 400; letter-spacing: -.045em;
 .clip-notes ul { display: grid; gap: .85rem; margin: 1.15rem 0 0; padding: 0; list-style: none; }
 .clip-notes li { position: relative; padding-left: 1.1rem; color: #45566e; font-size: .91rem; line-height: 1.58; }
 .clip-notes li::before { position: absolute; top: .63em; left: 0; width: .38rem; height: .38rem; border-radius: 50%; background: var(--purple); content: ""; }
+.defence-focus { margin-top: 1.6rem; padding: 1.2rem; border-left: 3px solid var(--purple); background: #f5f2fb; }
+.defence-focus h3 { margin: 0; color: var(--navy); font-size: .9rem; line-height: 1.4; }
+.defence-focus ul { margin-top: .9rem; }
+.defence-focus li { color: #33435a; }
 .foundation { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; margin-top: clamp(4rem, 8vw, 6rem); padding-top: 3rem; padding-bottom: 4rem; border-top: 1px solid #cdd6e0; }
 .foundation-copy { max-width: 34rem; color: #45566e; font-size: 1rem; line-height: 1.75; }
 .foundation-copy p { margin: 0 0 1.2rem; }

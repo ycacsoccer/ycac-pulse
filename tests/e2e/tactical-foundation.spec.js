@@ -11,7 +11,13 @@ test("standalone tactical foundation explains both clips without linking to the 
   await expect(page.locator(".team-key")).toContainText("looks blue in the build-up clip");
   await expect(page.locator("#defence-title")).toContainText("Defensive shape");
   await expect(page.locator("#attack-title")).toContainText("Attacking");
-  await expect(page.locator(".clip-card").first().locator("li")).toHaveCount(4);
+  await expect(page.locator(".clip-card").first().locator(".clip-notes > ul > li")).toHaveCount(4);
+  const focus = page.locator(".defence-focus");
+  await expect(focus.locator("li")).toHaveCount(4);
+  await expect(focus.locator("li").nth(0)).toContainText("two forwards defend well");
+  await expect(focus.locator("li").nth(1)).toContainText("passing lanes to the opposition’s central holding midfielders");
+  await expect(focus.locator("li").nth(2)).toContainText("Don’t both press at once");
+  await expect(focus.locator("li").nth(3)).toContainText("tactical plan");
   await expect(page.locator(".clip-card").last().locator("li")).toHaveCount(4);
   await expect(page.locator(".foundation")).toContainText("defending together and building up together");
   await expect(page.locator('a[href$=".html"]')).toHaveCount(0);
@@ -80,6 +86,9 @@ test("prominent language buttons translate the whole page and remember the choic
   await expect(page.locator("#defence-title")).toContainText("守備の形");
   await expect(page.locator("#attack-title")).toContainText("ビルドアップ");
   await expect(page.locator(".clip-card").first().locator("li").first()).toContainText("コンパクト");
+  await expect(page.locator(".defence-focus h3")).toContainText("２トップとボランチ");
+  await expect(page.locator(".defence-focus li").nth(1)).toContainText("パスコースをまず消し");
+  await expect(page.locator(".defence-focus li").nth(2)).toContainText("２人同時に出ない");
   await expect(page.locator(".foundation-copy")).toContainText("全員で守ること");
   await expect(video).toHaveAttribute("aria-label", "守備の形と動きの動画");
   await expect(picker.getByRole("button", { name: "日本語" })).toHaveAttribute("aria-pressed", "true");
@@ -95,6 +104,9 @@ test("prominent language buttons translate the whole page and remember the choic
   await expect(page.locator(".team-key")).toContainText("紫色的一方");
   await expect(page.locator("#defence-title")).toContainText("防守阵型");
   await expect(page.locator("#attack-title")).toContainText("组织与推进");
+  await expect(page.locator(".defence-focus h3")).toContainText("前锋与双后腰");
+  await expect(page.locator(".defence-focus li").nth(1)).toContainText("先封住对方中路后腰的接球路线");
+  await expect(page.locator(".defence-focus li").nth(2)).toContainText("不能两人同时上抢");
   await expect(page.locator(".foundation-copy")).toContainText("一起防守、一起组织进攻");
   await expect(picker.getByRole("button", { name: "简体中文" })).toHaveAttribute("aria-pressed", "true");
   await expect(page).toHaveURL(/lang=zh/);
