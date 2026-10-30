@@ -109,7 +109,7 @@ const check = (ok, label, detail = "") => {
   const ageRows = (ageDistribution.match(/class="age-row /g) || []).length;
   const ageTotal = [...ageDistribution.matchAll(/<strong>(\d+)<\/strong>/g)].reduce((sum, match) => sum + Number(match[1]), 0);
   check(ageRows === 5, "age distribution renders all five bands", `${ageRows} bands`);
-  check(ageTotal === 41, "age distribution covers every active player", `${ageTotal} players`);
+  check(ageTotal === 42, "age distribution covers every active player", `${ageTotal} players`);
 
   check(el("fixtures").innerHTML.includes("fixture") || el("fixtures").innerHTML.includes("No data"), "fixtures render (or empty state)", `${(el("fixtures").innerHTML.match(/class="fixture"/g) || []).length} fixtures`);
   check(el("squad-chips").innerHTML.includes("squad-chip"), "squad chips render");

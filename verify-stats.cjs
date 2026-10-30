@@ -1,8 +1,8 @@
 /* Verifies stats.js against the data in Supabase — the engine's regression
    snapshot (Phase 12 rewired this off gviz; the whole suite now reads one
-   source of truth). The EXPECTED block is the import-time snapshot of
-   16 Oct 2026 (Shinnosuke added 14 Oct — 41 players, not yet used in a
-   match, so every per-player count and tier is unchanged); if the database
+   source of truth). The EXPECTED block is the snapshot updated on
+   27 Oct 2026 (Ryuichi Shiba added — 42 players, not yet used in a
+   match, so every existing per-player count and tier is unchanged); if the database
    has moved on (new results entered, roster edits), mismatches are reported
    rather than silently accepted — bump the snapshot deliberately when that happens.
    Usage: node verify-stats.cjs */
@@ -26,8 +26,8 @@ async function grab(table) {
 }
 
 const EXPECTED = {
-  rows: { players: 41, matches: 15, appearances: 182, goals: 44 },
-  counts: { all: 12, tml: 5, friendly: 7, players: 41, used: 36 },
+  rows: { players: 42, matches: 15, appearances: 182, goals: 44 },
+  counts: { all: 12, tml: 5, friendly: 7, players: 42, used: 36 },
   players: {
     rick: { tml: "5/5", friendly: "7/7", all: "12/12", tier: "core", reliability: 100 },
     urabe: { tml: "5/5", friendly: "7/7", all: "12/12", tier: "core" },
@@ -41,6 +41,7 @@ const EXPECTED = {
     liu_hantang: { tml: "1/5", friendly: "0/7", all: "1/12", tier: "depth" }, // added 06 Oct (first TML appearance)
     ryuji: { tier: "inactive" },
     micah: { tier: "inactive" },
+    ryuichi_shiba: { tml: "0/5", friendly: "0/7", all: "0/12", tier: "inactive" },
   },
 };
 
@@ -117,7 +118,7 @@ async function main() {
   console.log(`  ${missingPhotos} players with no photo yet (coach uploads from the profile page)`);
   console.log(`  ${appearances.filter((app) => !app.minutes).length}/${appearances.length} appearances missing minutes`);
 
-  console.log(`\n${failed ? `${failed} CHECK(S) FAILED — data may have changed since the 16 Oct 2026 snapshot (bump EXPECTED deliberately)` : "All checks passed."}`);
+  console.log(`\n${failed ? `${failed} CHECK(S) FAILED — data may have changed since the 27 Oct 2026 snapshot (bump EXPECTED deliberately)` : "All checks passed."}`);
   process.exit(failed ? 1 : 0);
 }
 

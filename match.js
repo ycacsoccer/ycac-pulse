@@ -23,7 +23,7 @@
   const state = {
     mode: "loading", // loading | ok | missing | error
     match: null, allMatches: [], apps: [], allAppearances: [], goals: [], allGoals: [], signups: [], notes: [], savedSquad: [], injuries: [],
-    playersById: new Map(), seasonIndex: new Map(), discipline: [], bandDrafts: null,
+    playersById: new Map(), seasonIndex: new Map(), discipline: [], bandDrafts: null, reminderDraft: null,
   };
 
   // Coach-only draft of the match squad for an upcoming fixture: formation
@@ -101,6 +101,32 @@
       field.focus();
       field.select();
       $("band-status").textContent = t("bandCopyManual");
+    }
+  }
+
+  function renderReminder(forecast) {
+    const panel = $("reminder-panel");
+    panel.hidden = state.mode !== "ok" || isFinal(state.match) || !window.YCACBandTemplates?.generateReminder;
+    if (panel.hidden) return;
+    if (state.reminderDraft?.id !== state.match.id) {
+      state.reminderDraft = {
+        id: state.match.id,
+        text: YCACBandTemplates.generateReminder(state.match, forecast, window.YCACStandings || {}),
+      };
+    }
+    $("reminder-draft").value = state.reminderDraft.text;
+    $("reminder-status").textContent = "";
+  }
+
+  async function copyReminder() {
+    const field = $("reminder-draft");
+    try {
+      await navigator.clipboard.writeText(field.value);
+      $("reminder-status").textContent = t("reminderCopied");
+    } catch {
+      field.focus();
+      field.select();
+      $("reminder-status").textContent = t("bandCopyManual");
     }
   }
 
@@ -515,6 +541,7 @@
     }
 
     target.innerHTML = blocks.join("");
+    return f;
   }
 
   /* Signups (public): every status is editable on an upcoming fixture — add a
@@ -1022,7 +1049,8 @@
     document.querySelectorAll(".match-panel").forEach((panel) => { panel.hidden = state.mode !== "ok"; });
     if (state.mode !== "ok") { $("goals-panel").hidden = true; return; }
     renderBand();
-    renderForecast();
+    const forecast = renderForecast();
+    renderReminder(forecast);
     renderDiscipline();
     renderSquad();
     renderLineup();
@@ -1047,6 +1075,10 @@
     const button = event.target.closest && event.target.closest("[data-band-copy]");
     if (button) copyBand(button.dataset.bandCopy);
   });
+  $("reminder-draft").addEventListener("input", (event) => {
+    if (state.reminderDraft) state.reminderDraft.text = event.target.value;
+  });
+  $("reminder-copy").addEventListener("click", copyReminder);
 
   $("squad-formation").addEventListener("change", (event) => {
     squad.formation = event.target.value;

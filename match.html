@@ -140,6 +140,18 @@
         <div id="match-band" class="band-drafts"></div>
         <p id="band-status" class="signup-notice" role="status" aria-live="polite"></p>
       </section>
+
+      <section id="reminder-panel" class="panel match-panel" hidden>
+        <div class="section-heading"><div>
+          <h2 data-i18n="reminderTitle">Pre-Match Reminder</h2>
+          <p class="fc-intro" data-i18n="reminderIntro">A bilingual draft based on match details and the forecast. Check the standings date, squad, and default timings and format before sharing. Edits are not saved or posted automatically.</p>
+        </div></div>
+        <div class="band-draft">
+          <div class="band-draft-heading"><label for="reminder-draft" data-i18n="reminderLabel">Reminder draft</label><button id="reminder-copy" type="button" class="quiet-button small" data-i18n="reminderCopy">Copy reminder</button></div>
+          <textarea id="reminder-draft" rows="24" spellcheck="false"></textarea>
+        </div>
+        <p id="reminder-status" class="signup-notice" role="status" aria-live="polite"></p>
+      </section>
     </main>
 
     <footer><span data-i18n="footer">YC&amp;AC Pulse · Official Top Team of Yokohama Country &amp; Athletic Club</span> <a href="https://ycac.jp" target="_blank" rel="noreferrer">ycac.jp</a> <span id="build-info" class="build-info" hidden></span></footer>

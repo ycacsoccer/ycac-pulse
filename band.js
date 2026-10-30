@@ -42,11 +42,16 @@
     };
     return { meet: time(-60), warmup: time(-40), kickoff: time(0) };
   }
+  function competitionNames(competition) {
+    return {
+      ja: competition === "TML Division 3" ? "TMLディビジョン3"
+        : /friendly/i.test(competition || "") ? "親善試合" : competition || TBC,
+      en: /friendly/i.test(competition || "") ? "Friendly Match" : competition || TBC,
+    };
+  }
   function generate(match) {
     const times = schedule(match.kickoff);
-    const competitionJA = match.competition === "TML Division 3" ? "TMLディビジョン3"
-      : /friendly/i.test(match.competition || "") ? "親善試合" : match.competition || TBC;
-    const competitionEN = /friendly/i.test(match.competition || "") ? "Friendly Match" : match.competition || TBC;
+    const { ja: competitionJA, en: competitionEN } = competitionNames(match.competition);
     const competition = `${competitionJA} / ${competitionEN}`;
     const title = (ja, en) => `${competitionJA} vs ${match.opponent || TBC} [${ja}] / ${competitionEN} vs ${match.opponent || TBC} [${en}]`;
     const deadlines = { standard: standardDeadline(match.date), priority: priorityDeadline(match.date) };
@@ -121,7 +126,93 @@ For YC&AC Members + Starting GK.
 Priority sign-up closes 15 days before match day at 9pm Japan time.`;
     return { standard, priority, standardTitle: title("STANDARD", "STANDARD"), priorityTitle: title("YC&AC 優先", "YC&AC Priority"), deadlines, alerts };
   }
-  const api = { generate, formatDate, schedule, priorityDeadline, standardDeadline };
+
+  // The reminder is a draft, not a declaration that a squad has been confirmed.
+  // Only use the forecast's table for its own competition and before the match;
+  // otherwise fall back to recorded form / meetings without inventing a ranking.
+  function generateReminder(match = {}, forecast = null, standings = {}) {
+    const times = schedule(match.kickoff);
+    const competition = competitionNames(match.competition);
+    const competitionLabel = competition.ja === competition.en ? competition.ja : `${competition.ja} / ${competition.en}`;
+    const opponent = match.opponent || TBC;
+    const sameCompetition = Boolean(match.competition && standings.competition
+      && String(match.competition).trim().toLowerCase() === String(standings.competition).trim().toLowerCase());
+    const tableDate = dateOf(standings.updated);
+    const matchDate = dateOf(match.date);
+    const tableUsable = sameCompetition && (!tableDate || !matchDate || tableDate <= matchDate);
+    const tableSide = (side) => {
+      if (!side?.row || !Number.isInteger(Number(side.pos)) || Number(side.pos) < 1) return null;
+      const keys = ["p", "w", "d", "l", "gf", "ga"];
+      if (keys.some((key) => side.row[key] == null || side.row[key] === "" || !Number.isInteger(Number(side.row[key])) || Number(side.row[key]) < 0)) return null;
+      const values = Object.fromEntries(keys.map((key) => [key, Number(side.row[key])]));
+      const points = side.row.pts;
+      const pts = points != null && points !== "" && Number.isInteger(Number(points)) && Number(points) >= 0 ? Number(points) : null;
+      return values.p === values.w + values.d + values.l ? { pos: Number(side.pos), ...values, pts } : null;
+    };
+    const us = tableUsable ? tableSide(forecast?.table?.us) : null;
+    const them = tableUsable ? tableSide(forecast?.table?.them) : null;
+    const haveTable = Boolean(us && them);
+    const ordinal = (n) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" }[n % 10] || "th")}`;
+    const count = (n, singular, plural = `${singular}s`) => `${n} ${n === 1 ? singular : plural}`;
+    const recordEN = (r) => `${count(r.w, "win")}, ${count(r.d, "draw")} and ${count(r.l, "loss", "losses")}`;
+    const recordJA = (r) => `${r.w}勝${r.d}分${r.l}敗`;
+
+    const introJA = match.opponent
+      ? `次の試合は${match.opponent}との${match.competition ? competition.ja : "一戦"}です！⚽️`
+      : "次の試合に向けて、準備をお願いします！⚽️";
+    const introEN = match.opponent
+      ? `Our next match is against ${match.opponent}${match.competition ? ` (${competition.en})` : ""}! ⚽️`
+      : "Our next match is coming up! ⚽️";
+    const tableJA = haveTable
+      ? `${tableDate ? `${standings.updated}時点で、` : ""}相手はリーグ${them.pos}位。${them.p}試合で${recordJA(them)}、${them.gf}得点・${them.ga}失点です。僕たちは${us.pos}位（${recordJA(us)}）です。`
+      : "";
+    const tableEN = haveTable
+      ? `${tableDate ? `As of ${standings.updated}, our` : "Our"} opponents are ${ordinal(them.pos)} in the league with ${recordEN(them)} in ${count(them.p, "match", "matches")}, scoring ${them.gf} and conceding ${them.ga}. We are ${ordinal(us.pos)} with ${recordEN(us)}.`
+      : "";
+    const canCloseGap = haveTable && them.pos < us.pos && them.pts != null && us.pts != null && them.pts > us.pts;
+    const gapJA = canCloseGap ? "上位との差を縮めるためにも、大事な一戦になります。" : "";
+    const gapEN = canCloseGap ? "This is an important opportunity to close the gap with the teams above us." : "";
+
+    const beforeMatch = (row) => matchDate && dateOf(row.date) && row.date < match.date;
+    const form = !haveTable && Array.isArray(forecast?.form)
+      ? forecast.form.filter((row) => beforeMatch(row) && ["win", "draw", "loss"].includes(row.outcome)) : [];
+    const formRecord = { w: form.filter((row) => row.outcome === "win").length, d: form.filter((row) => row.outcome === "draw").length, l: form.filter((row) => row.outcome === "loss").length };
+    const formJA = form.length ? `直近${form.length}試合の記録は${recordJA(formRecord)}です。` : "";
+    const formEN = form.length === 1 ? `Our most recent recorded match ended in ${form[0].outcome === "win" ? "a win" : form[0].outcome === "draw" ? "a draw" : "a loss"}.`
+      : form.length ? `Our last ${count(form.length, "recorded match", "recorded matches")} produced ${recordEN(formRecord)}.` : "";
+
+    const meetings = Array.isArray(forecast?.h2h?.rows) ? forecast.h2h.rows.filter((row) => beforeMatch(row)
+      && row.ycac_goals != null && row.opponent_goals != null
+      && Number.isFinite(Number(row.ycac_goals)) && Number.isFinite(Number(row.opponent_goals))) : [];
+    const h2hRecord = {
+      w: meetings.filter((row) => Number(row.ycac_goals) > Number(row.opponent_goals)).length,
+      d: meetings.filter((row) => Number(row.ycac_goals) === Number(row.opponent_goals)).length,
+      l: meetings.filter((row) => Number(row.ycac_goals) < Number(row.opponent_goals)).length,
+    };
+    const h2hJA = meetings.length ? `直近${meetings.length}回の対戦記録は${recordJA(h2hRecord)}です。` : "";
+    const h2hEN = meetings.length === 1 ? `We ${h2hRecord.w ? "won" : h2hRecord.d ? "drew" : "lost"} our most recent recorded meeting.`
+      : meetings.length ? `In our last ${count(meetings.length, "recorded meeting")}, our record is ${recordEN(h2hRecord)}.` : "";
+    const motivationJA = sameCompetition
+      ? "チーム全員で声を掛け合い、勝ち点3を取りにいきましょう！💪"
+      : "チーム全員で声を掛け合い、良い試合にしましょう！💪";
+    const motivationEN = sameCompetition
+      ? "Let’s stay united, communicate well, and fight together for all three points! 💪"
+      : "Let’s stay united, communicate well, and put in a strong performance together! 💪";
+
+    return [
+      `⚽ 試合情報 / Match Information\n\n📅 ${formatDate(match.date)}\n🆚 ${opponent} | ${competitionLabel}\n🏟 ${match.venue || TBC} | 11人制 / 11-a-side\n🕔 集合 / Meet: ${times.meet}\n🔥 アップ / Warm-up: ${times.warmup}\n⚽ KO: ${times.kickoff} | 40分 × 2 / 40 mins × 2`,
+      "━━━━━━━━━━━━━━",
+      "@All",
+      "皆さん、お疲れ様です！",
+      introJA, tableJA, formJA, h2hJA, gapJA, motivationJA,
+      "試合の詳細とメンバーを各自ご確認ください！\n当日もよろしくお願いします！",
+      "━━━━━━━━━━━━━━",
+      "Hello everyone!",
+      introEN, tableEN, formEN, h2hEN, gapEN, motivationEN,
+      "Please check the match details and matchday squad!\nSee you all on matchday!",
+    ].filter(Boolean).join("\n\n");
+  }
+  const api = { generate, generateReminder, formatDate, schedule, priorityDeadline, standardDeadline };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (typeof window !== "undefined") window.YCACBandTemplates = api;
 })();

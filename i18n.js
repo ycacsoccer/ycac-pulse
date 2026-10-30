@@ -273,6 +273,9 @@ const YCACI18n = (() => {
     bandSetupIntro: "STANDARD closes 2 days before the match at 9pm; Priority closes 15 days before at 9pm. All settings below use Japan time. Set deadlines and both alerts manually in BAND; these instructions do not schedule notifications.",
     bandDeadlineAlert: "Set deadline reminder (one day before closing): {date}", bandMatchAlert: "Set match reminder (day before the match): {date}",
     bandCopyManual: "Clipboard unavailable. The text is selected — copy it manually.",
+    reminderTitle: "Pre-Match Reminder", reminderLabel: "Reminder draft", reminderCopy: "Copy reminder",
+    reminderIntro: "A bilingual draft based on match details and the forecast. Check the standings date, squad, and default timings and format before sharing. Edits are not saved or posted automatically.",
+    reminderCopied: "Copied — ready to paste.",
     // team page (Phase 9)
     navTeam: "Team",
     teamTitle: "Team guidelines | YC&AC Pulse",
@@ -541,6 +544,9 @@ const YCACI18n = (() => {
     bandSetupIntro: "STANDARDは試合2日前の21時、優先申込は15日前の21時に締め切ります。以下はすべて日本時間です。締切と両方の通知をBANDで手動設定してください。この手順では通知は自動予約されません。",
     bandDeadlineAlert: "締切リマインダーを設定（締切前日）：{date}", bandMatchAlert: "試合リマインダーを設定（試合前日）：{date}",
     bandCopyManual: "クリップボードを使用できません。選択された文章を手動でコピーしてください。",
+    reminderTitle: "試合前リマインダー", reminderLabel: "リマインダーの下書き", reminderCopy: "リマインダーをコピー",
+    reminderIntro: "試合情報と予想をもとに作成した日英併記の下書きです。共有前に順位表の日付、メンバー、初期設定の時間と試合形式を確認してください。編集内容は保存・自動投稿されません。",
+    reminderCopied: "コピーしました。貼り付けてください。",
     // team page (Phase 9)
     navTeam: "チーム",
     teamTitle: "チームガイドライン | YC&AC Pulse",
@@ -809,6 +815,9 @@ const YCACI18n = (() => {
     bandSetupIntro: "STANDARD于比赛前2天晚上9点截止，优先报名于比赛前15天晚上9点截止。以下均为日本时间。请在BAND中手动设置截止时间和两项提醒，此说明不会自动安排通知。",
     bandDeadlineAlert: "设置截止提醒（截止前一天）：{date}", bandMatchAlert: "设置比赛提醒（比赛前一天）：{date}",
     bandCopyManual: "无法访问剪贴板。已选中文本，请手动复制。",
+    reminderTitle: "赛前提醒", reminderLabel: "提醒草稿", reminderCopy: "复制提醒",
+    reminderIntro: "根据比赛信息和赛前预测生成的日英双语草稿。分享前请核对积分榜日期、参赛名单及默认时间和赛制。编辑内容不会保存或自动发布。",
+    reminderCopied: "已复制，可粘贴。",
     // team page (Phase 9)
     navTeam: "球队",
     teamTitle: "球队准则 | YC&AC Pulse",

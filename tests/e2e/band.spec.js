@@ -18,7 +18,7 @@ test("upcoming matches offer both supplied BAND templates and copy the edited dr
   await page.goto("/match.html?id=x1");
   const panel = page.locator("#band-panel");
   await expect(panel).toBeVisible();
-  await expect(page.locator("main > section").last()).toHaveAttribute("id", "band-panel");
+  await expect(page.locator("#band-panel + section")).toHaveAttribute("id", "reminder-panel");
   await expect(page.locator("#band-standard")).toHaveValue(generate(example).standard);
   await expect(page.locator("#band-priority")).toHaveValue(generate(example).priority);
   await expect(page.locator("#band-standardTitle")).toHaveValue(generate(example).standardTitle);
