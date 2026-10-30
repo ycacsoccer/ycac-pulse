@@ -13,7 +13,7 @@ test("site build publishes only the intended standalone clips and posters", (t) 
   fs.mkdirSync(path.join(sandbox, "scripts"), { recursive: true });
   fs.mkdirSync(path.join(sandbox, "media", "tactical-foundation"), { recursive: true });
   fs.copyFileSync(path.join(project, "scripts", "build-site.js"), path.join(sandbox, "scripts", "build-site.js"));
-  for (const file of ["tactical-foundation.html", "tactical-foundation.css"]) fs.copyFileSync(path.join(project, file), path.join(sandbox, file));
+  for (const file of ["tactical-foundation.html", "tactical-foundation.css", "tactical-foundation.js", "i18n.js"]) fs.copyFileSync(path.join(project, file), path.join(sandbox, file));
   for (const name of ["defensive-shape", "attacking-buildup"]) {
     for (const extension of ["mp4", "jpg"]) {
       const file = path.join("media", "tactical-foundation", `${name}.${extension}`);
@@ -23,8 +23,9 @@ test("site build publishes only the intended standalone clips and posters", (t) 
   fs.writeFileSync(path.join(sandbox, "media", "tactical-foundation", "unrelated.mp4"), "must not be published");
   fs.writeFileSync(path.join(sandbox, ".env"), "must not be published");
   execFileSync(process.execPath, [path.join(sandbox, "scripts", "build-site.js"), "--sha", "abcdef0123456789"], { cwd: sandbox, encoding: "utf8" });
-  for (const file of ["tactical-foundation.html", "tactical-foundation.css"]) assert.ok(fs.existsSync(path.join(sandbox, "_site", file)));
+  for (const file of ["tactical-foundation.html", "tactical-foundation.css", "tactical-foundation.js", "i18n.js"]) assert.ok(fs.existsSync(path.join(sandbox, "_site", file)));
   const html = fs.readFileSync(path.join(sandbox, "_site", "tactical-foundation.html"), "utf8");
+  for (const file of ["tactical-foundation.css", "tactical-foundation.js", "i18n.js"]) assert.ok(html.includes(`${file}?v=abcdef0`), `${file} is cache-busted`);
   for (const name of ["defensive-shape", "attacking-buildup"]) {
     for (const extension of ["mp4", "jpg"]) {
       const file = path.join("media", "tactical-foundation", `${name}.${extension}`);

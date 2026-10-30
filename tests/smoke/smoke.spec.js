@@ -86,6 +86,13 @@ test("the standalone tactical foundation and both videos are published", async (
   await page.goto("./tactical-foundation.html");
   await expect(page.locator("h1")).toContainText("Our Tactical");
   await expect(page.locator(".team-key")).toContainText("purple team");
+  await page.getByRole("button", { name: "日本語" }).click();
+  await expect(page.locator("#page-title")).toContainText("戦術の土台");
+  await expect(page.locator("#defence-title")).toContainText("守備の形");
+  await page.getByRole("button", { name: "简体中文" }).click();
+  await expect(page.locator("#page-title")).toContainText("战术基础");
+  await expect(page.locator("#defence-title")).toContainText("防守阵型");
+  await page.getByRole("button", { name: "English" }).click();
   const videos = page.locator("video");
   await expect(videos).toHaveCount(2);
   for (const [index, name] of ["defensive-shape", "attacking-buildup"].entries()) {

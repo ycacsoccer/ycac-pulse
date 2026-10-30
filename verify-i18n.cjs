@@ -49,7 +49,7 @@ const collect = (regex, source, where) => {
   while ((match = regex.exec(source))) usedKeys.set(match[1], where);
 };
 
-for (const file of ["index.html", "login.html", "coach.html", "players.html", "player.html", "admin.html", "match.html", "team.html"]) {
+for (const file of ["index.html", "login.html", "coach.html", "players.html", "player.html", "admin.html", "match.html", "team.html", "tactical-foundation.html"]) {
   collect(/data-i18n(?:-title|-html|-placeholder|-aria)?="([^"]+)"/g, read(file), file);
 }
 for (const file of ["app.js", "login.js", "auth.js", "coach.js", "players.js", "player.js", "admin.js", "match.js", "team.js"]) {
