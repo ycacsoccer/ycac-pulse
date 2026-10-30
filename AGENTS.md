@@ -1,8 +1,8 @@
-# Fixture and standings updates
+# Project updates and deployment
 
-After running fixture or standings updates, verify the changes, then always
-commit and push the update-related files, then deploy. Include any required
-verification snapshot changes, but do not include unrelated work.
+After making requested changes, verify them, then always commit and push the
+task-related files to `main` to deploy. Include any required verification
+snapshot changes, but do not include unrelated work.
 
 Pushing to `main` triggers `.github/workflows/pages.yml`. Watch that workflow
 through verification, deployment, and post-deploy smoke tests; confirm the
