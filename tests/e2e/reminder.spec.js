@@ -16,6 +16,8 @@ async function setup(page, fixture = match) {
 test("upcoming reminder follows the sign-up drafts, uses the forecast and copies edits", async ({ page }) => {
   const api = await setup(page);
   const errors = watchErrors(page);
+  const now = new Date("2026-10-30T03:00:00Z");
+  await page.clock.install({ time: now });
   await page.addInitScript(() => {
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (text) => { window.copiedReminder = text; } } });
   });
@@ -26,7 +28,7 @@ test("upcoming reminder follows the sign-up drafts, uses the forecast and copies
   await expect(page.locator("#band-panel + section")).toHaveAttribute("id", "reminder-panel");
   await expect(panel.locator("h2")).toHaveText("Pre-Match Reminder");
   const data = forecast.build({ match, finals: fixtures.matches.filter((row) => row.ycac_goals != null && row.opponent_goals != null), standingsRows: standings.rows, goals: fixtures.goals });
-  const generated = generateReminder(match, data, standings);
+  const generated = generateReminder(match, data, standings, now);
   await expect(draft).toHaveValue(generated);
   await expect(draft).toHaveValue(/Meet: 17:00/);
   await expect(draft).toHaveValue(/Warm-up: 17:20/);
@@ -34,7 +36,11 @@ test("upcoming reminder follows the sign-up drafts, uses the forecast and copies
   await expect(draft).toHaveValue(/in the league with/);
   await expect(draft).toHaveValue(/@All/);
   await expect(draft).toHaveValue(/皆さん、お疲れ様です！/);
-  await expect(draft).toHaveValue(/Hello everyone!/);
+  await expect(draft).toHaveValue(/Hi everyone!/);
+  await expect(draft).toHaveValue(/明日はKilimanjaro FC/);
+  await expect(draft).toHaveValue(/Tomorrow we’re up against Kilimanjaro FC/);
+  await expect(draft).toHaveValue(/See you tomorrow!/);
+  await expect(draft).not.toHaveValue(/as of|時点|2026-10-26/i);
 
   const edited = `${generated}\n\nAdditional team note`;
   await draft.fill(edited);
@@ -55,6 +61,21 @@ test("upcoming reminder follows the sign-up drafts, uses the forecast and copies
     expect(await fitsViewport(page)).toBe(true);
   }
   expect(api.denied).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test("a reloaded reminder uses Japan's current date at midnight", async ({ page }) => {
+  await setup(page);
+  const errors = watchErrors(page);
+  await page.clock.install({ time: new Date("2026-10-30T14:30:00Z") }); // 23:30 in Japan
+  await page.goto("/match.html?id=x1");
+  const draft = page.locator("#reminder-draft");
+  await expect(draft).toHaveValue(/See you tomorrow!/);
+  await page.clock.setFixedTime(new Date("2026-10-30T15:00:00Z")); // 00:00 in Japan
+  await page.reload();
+  await expect(draft).toHaveValue(/今日はKilimanjaro FC/);
+  await expect(draft).toHaveValue(/It’s matchday! We’re playing Kilimanjaro FC today/);
+  await expect(draft).not.toHaveValue(/tomorrow|明日/i);
   expect(errors).toEqual([]);
 });
 

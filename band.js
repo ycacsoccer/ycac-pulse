@@ -1,5 +1,5 @@
-/* Copy-ready BAND descriptions. Pure, bilingual and independent of the UI
-   language; drafts never post to BAND or write to the match database. */
+/* Copy-ready BAND descriptions. Bilingual and independent of the UI language;
+   drafts never post to BAND or write to the match database. */
 (() => {
   const TBC = "未定 / TBC";
   const weekdaysJA = ["日", "月", "火", "水", "木", "金", "土"];
@@ -10,6 +10,12 @@
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return null;
     const date = new Date(`${value}T00:00:00Z`);
     return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value ? date : null;
+  }
+  function todayInJapan(now) {
+    const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit",
+    }).formatToParts(now).map((part) => [part.type, part.value]));
+    return `${parts.year}-${parts.month}-${parts.day}`;
   }
   function formatDate(value) {
     const date = dateOf(value);
@@ -127,10 +133,9 @@ Priority sign-up closes 15 days before match day at 9pm Japan time.`;
     return { standard, priority, standardTitle: title("STANDARD", "STANDARD"), priorityTitle: title("YC&AC 優先", "YC&AC Priority"), deadlines, alerts };
   }
 
-  // The reminder is a draft, not a declaration that a squad has been confirmed.
-  // Only use the forecast's table for its own competition and before the match;
-  // otherwise fall back to recorded form / meetings without inventing a ranking.
-  function generateReminder(match = {}, forecast = null, standings = {}) {
+  // Relative wording follows the current date in Japan (injectable for tests).
+  // Do not declare a squad confirmed or use another competition's table.
+  function generateReminder(match = {}, forecast = null, standings = {}, now = new Date()) {
     const times = schedule(match.kickoff);
     const competition = competitionNames(match.competition);
     const competitionLabel = competition.ja === competition.en ? competition.ja : `${competition.ja} / ${competition.en}`;
@@ -139,6 +144,8 @@ Priority sign-up closes 15 days before match day at 9pm Japan time.`;
       && String(match.competition).trim().toLowerCase() === String(standings.competition).trim().toLowerCase());
     const tableDate = dateOf(standings.updated);
     const matchDate = dateOf(match.date);
+    const today = dateOf(todayInJapan(now));
+    const daysUntil = matchDate && today ? Math.round((matchDate - today) / 86400000) : null;
     const tableUsable = sameCompetition && (!tableDate || !matchDate || tableDate <= matchDate);
     const tableSide = (side) => {
       if (!side?.row || !Number.isInteger(Number(side.pos)) || Number(side.pos) < 1) return null;
@@ -154,50 +161,66 @@ Priority sign-up closes 15 days before match day at 9pm Japan time.`;
     const haveTable = Boolean(us && them);
     const ordinal = (n) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" }[n % 10] || "th")}`;
     const count = (n, singular, plural = `${singular}s`) => `${n} ${n === 1 ? singular : plural}`;
-    const recordEN = (r) => `${count(r.w, "win")}, ${count(r.d, "draw")} and ${count(r.l, "loss", "losses")}`;
-    const recordJA = (r) => `${r.w}勝${r.d}分${r.l}敗`;
+    const recordEN = (r) => {
+      const parts = [r.w && count(r.w, "win"), r.d && count(r.d, "draw"), r.l && count(r.l, "loss", "losses")].filter(Boolean);
+      if (!parts.length) return "0 wins";
+      return parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
+    };
+    const recordJA = (r) => [r.w && `${r.w}勝`, r.d && `${r.d}分`, r.l && `${r.l}敗`].filter(Boolean).join("") || "0勝";
 
-    const introJA = match.opponent
-      ? `次の試合は${match.opponent}との${match.competition ? competition.ja : "一戦"}です！⚽️`
-      : "次の試合に向けて、準備をお願いします！⚽️";
-    const introEN = match.opponent
-      ? `Our next match is against ${match.opponent}${match.competition ? ` (${competition.en})` : ""}! ⚽️`
-      : "Our next match is coming up! ⚽️";
+    const whenJA = daysUntil === 1 ? "明日は" : daysUntil === 0 ? "今日は" : daysUntil > 1 ? "次の試合は" : "今回の試合は";
+    const matchTypeJA = sameCompetition ? "リーグ戦" : match.competition ? competition.ja : "試合";
+    const introJA = `${whenJA}${match.opponent ? `${match.opponent}との` : ""}${matchTypeJA}です！⚽️`;
+    const introEN = daysUntil === 1
+      ? match.opponent ? `Tomorrow we’re up against ${match.opponent}! ⚽️` : "We’ve got a match tomorrow! ⚽️"
+      : daysUntil === 0
+        ? match.opponent ? `It’s matchday! We’re playing ${match.opponent} today. ⚽️` : "It’s matchday! ⚽️"
+        : daysUntil > 1
+          ? match.opponent ? `Next up, we’ve got ${match.opponent}! ⚽️` : "We’ve got a match coming up! ⚽️"
+          : match.opponent ? `Here are the details for our match against ${match.opponent}. ⚽️` : "Here are the match details. ⚽️";
+    // Only describe their attack as strong with a meaningful, high-scoring sample.
+    const strongAttack = haveTable && them.p >= 3 && them.gf / them.p >= 2.5;
     const tableJA = haveTable
-      ? `${tableDate ? `${standings.updated}時点で、` : ""}相手はリーグ${them.pos}位。${them.p}試合で${recordJA(them)}、${them.gf}得点・${them.ga}失点です。僕たちは${us.pos}位（${recordJA(us)}）です。`
+      ? `相手はリーグ${them.pos}位${them.p ? `で、${them.p}試合を終えて${recordJA(them)}。${them.gf}得点・${them.ga}失点${strongAttack ? "と、得点力のあるチーム" : ""}` : ""}です。僕たちは${us.pos}位${us.p ? `で、${recordJA(us)}` : ""}です。`
       : "";
     const tableEN = haveTable
-      ? `${tableDate ? `As of ${standings.updated}, our` : "Our"} opponents are ${ordinal(them.pos)} in the league with ${recordEN(them)} in ${count(them.p, "match", "matches")}, scoring ${them.gf} and conceding ${them.ga}. We are ${ordinal(us.pos)} with ${recordEN(us)}.`
+      ? `They’re ${ordinal(them.pos)} in the league${them.p ? ` with ${recordEN(them)} from ${count(them.p, "game")}. They’ve scored ${them.gf} and conceded ${them.ga} so far${strongAttack ? ", so we’ll need to stay sharp at the back" : ""}` : ""}. We’re ${ordinal(us.pos)}${us.p ? ` with ${recordEN(us)}` : ""}.`
       : "";
     const canCloseGap = haveTable && them.pos < us.pos && them.pts != null && us.pts != null && them.pts > us.pts;
-    const gapJA = canCloseGap ? "上位との差を縮めるためにも、大事な一戦になります。" : "";
-    const gapEN = canCloseGap ? "This is an important opportunity to close the gap with the teams above us." : "";
+    const gapJA = canCloseGap ? "上位との差を縮めるチャンスです！" : "";
+    const gapEN = canCloseGap ? "A good chance for us to close the gap!" : "";
 
     const beforeMatch = (row) => matchDate && dateOf(row.date) && row.date < match.date;
     const form = !haveTable && Array.isArray(forecast?.form)
       ? forecast.form.filter((row) => beforeMatch(row) && ["win", "draw", "loss"].includes(row.outcome)) : [];
     const formRecord = { w: form.filter((row) => row.outcome === "win").length, d: form.filter((row) => row.outcome === "draw").length, l: form.filter((row) => row.outcome === "loss").length };
-    const formJA = form.length ? `直近${form.length}試合の記録は${recordJA(formRecord)}です。` : "";
-    const formEN = form.length === 1 ? `Our most recent recorded match ended in ${form[0].outcome === "win" ? "a win" : form[0].outcome === "draw" ? "a draw" : "a loss"}.`
-      : form.length ? `Our last ${count(form.length, "recorded match", "recorded matches")} produced ${recordEN(formRecord)}.` : "";
-
     const meetings = Array.isArray(forecast?.h2h?.rows) ? forecast.h2h.rows.filter((row) => beforeMatch(row)
       && row.ycac_goals != null && row.opponent_goals != null
       && Number.isFinite(Number(row.ycac_goals)) && Number.isFinite(Number(row.opponent_goals))) : [];
+    // One recorded game can be both our form and the only meeting: say it once.
+    const sameOnlyGame = form.length === 1 && meetings.length === 1 && form[0].date === meetings[0].date
+      && form[0].opponent && String(form[0].opponent).toLowerCase() === String(meetings[0].opponent || "").toLowerCase()
+      && form[0].gf === Number(meetings[0].ycac_goals) && form[0].ga === Number(meetings[0].opponent_goals);
+    const formJA = form.length && !sameOnlyGame ? `僕たちの直近${form.length}試合は${recordJA(formRecord)}です。` : "";
+    const formEN = !sameOnlyGame && form.length === 1 ? `Our last game ended in ${form[0].outcome === "win" ? "a win" : form[0].outcome === "draw" ? "a draw" : "a loss"}.`
+      : !sameOnlyGame && form.length ? `We’ve had ${recordEN(formRecord)} in our last ${count(form.length, "game")}.` : "";
     const h2hRecord = {
       w: meetings.filter((row) => Number(row.ycac_goals) > Number(row.opponent_goals)).length,
       d: meetings.filter((row) => Number(row.ycac_goals) === Number(row.opponent_goals)).length,
       l: meetings.filter((row) => Number(row.ycac_goals) < Number(row.opponent_goals)).length,
     };
-    const h2hJA = meetings.length ? `直近${meetings.length}回の対戦記録は${recordJA(h2hRecord)}です。` : "";
-    const h2hEN = meetings.length === 1 ? `We ${h2hRecord.w ? "won" : h2hRecord.d ? "drew" : "lost"} our most recent recorded meeting.`
-      : meetings.length ? `In our last ${count(meetings.length, "recorded meeting")}, our record is ${recordEN(h2hRecord)}.` : "";
+    const h2hJA = meetings.length === 1 ? `前回の対戦は${h2hRecord.w ? "勝ち" : h2hRecord.d ? "引き分け" : "負け"}でした。`
+      : meetings.length ? `直近${meetings.length}回の対戦は${recordJA(h2hRecord)}です。` : "";
+    const h2hEN = meetings.length === 1 ? h2hRecord.d ? "Our last game against them ended in a draw." : `We ${h2hRecord.w ? "won" : "lost"} our last game against them.`
+      : meetings.length ? `We’ve had ${recordEN(h2hRecord)} in our last ${count(meetings.length, "game")} against them.` : "";
     const motivationJA = sameCompetition
-      ? "チーム全員で声を掛け合い、勝ち点3を取りにいきましょう！💪"
-      : "チーム全員で声を掛け合い、良い試合にしましょう！💪";
+      ? "みんなで声を掛け合って、勝ち点3を取りにいきましょう！💪"
+      : "みんなで声を掛け合って、いい試合にしましょう！💪";
     const motivationEN = sameCompetition
-      ? "Let’s stay united, communicate well, and fight together for all three points! 💪"
-      : "Let’s stay united, communicate well, and put in a strong performance together! 💪";
+      ? "Let’s keep talking, work for each other and go for the three points! 💪"
+      : "Let’s keep talking, work for each other and enjoy the game! 💪";
+    const closingJA = daysUntil === 1 ? "それでは、明日よろしくお願いします！" : daysUntil === 0 ? "それでは、今日もよろしくお願いします！" : daysUntil > 1 ? "当日はよろしくお願いします！" : "よろしくお願いします！";
+    const closingEN = daysUntil === 1 ? "See you tomorrow!" : daysUntil >= 0 && daysUntil != null ? "See you at the match!" : "Thanks, everyone!";
 
     return [
       `⚽ 試合情報 / Match Information\n\n📅 ${formatDate(match.date)}\n🆚 ${opponent} | ${competitionLabel}\n🏟 ${match.venue || TBC} | 11人制 / 11-a-side\n🕔 集合 / Meet: ${times.meet}\n🔥 アップ / Warm-up: ${times.warmup}\n⚽ KO: ${times.kickoff} | 40分 × 2 / 40 mins × 2`,
@@ -205,11 +228,11 @@ Priority sign-up closes 15 days before match day at 9pm Japan time.`;
       "@All",
       "皆さん、お疲れ様です！",
       introJA, tableJA, formJA, h2hJA, gapJA, motivationJA,
-      "試合の詳細とメンバーを各自ご確認ください！\n当日もよろしくお願いします！",
+      `試合の詳細とメンバーも各自チェックお願いします！\n${closingJA}`,
       "━━━━━━━━━━━━━━",
-      "Hello everyone!",
+      "Hi everyone!",
       introEN, tableEN, formEN, h2hEN, gapEN, motivationEN,
-      "Please check the match details and matchday squad!\nSee you all on matchday!",
+      `Please check the match details and squad. ${closingEN}`,
     ].filter(Boolean).join("\n\n");
   }
   const api = { generate, generateReminder, formatDate, schedule, priorityDeadline, standardDeadline };

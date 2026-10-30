@@ -92,29 +92,34 @@ test("dates and deadlines are timezone-independent, including month/year rollove
   assert.equal(schedule("9:05").warmup, "08:25");
 });
 
-test("pre-match reminder uses match details and the forecast's dated league table in both languages", () => {
+test("pre-match reminder uses match details and a casual league summary without the source date", () => {
   const standings = { competition: "TML Division 3", updated: "2026-10-26", rows: [
     { team: "Kilimanjaro FC", p: 5, w: 3, d: 0, l: 2, gf: 15, ga: 17, pts: 9 },
     { team: "YCAC Pulse", p: 5, w: 2, d: 1, l: 2, gf: 16, ga: 11, pts: 7, us: true },
   ] };
   const data = forecast.build({ match, standingsRows: standings.rows });
-  const text = generateReminder(match, data, standings);
+  const text = generateReminder(match, data, standings, new Date("2026-10-30T03:00:00Z"));
   assert.match(text, /2026年10月31日（土） \/ Sat, 31 Oct 2026/);
   assert.match(text, /🆚 Kilimanjaro FC \| TMLディビジョン3 \/ TML Division 3/);
   assert.match(text, /🏟 YC&AC \| 11人制 \/ 11-a-side/);
   assert.match(text, /Meet: 17:00/);
   assert.match(text, /Warm-up: 17:20/);
   assert.match(text, /KO: 18:00 \| 40分 × 2 \/ 40 mins × 2/);
-  assert.match(text, /2026-10-26時点で、相手はリーグ1位。5試合で3勝0分2敗、15得点・17失点/);
-  assert.match(text, /僕たちは2位（2勝1分2敗）/);
-  assert.match(text, /As of 2026-10-26, our opponents are 1st in the league with 3 wins, 0 draws and 2 losses in 5 matches, scoring 15 and conceding 17/);
-  assert.match(text, /We are 2nd with 2 wins, 1 draw and 2 losses/);
+  assert.match(text, /相手はリーグ1位で、5試合を終えて3勝2敗。15得点・17失点と、得点力のあるチーム/);
+  assert.match(text, /僕たちは2位で、2勝1分2敗/);
+  assert.match(text, /They’re 1st in the league with 3 wins and 2 losses from 5 games\. They’ve scored 15 and conceded 17 so far, so we’ll need to stay sharp at the back/);
+  assert.match(text, /We’re 2nd with 2 wins, 1 draw and 2 losses/);
+  assert.doesNotMatch(text, /2026-10-26|as of|時点/i);
   assert.match(text, /上位との差を縮める/);
-  assert.match(text, /opportunity to close the gap/);
+  assert.match(text, /good chance for us to close the gap/);
   assert.match(text, /勝ち点3/);
-  assert.match(text, /all three points/);
+  assert.match(text, /the three points/);
   assert.match(text, /@All/);
-  assert.doesNotMatch(text, /tomorrow|明日|confirmed squad|確定メンバー/i);
+  assert.match(text, /明日はKilimanjaro FCとのリーグ戦/);
+  assert.match(text, /Tomorrow we’re up against Kilimanjaro FC/);
+  assert.match(text, /明日よろしくお願いします/);
+  assert.match(text, /See you tomorrow!/);
+  assert.doesNotMatch(text, /confirmed squad|確定メンバー/i);
   standings.rows[1].pts = 9; // higher table position but no points gap to close
   assert.doesNotMatch(generateReminder(match, data, standings), /close the gap|上位との差/);
 });
@@ -127,13 +132,24 @@ test("reminder falls back to recent form and head-to-head when the table cannot 
   ];
   const data = forecast.build({ match, finals });
   const text = generateReminder(match, data, { competition: match.competition, updated: "2026-10-26" });
-  assert.match(text, /直近2試合の記録は1勝1分0敗/);
-  assert.match(text, /Our last 2 recorded matches produced 1 win, 1 draw and 0 losses/);
-  assert.match(text, /直近1回の対戦記録は1勝0分0敗/);
-  assert.match(text, /We won our most recent recorded meeting/);
+  assert.match(text, /直近2試合は1勝1分/);
+  assert.match(text, /We’ve had 1 win and 1 draw in our last 2 games/);
+  assert.match(text, /前回の対戦は勝ちでした/);
+  assert.match(text, /We won our last game against them/);
   assert.doesNotMatch(text, /in the league|4 losses|0勝1分1敗/);
   const oneMatch = forecast.build({ match, finals: [finals[0]] });
-  assert.match(generateReminder(match, oneMatch), /Our most recent recorded match ended in a win/);
+  const oneText = generateReminder(match, oneMatch);
+  assert.match(oneText, /We won our last game against them/);
+  assert.doesNotMatch(oneText, /Our last game ended/);
+  const formOnly = forecast.build({ match, finals: [finals[1]] });
+  assert.match(generateReminder(match, formOnly), /Our last game ended in a draw/);
+  const sameDayDifferentOpponents = forecast.build({ match, finals: [
+    { ...finals[0], competition: "Friendly Match" },
+    { ...finals[0], opponent: "Another FC" },
+  ] });
+  const separateText = generateReminder(match, sameDayDifferentOpponents);
+  assert.match(separateText, /Our last game ended in a win/);
+  assert.match(separateText, /We won our last game against them/);
 });
 
 test("reminder avoids unrelated, future-dated and malformed standings and handles unknown details", () => {
@@ -141,8 +157,9 @@ test("reminder avoids unrelated, future-dated and malformed standings and handle
   const data = { table: { us: side, them: side } };
   const standings = { competition: "TML Division 3", updated: "2026-10-26" };
   assert.match(generateReminder(match, data, standings), /12th in the league/);
+  assert.doesNotMatch(generateReminder(match, data, standings), /得点力のある|stay sharp at the back/); // one game is too small a sample
   assert.doesNotMatch(generateReminder(match, data, standings), /close the gap|上位との差/);
-  assert.doesNotMatch(generateReminder({ ...match, competition: "Friendly Match" }, data, standings), /in the league|all three points|勝ち点3/);
+  assert.doesNotMatch(generateReminder({ ...match, competition: "Friendly Match" }, data, standings), /in the league|the three points|勝ち点3/);
   assert.doesNotMatch(generateReminder(match, data, { ...standings, updated: "2026-11-01" }), /in the league/);
   const bad = { table: { us: side, them: { ...side, row: { ...side.row, p: null } } } };
   assert.doesNotMatch(generateReminder(match, bad, standings), /in the league/);
@@ -153,4 +170,27 @@ test("reminder avoids unrelated, future-dated and malformed standings and handle
   assert.match(unknown, /Warm-up: 未定 \/ TBC/);
   assert.match(unknown, /KO: 未定 \/ TBC/);
   assert.doesNotMatch(unknown, /in the league|NaN|undefined/);
+});
+
+test("relative reminder language follows Japan's date across midnight and year boundaries", () => {
+  const tomorrow = generateReminder(match, null, {}, new Date("2026-10-30T14:59:59Z")); // 23:59 in Japan
+  assert.match(tomorrow, /明日はKilimanjaro FC/);
+  assert.match(tomorrow, /Tomorrow we’re up against Kilimanjaro FC/);
+  assert.match(tomorrow, /See you tomorrow!/);
+  const today = generateReminder(match, null, {}, new Date("2026-10-30T15:00:00Z")); // 00:00 in Japan
+  assert.match(today, /今日はKilimanjaro FC/);
+  assert.match(today, /It’s matchday! We’re playing Kilimanjaro FC today/);
+  assert.match(today, /今日もよろしくお願いします/);
+  assert.doesNotMatch(today, /tomorrow|明日/i);
+  const later = generateReminder(match, null, {}, new Date("2026-10-29T03:00:00Z"));
+  assert.match(later, /次の試合はKilimanjaro FC/);
+  assert.match(later, /Next up, we’ve got Kilimanjaro FC/);
+  assert.doesNotMatch(later, /tomorrow|明日/i);
+  const past = generateReminder(match, null, {}, new Date("2026-11-01T03:00:00Z"));
+  assert.match(past, /今回の試合はKilimanjaro FC/);
+  assert.doesNotMatch(past, /tomorrow|明日|It’s matchday|Next up/i);
+  const newYear = generateReminder({ ...match, date: "2027-01-01" }, null, {}, new Date("2026-12-31T10:00:00Z"));
+  assert.match(newYear, /See you tomorrow!/);
+  const unknown = generateReminder({ ...match, date: null }, null, {}, new Date("2026-10-30T03:00:00Z"));
+  assert.doesNotMatch(unknown, /tomorrow|明日|It’s matchday/i);
 });

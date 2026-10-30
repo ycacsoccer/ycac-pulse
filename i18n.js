@@ -274,7 +274,7 @@ const YCACI18n = (() => {
     bandDeadlineAlert: "Set deadline reminder (one day before closing): {date}", bandMatchAlert: "Set match reminder (day before the match): {date}",
     bandCopyManual: "Clipboard unavailable. The text is selected — copy it manually.",
     reminderTitle: "Pre-Match Reminder", reminderLabel: "Reminder draft", reminderCopy: "Copy reminder",
-    reminderIntro: "A bilingual draft based on match details and the forecast. Check the standings date, squad, and default timings and format before sharing. Edits are not saved or posted automatically.",
+    reminderIntro: "A bilingual draft based on match details, the forecast and today's date in Japan. Check the latest standings, squad, default timings and format before sharing. Edits are not saved or posted automatically.",
     reminderCopied: "Copied — ready to paste.",
     // team page (Phase 9)
     navTeam: "Team",
@@ -545,7 +545,7 @@ const YCACI18n = (() => {
     bandDeadlineAlert: "締切リマインダーを設定（締切前日）：{date}", bandMatchAlert: "試合リマインダーを設定（試合前日）：{date}",
     bandCopyManual: "クリップボードを使用できません。選択された文章を手動でコピーしてください。",
     reminderTitle: "試合前リマインダー", reminderLabel: "リマインダーの下書き", reminderCopy: "リマインダーをコピー",
-    reminderIntro: "試合情報と予想をもとに作成した日英併記の下書きです。共有前に順位表の日付、メンバー、初期設定の時間と試合形式を確認してください。編集内容は保存・自動投稿されません。",
+    reminderIntro: "試合情報・予想と日本時間の日付をもとに作成した日英併記の下書きです。共有前に最新の順位、メンバー、初期設定の時間と試合形式を確認してください。編集内容は保存・自動投稿されません。",
     reminderCopied: "コピーしました。貼り付けてください。",
     // team page (Phase 9)
     navTeam: "チーム",
@@ -816,7 +816,7 @@ const YCACI18n = (() => {
     bandDeadlineAlert: "设置截止提醒（截止前一天）：{date}", bandMatchAlert: "设置比赛提醒（比赛前一天）：{date}",
     bandCopyManual: "无法访问剪贴板。已选中文本，请手动复制。",
     reminderTitle: "赛前提醒", reminderLabel: "提醒草稿", reminderCopy: "复制提醒",
-    reminderIntro: "根据比赛信息和赛前预测生成的日英双语草稿。分享前请核对积分榜日期、参赛名单及默认时间和赛制。编辑内容不会保存或自动发布。",
+    reminderIntro: "根据比赛信息、赛前预测及日本当前日期生成的日英双语草稿。分享前请核对最新积分榜、参赛名单及默认时间和赛制。编辑内容不会保存或自动发布。",
     reminderCopied: "已复制，可粘贴。",
     // team page (Phase 9)
     navTeam: "球队",
