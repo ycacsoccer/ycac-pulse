@@ -23,7 +23,7 @@
   const state = {
     mode: "loading", // loading | ok | missing | error
     match: null, allMatches: [], apps: [], allAppearances: [], goals: [], allGoals: [], signups: [], notes: [], savedSquad: [], injuries: [],
-    playersById: new Map(), seasonIndex: new Map(), discipline: [], bandDrafts: null, reminderDraft: null,
+    playersById: new Map(), seasonIndex: new Map(), discipline: [], bandDrafts: null, reminderDraft: null, socialDraft: null,
   };
 
   // Coach-only draft of the match squad for an upcoming fixture: formation
@@ -127,6 +127,31 @@
       field.focus();
       field.select();
       $("reminder-status").textContent = t("bandCopyManual");
+    }
+  }
+
+  function renderSocial() {
+    const panel = $("social-panel");
+    const generated = window.YCACSocialMedia?.generate(state.match);
+    panel.hidden = state.mode !== "ok" || !generated;
+    if (panel.hidden) return;
+    if (state.socialDraft?.id !== state.match.id || state.socialDraft.kind !== generated.kind) {
+      state.socialDraft = { id: state.match.id, ...generated };
+    }
+    $("social-label").textContent = t(generated.kind === "fullTime" ? "socialFullTimeLabel" : "socialLineupLabel");
+    $("social-draft").value = state.socialDraft.text;
+    $("social-status").textContent = "";
+  }
+
+  async function copySocial() {
+    const field = $("social-draft");
+    try {
+      await navigator.clipboard.writeText(field.value);
+      $("social-status").textContent = t("reminderCopied");
+    } catch {
+      field.focus();
+      field.select();
+      $("social-status").textContent = t("bandCopyManual");
     }
   }
 
@@ -1051,6 +1076,7 @@
     renderBand();
     const forecast = renderForecast();
     renderReminder(forecast);
+    renderSocial();
     renderDiscipline();
     renderSquad();
     renderLineup();
@@ -1079,6 +1105,11 @@
     if (state.reminderDraft) state.reminderDraft.text = event.target.value;
   });
   $("reminder-copy").addEventListener("click", copyReminder);
+  $("social-draft").addEventListener("input", (event) => {
+    if (state.socialDraft) state.socialDraft.text = event.target.value;
+    $("social-status").textContent = "";
+  });
+  $("social-copy").addEventListener("click", copySocial);
 
   $("squad-formation").addEventListener("change", (event) => {
     squad.formation = event.target.value;

@@ -105,7 +105,7 @@ test("pre-match reminder uses match details and a casual league summary without 
   assert.match(text, /Meet: 17:00/);
   assert.match(text, /Warm-up: 17:20/);
   assert.match(text, /KO: 18:00 \| 40分 × 2 \/ 40 mins × 2/);
-  assert.match(text, /相手はリーグ1位で、5試合を終えて3勝2敗。15得点・17失点と、得点力のあるチーム/);
+  assert.match(text, /相手はリーグ1位で、5試合を終えて3勝2敗。15得点・17失点。得点力のあるチーム/);
   assert.match(text, /僕たちは2位で、2勝1分2敗/);
   assert.match(text, /They’re 1st in the league with 3 wins and 2 losses from 5 games\. They’ve scored 15 and conceded 17 so far, so we’ll need to stay sharp at the back/);
   assert.match(text, /We’re 2nd with 2 wins, 1 draw and 2 losses/);

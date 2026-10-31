@@ -88,7 +88,7 @@ Please ensure you are ready to warm up together at the scheduled warm-up time.
 
 **ホーム（白）＋アウェイ（赤／黒）**の両方をご持参ください。当日の使用ユニフォームは試合日が近づきましたらご案内します。
 
-ユニフォームをお持ちでない場合はYC&ACで貸出可能です。スパイク・すね当てをご持参ください。
+ユニフォームをお持ちでない場合は、YC&ACで貸し出し可能です。スパイクとすね当てをご持参ください。
 
 Please bring both Home (White) + Away (Red/Black). The match kit will be confirmed closer to match day.
 
@@ -181,7 +181,7 @@ Priority sign-up closes 15 days before match day at 9pm Japan time.`;
     // Only describe their attack as strong with a meaningful, high-scoring sample.
     const strongAttack = haveTable && them.p >= 3 && them.gf / them.p >= 2.5;
     const tableJA = haveTable
-      ? `相手はリーグ${them.pos}位${them.p ? `で、${them.p}試合を終えて${recordJA(them)}。${them.gf}得点・${them.ga}失点${strongAttack ? "と、得点力のあるチーム" : ""}` : ""}です。僕たちは${us.pos}位${us.p ? `で、${recordJA(us)}` : ""}です。`
+      ? `相手はリーグ${them.pos}位${them.p ? `で、${them.p}試合を終えて${recordJA(them)}。${them.gf}得点・${them.ga}失点${strongAttack ? "。得点力のあるチーム" : ""}` : ""}です。僕たちは${us.pos}位${us.p ? `で、${recordJA(us)}` : ""}です。`
       : "";
     const tableEN = haveTable
       ? `They’re ${ordinal(them.pos)} in the league${them.p ? ` with ${recordEN(them)} from ${count(them.p, "game")}. They’ve scored ${them.gf} and conceded ${them.ga} so far${strongAttack ? ", so we’ll need to stay sharp at the back" : ""}` : ""}. We’re ${ordinal(us.pos)}${us.p ? ` with ${recordEN(us)}` : ""}.`
@@ -228,7 +228,7 @@ Priority sign-up closes 15 days before match day at 9pm Japan time.`;
       "@All",
       "皆さん、お疲れ様です！",
       introJA, tableJA, formJA, h2hJA, gapJA, motivationJA,
-      `試合の詳細とメンバーも各自チェックお願いします！\n${closingJA}`,
+      `試合の詳細とメンバーも各自チェックしてください！\n${closingJA}`,
       "━━━━━━━━━━━━━━",
       "Hi everyone!",
       introEN, tableEN, formEN, h2hEN, gapEN, motivationEN,

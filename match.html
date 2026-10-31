@@ -152,6 +152,18 @@
         </div>
         <p id="reminder-status" class="signup-notice" role="status" aria-live="polite"></p>
       </section>
+
+      <section id="social-panel" class="panel match-panel" hidden>
+        <div class="section-heading"><div>
+          <h2 data-i18n="socialTitle">Social Media Helper</h2>
+          <p class="fc-intro" data-i18n="socialIntro">An English Instagram caption based on this match. Review and edit before sharing. Edits are not saved or posted automatically.</p>
+        </div></div>
+        <div class="band-draft">
+          <div class="band-draft-heading"><label id="social-label" for="social-draft">Instagram lineup caption</label><button id="social-copy" type="button" class="quiet-button small" data-i18n="socialCopy">Copy caption</button></div>
+          <textarea id="social-draft" class="social-draft" rows="8" lang="en" spellcheck="false"></textarea>
+        </div>
+        <p id="social-status" class="signup-notice" role="status" aria-live="polite"></p>
+      </section>
     </main>
 
     <footer><span data-i18n="footer">YC&amp;AC Pulse · Official Top Team of Yokohama Country &amp; Athletic Club</span> <a href="https://ycac.jp" target="_blank" rel="noreferrer">ycac.jp</a> <span id="build-info" class="build-info" hidden></span></footer>
@@ -167,6 +179,7 @@
     <script src="auth.js"></script>
     <script src="buildinfo.js"></script>
     <script src="band.js"></script>
+    <script src="social-media.js"></script>
     <script src="match.js"></script>
   </body>
 </html>

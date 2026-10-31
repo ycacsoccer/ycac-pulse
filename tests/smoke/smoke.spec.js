@@ -79,6 +79,10 @@ test("a live fixture detail opens every panel for anonymous visitors", async ({ 
   await expect(page.locator("#match-hero")).toContainText("Corinthians Harbour FC");
   await expect(page.locator("#signups-panel")).toBeVisible(); // wave 33: public reads signups/match_notes
   await expect(page.locator("#notes-panel")).toBeVisible();
+  await expect(page.locator("#social-panel")).toBeVisible();
+  await expect(page.locator("#social-label")).toHaveText("Instagram full-time caption");
+  await expect(page.locator("#social-draft")).toHaveValue(/FULL TIME \| 2–2.*[\s\S]*Corinthians Harbour FC/);
+  await expect(page.locator("#social-draft")).toHaveValue(/#YCACPulse #YCAC #YCACSoccer #YokohamaFootball #FootballInJapan/);
 });
 
 test("the standalone tactical foundation and all four videos are published", async ({ page, request }) => {

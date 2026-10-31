@@ -895,6 +895,7 @@ svg.timing-svg, svg.trajectory-svg { display: block; width: 100%; height: auto; 
 .band-draft-heading label { font-size: .85rem; font-weight: 700; color: var(--navy); }
 .band-draft textarea { display: block; width: 100%; min-height: 20rem; padding: .85rem; resize: vertical; border: 1px solid var(--line); background: var(--mist); color: var(--ink); font: .8rem/1.7 'DM Sans', Arial, sans-serif; }
 .band-draft textarea.band-event-title { min-height: 5rem; }
+.band-draft textarea.social-draft { min-height: 12rem; }
 .band-draft h3 { color: var(--navy); font-size: 1rem; margin: 0 0 1rem; }
 .band-settings { margin: 1rem 0; padding: .8rem; border-left: 3px solid var(--gold); background: var(--gold-pale); overflow-wrap: anywhere; }
 .band-settings h4 { font-size: .8rem; margin: 0 0 .5rem; }

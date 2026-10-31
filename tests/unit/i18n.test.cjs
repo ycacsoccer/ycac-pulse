@@ -90,6 +90,15 @@ test("selection-group bands are frequency words, not ability rankings", () => {
   }
 });
 
+test("Japanese football copy uses clear everyday terminology", () => {
+  assert.match(dictionaries.ja.coachIntro, /出場状況別のメンバー一覧/);
+  assert.doesNotMatch(dictionaries.ja.coachIntro, /スターブル陣容/);
+  assert.equal(dictionaries.ja.matchSubs, "控え");
+  assert.equal(dictionaries.ja.indexSquadTitle, "出場の多いメンバー");
+  assert.match(dictionaries.ja.tfDefenceFocusTwo, /パスコースをまず消し/);
+  assert.match(dictionaries.ja.tfDefenceFocusTwo, /そのコースを切り続け/);
+});
+
 test("formatDate renders a date for the current language", () => {
   assert.equal(i18n.formatDate("2026-03-07"), "7 Mar 2026");
   assert.equal(i18n.formatDate(""), "");
