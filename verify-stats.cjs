@@ -1,10 +1,10 @@
 /* Verifies stats.js against the data in Supabase — the engine's regression
    snapshot (Phase 12 rewired this off gviz; the whole suite now reads one
    source of truth). The EXPECTED block is the 31 Oct 2026 snapshot after the
-   2–2 Kilimanjaro result. Its lineup is not yet recorded, so appearance-based
-   figures are provisional. If the database moves on (new results entered,
-   roster edits), mismatches are reported rather than silently accepted — bump
-   the snapshot deliberately when that happens.
+   2–2 Kilimanjaro result, before its lineup was recorded. Once that squad is
+   confirmed, verify its appearances against the locked squad separately and
+   keep comparing historical totals to the same baseline. Other live data
+   changes still require a deliberate snapshot update.
    Usage: node verify-stats.cjs */
 
 const fs = require("fs");
@@ -19,8 +19,8 @@ const readConfig = () => {
 const config = readConfig();
 const anonHeaders = { apikey: config.publishable, Authorization: `Bearer ${config.publishable}`, "Content-Type": "application/json" };
 
-async function grab(table) {
-  const response = await fetch(`${config.url}/rest/v1/${table}?select=*`, { headers: anonHeaders });
+async function grab(table, query = "select=*") {
+  const response = await fetch(`${config.url}/rest/v1/${table}?${query}`, { headers: anonHeaders });
   if (!response.ok) throw new Error(`${table}: ${response.status} ${await response.text()}`);
   return response.json();
 }
@@ -49,28 +49,47 @@ const show = (stat, total) => `${stat}/${total}`;
 
 async function main() {
   const [players, matches, appearances, goals] = await Promise.all(
-    ["players", "matches", "appearances", "goals"].map(grab));
+    ["players", "matches", "appearances", "goals"].map((table) => grab(table)));
+  const kilimanjaro = matches.find((match) => match.id === "m007");
+  const confirmed = Boolean(kilimanjaro?.squad_confirmed_at);
+  const matchApps = appearances.filter((row) => row.match_id === "m007");
+  const baselineApps = confirmed ? appearances.filter((row) => row.match_id !== "m007") : appearances;
+  const savedSquads = confirmed ? await grab("saved_squads", "select=*&match_id=eq.m007&active=eq.true") : [];
 
   // signups is a team-only table; the tier engine doesn't need it (tiers come
   // from appearances alone), so the public snapshot passes none.
   const season = YCACStats.computeSeason({ players, matches, appearances, goals });
-  const byId = new Map(season.players.map((entry) => [entry.id, entry]));
+  const baseline = confirmed ? YCACStats.computeSeason({ players, matches, appearances: baselineApps, goals }) : season;
+  const byId = new Map(baseline.players.map((entry) => [entry.id, entry]));
 
   const checks = [];
   const check = (label, actual, expected) => checks.push({ label, actual, expected, ok: String(actual) === String(expected) });
 
   check("Players rows", players.length, EXPECTED.rows.players);
   check("Matches rows", matches.length, EXPECTED.rows.matches);
-  check("Appearances rows", appearances.length, EXPECTED.rows.appearances);
+  check("Baseline appearances rows", baselineApps.length, EXPECTED.rows.appearances);
   check("Goals rows", goals.length, EXPECTED.rows.goals);
-  check("Played matches", season.counts.matches.all, EXPECTED.counts.all);
-  check("TML matches", season.counts.matches.tml, EXPECTED.counts.tml);
-  check("Friendly matches", season.counts.matches.friendly, EXPECTED.counts.friendly);
-  check("Players in squad", season.counts.players, EXPECTED.counts.players);
-  check("Players used", season.counts.used, EXPECTED.counts.used);
-  const kilimanjaro = matches.find((match) => match.id === "m007");
+  check("Played matches", baseline.counts.matches.all, EXPECTED.counts.all);
+  check("TML matches", baseline.counts.matches.tml, EXPECTED.counts.tml);
+  check("Friendly matches", baseline.counts.matches.friendly, EXPECTED.counts.friendly);
+  check("Players in squad", baseline.counts.players, EXPECTED.counts.players);
+  check("Baseline players used", baseline.counts.used, EXPECTED.counts.used);
   check("31 Oct result", kilimanjaro ? `${kilimanjaro.ycac_goals}–${kilimanjaro.opponent_goals}` : "MISSING", "2–2");
   check("31 Oct scorers", goals.filter((goal) => goal.match_id === "m007").map((goal) => goal.scorer_id).sort().join(","), "masashi,ryu");
+  if (confirmed) {
+    const groups = new Set(savedSquads.map((row) => row.saved_squad_id));
+    const picked = savedSquads.filter((row) => row.selection_type === "starter" || (row.selection_type === "sub" && row.played === true));
+    const signature = (rows, roleKey) => rows.map((row) => `${row.player_id}:${row[roleKey]}`).sort().join(",");
+    check("Confirmed squad groups", groups.size, 1);
+    check("Confirmed starting XI", savedSquads.filter((row) => row.selection_type === "starter").length, 11);
+    check("Confirmed appearances", signature(matchApps, "role"), signature(picked, "selection_type"));
+    const actual = new Map(season.players.map((entry) => [entry.id, entry]));
+    const pickedIds = new Set(picked.map((row) => row.player_id));
+    for (const [id, entry] of byId) {
+      check(`${id} confirmed-match contribution`, actual.get(id).competitions.tml.played,
+        entry.competitions.tml.played + (pickedIds.has(id) ? 1 : 0));
+    }
+  }
 
   for (const [id, expected] of Object.entries(EXPECTED.players)) {
     const entry = byId.get(id);

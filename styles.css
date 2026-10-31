@@ -361,7 +361,10 @@ a.history-row:hover { background: var(--gold-pale); }
 .squad-formation { display: flex; align-items: center; gap: .45rem; color: var(--muted); font-size: .68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 .squad-formation select { min-height: 34px; padding: .25rem .5rem; color: var(--navy); background: #fff; border: 1px solid var(--line); border-radius: 0; font: 700 .78rem 'DM Sans', Arial, sans-serif; }
 .squad-status { margin: .9rem 0 0; color: var(--muted); font-size: .78rem; }
+.squad-confirm-hint { margin: .55rem 0 0; color: var(--muted); font-size: .76rem; line-height: 1.55; }
+.squad-confirm-hint.is-locked { color: #17663b; font-weight: 700; }
 .pk-layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(280px, .75fr); gap: 1.25rem; margin-top: 1rem; }
+.is-squad-locked .pk-layout { grid-template-columns: minmax(0, 1fr); }
 .pk-pitch { position: relative; display: grid; grid-template-rows: repeat(4, 1fr); min-height: 520px; padding: 1.1rem .9rem; overflow: hidden; border: 4px solid #d8ead8; background: repeating-linear-gradient(90deg, #367c54 0 12.5%, #3b865a 12.5% 25%); }
 .pk-pitch::before { position: absolute; inset: 0; border-top: 1px solid rgba(255,255,255,.75); border-bottom: 1px solid rgba(255,255,255,.75); content: ''; pointer-events: none; }
 .pk-pitch::after { position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(255,255,255,.75); content: ''; }
@@ -374,6 +377,11 @@ a.history-row:hover { background: var(--gold-pale); }
 .pk-num { color: var(--blue); font-size: .6rem; font-weight: 700; }
 .pk-bench-heading { display: flex; justify-content: space-between; align-items: baseline; margin: 1.1rem 0 .6rem; color: var(--muted); font-size: .62rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 .pk-bench { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+.pk-bench-item { display: grid; align-content: start; gap: .2rem; min-width: 0; }
+.pk-played { display: flex; align-items: center; gap: .3rem; padding: .25rem; color: var(--navy); font-size: .68rem; font-weight: 700; cursor: pointer; }
+.pk-played input { flex: none; width: 16px; height: 16px; margin: 0; accent-color: var(--navy); }
+.pk-slot:disabled, .pk-bench-slot:disabled { cursor: default; }
+.pk-slot:disabled:hover { outline: none; }
 .pk-bench-slot { display: grid; grid-template-columns: 1.4rem 1fr; gap: .35rem; align-items: center; min-height: 42px; padding: .45rem; color: var(--muted); border: 1px dashed #b8c5d3; border-radius: 0; background: #fafbfd; cursor: pointer; text-align: left; }
 .pk-bench-slot:hover, .pk-bench-slot.active { border-color: var(--gold); background: var(--gold-pale); }
 .pk-bench-slot.assigned { color: var(--navy); border-style: solid; border-color: var(--navy); background: #fff; }

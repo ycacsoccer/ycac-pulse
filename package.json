@@ -23,6 +23,7 @@
     "node": ">=20"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.14",
     "@playwright/test": "^1.63.0",
     "husky": "^9.1.7"
   }

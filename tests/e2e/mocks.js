@@ -40,7 +40,12 @@ async function mockSupabase(page, options = {}) {
   const log = { rest: [], requestedTables: [], denied: [], hosts: new Set() };
   // The signups store is mutable — edits stick for later reads in the same
   // test (wave 33: anyone may add / move / remove signups on the match page).
-  const store = { signups: clone(signupsFixture) };
+  const store = options.store || {
+    signups: clone(signupsFixture), savedSquads: clone(options.savedSquads || []),
+    matches: clone(options.matches || fixtures.matches), players: clone(options.players || fixtures.players),
+    appearances: clone(options.appearances || fixtures.appearances), goals: clone(options.goals || fixtures.goals),
+  };
+  log.store = store;
 
   await page.route("**/rest/v1/**", async (route) => {
     const url = new URL(route.request().url());
@@ -55,6 +60,30 @@ async function mockSupabase(page, options = {}) {
       if (options.coach) return route.fulfill({ status: 200, contentType: "application/json", body: "true" });
       log.denied.push(tail);
       return route.fulfill({ status: 401, contentType: "application/json", body: DENY_BODY });
+    }
+    if (options.squadFeature && ["rpc/save_match_squad_draft", "rpc/confirm_match_squad"].includes(tail)) {
+      const json = (status, body) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
+      const body = route.request().postDataJSON();
+      const match = store.matches.find((row) => row.id === body.p_match_id);
+      if (!match) return json(400, { message: "match_missing" });
+      if (match.squad_confirmed_at) return json(400, { message: "squad_locked" });
+      const active = store.savedSquads.filter((row) => row.match_id === match.id && row.active !== false);
+      const groups = [...new Set(active.map((row) => row.saved_squad_id))];
+      if (tail.endsWith("save_match_squad_draft")) {
+        if (groups.length > 1 || (groups[0] || null) !== body.p_expected_group) return json(400, { message: "squad_stale" });
+        active.forEach((row) => { row.active = false; });
+        body.p_players.forEach((row) => store.savedSquads.push({ ...row, match_id: match.id, saved_squad_id: body.p_new_group, formation: body.p_formation, active: true }));
+        return json(200, body.p_new_group);
+      }
+      if (match.ycac_goals == null || match.opponent_goals == null) return json(400, { message: "result_required" });
+      if (groups.length !== 1 || groups[0] !== body.p_saved_squad_id) return json(400, { message: "squad_stale" });
+      if (active.filter((row) => row.selection_type === "starter").length !== 11) return json(400, { message: "squad_invalid" });
+      const played = active.filter((row) => row.selection_type === "starter" || row.played === true);
+      const ids = new Set(played.map((row) => row.player_id));
+      if (store.goals.filter((goal) => goal.match_id === match.id).some((goal) => [goal.scorer_id, goal.assist_id].some((id) => id && !ids.has(id)))) return json(400, { message: "squad_contributor_missing" });
+      store.appearances = store.appearances.filter((row) => row.match_id !== match.id).concat(played.map((row) => ({ match_id: match.id, player_id: row.player_id, role: row.selection_type })));
+      match.squad_confirmed_at = "2026-11-01T12:00:00Z";
+      return json(200, match.squad_confirmed_at);
     }
     if (!PUBLIC_TABLES.has(table)) { // coach_roster, unknown tables
       log.denied.push(tail);
@@ -97,12 +126,17 @@ async function mockSupabase(page, options = {}) {
       }
       return json(200, rows);
     }
+    if (options.squadFeature && table === "saved_squads" && route.request().method() === "GET") {
+      const id = url.searchParams.get("match_id")?.replace(/^eq\./, "");
+      const rows = store.savedSquads.filter((row) => !id || row.match_id === id);
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(rows) });
+    }
     if (table === "coach_notes" || table === "match_notes" || table === "saved_squads" || table === "team_content") {
       // no fixture rows for these — reads answer empty, writes acknowledge.
       return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
     }
 
-    let rows = clone(fixtures[table]);
+    let rows = clone(options.squadFeature && ["matches", "players", "appearances", "goals"].includes(table) ? store[table] : fixtures[table]);
 
     // Common PostgREST equality filters used across public pages.
     for (const field of ["id", "match_id", "player_id"]) {
@@ -122,10 +156,10 @@ async function mockSupabase(page, options = {}) {
     // PostgREST embedding: `select=*,matches(date,opponent,…)` on a child row
     const select = url.searchParams.get("select") || "";
     if (select.includes("matches(")) {
-      rows = rows.map((row) => ({ ...row, matches: fixtures.matches.find((match) => match.id === row.match_id) ?? null }));
+      rows = rows.map((row) => ({ ...row, matches: (options.squadFeature ? store.matches : fixtures.matches).find((match) => match.id === row.match_id) ?? null }));
     }
     if (select.includes("players(")) {
-      rows = rows.map((row) => ({ ...row, players: fixtures.players.find((player) => player.id === row.player_id) ?? null }));
+      rows = rows.map((row) => ({ ...row, players: (options.squadFeature ? store.players : fixtures.players).find((player) => player.id === row.player_id) ?? null }));
     }
 
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(rows) });

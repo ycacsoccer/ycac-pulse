@@ -85,6 +85,17 @@ test("a live fixture detail opens every panel for anonymous visitors", async ({ 
   await expect(page.locator("#social-draft")).toHaveValue(/#YCACPulse #YCAC #YCACSoccer #YokohamaFootball #FootballInJapan/);
 });
 
+test("the played Kilimanjaro match exposes the squad confirmation flow", async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto("./match.html?id=m007", { waitUntil: "domcontentloaded" });
+  await expect(page.locator("#match-hero")).toContainText("Kilimanjaro FC");
+  await expect(page.locator("#squad-panel")).toBeVisible();
+  await expect(page.locator("#squad-pitch .pk-slot")).toHaveCount(11);
+  await expect(page.locator("#squad-confirm-hint")).toContainText(/mark the substitutes|confirmed and locked/i);
+  await expect(page.locator("#squad-confirm-hint")).not.toContainText("unavailable");
+  expect(errors).toEqual([]);
+});
+
 test("the standalone tactical foundation and all four videos are published", async ({ page, request }) => {
   const errors = watchErrors(page);
   await page.goto("./tactical-foundation.html");

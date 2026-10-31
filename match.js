@@ -30,7 +30,8 @@
   // pitch slots + a 9-slot bench + search/roster with signup badges.
   const squad = {
     formation: "4231", slots: [], subs: Array(MAX_SUBS).fill(null),
-    active: null, search: "", availability: "confirmed", dirty: false, saving: false, status: null,
+    playedSubs: new Set(), groupId: null, active: null, search: "", availability: "confirmed",
+    dirty: false, saving: false, confirming: false, stale: false, status: null,
   };
 
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
@@ -722,15 +723,18 @@
         : "");
   }
 
-  // ---- match squad (coach, upcoming fixtures only) --------------------------
+  // ---- match squad ----------------------------------------------------------
   // The full pitch-based squad picker integrated from the retired standalone
   // squad-picker.html: formation pitch + 9-slot bench + roster with signup
   // badges, core-weighted "Suggest squad", copy and image export. The squad
-  // lives in saved_squads (coach-write RLS): one active group of starters +
-  // subs per match, deactivate-then-insert on save.
+  // lives in saved_squads. Once a played match is confirmed, the database
+  // locks the selected squad and the associated appearance records.
 
   const email = () => YCACAuth.session?.user?.email || null;
   const setSquadStatus = (key, vars) => { squad.status = { key, vars }; $("squad-status").textContent = t(key, vars); };
+  const squadReady = () => Boolean(state.match && Object.prototype.hasOwnProperty.call(state.match, "squad_confirmed_at"));
+  const squadLocked = () => Boolean(state.match?.squad_confirmed_at);
+  const squadBusy = () => squadLocked() || squad.saving || squad.confirming || squad.stale;
   const squadPlayer = (id) => state.playersById.get(id) || { id, display_name: id };
   const activePlayers = () => [...state.playersById.values()].filter((player) => player.active !== false);
 
@@ -769,6 +773,7 @@
   function resetFormation() {
     squad.slots = FORMATIONS[squad.formation].flat().map((role, index) => ({ id: index, role, playerId: null }));
     squad.subs = Array(MAX_SUBS).fill(null);
+    squad.playedSubs = new Set();
     squad.active = null;
     renderSquad();
   }
@@ -786,12 +791,31 @@
     squad.formation = FORMATIONS[saved[0]?.formation] ? saved[0].formation : "4231";
     squad.slots = FORMATIONS[squad.formation].flat().map((role, index) => ({ id: index, role, playerId: null }));
     squad.subs = Array(MAX_SUBS).fill(null);
-    saved.filter((row) => row.selection_type === "starter")
-      .forEach((row) => assignToStarter(row.player_id, YCACStats.positionGroup(squadPlayer(row.player_id).primary_position)));
+    saved.filter((row) => row.selection_type === "starter").forEach((row) => {
+      const slot = squad.slots[Number(row.slot_order)];
+      if (slot && !slot.playerId) slot.playerId = row.player_id;
+      else assignToStarter(row.player_id, YCACStats.positionGroup(squadPlayer(row.player_id).primary_position));
+    });
     const savedSubs = saved.filter((row) => row.selection_type === "sub").slice(0, MAX_SUBS);
-    squad.subs = Array.from({ length: MAX_SUBS }, (_, index) => savedSubs[index]?.player_id || null);
+    savedSubs.forEach((row) => {
+      const index = Number(row.slot_order);
+      if (Number.isInteger(index) && index >= 0 && index < MAX_SUBS && !squad.subs[index]) squad.subs[index] = row.player_id;
+      else { const open = squad.subs.findIndex((id) => !id); if (open >= 0) squad.subs[open] = row.player_id; }
+    });
+    squad.playedSubs = new Set(savedSubs.filter((row) => row.played === true || (row.played == null
+      && state.apps.some((app) => app.player_id === row.player_id && app.role === "sub"))).map((row) => row.player_id));
+    if (!saved.length && isFinal(state.match)) {
+      state.apps.filter((app) => app.role === "starter").forEach((app) => assignToStarter(app.player_id,
+        YCACStats.positionGroup(app.position || squadPlayer(app.player_id).primary_position)));
+      state.apps.filter((app) => app.role === "sub").slice(0, MAX_SUBS).forEach((app, index) => {
+        squad.subs[index] = app.player_id;
+        squad.playedSubs.add(app.player_id);
+      });
+    }
+    squad.groupId = latestId || null;
     squad.active = null;
     squad.dirty = false;
+    squad.stale = false;
     squad.status = null;
   }
 
@@ -808,6 +832,7 @@
       .slice(0, MAX_SUBS)
       .map((player) => player.id);
     while (squad.subs.length < MAX_SUBS) squad.subs.push(null);
+    squad.playedSubs = new Set([...squad.playedSubs].filter((id) => squad.subs.includes(id)));
   }
 
   function suggestSquad() {
@@ -826,9 +851,11 @@
   }
 
   function assignPlayer(playerId) {
-    if (suspendedPlayer(playerId)) { setSquadStatus("disciplineSquadBlocked"); return; }
+    if (squadBusy()) return;
+    if (!isFinal(state.match) && suspendedPlayer(playerId)) { setSquadStatus("disciplineSquadBlocked"); return; }
     squad.slots.forEach((slot) => { if (slot.playerId === playerId) slot.playerId = null; });
     squad.subs = squad.subs.map((id) => (id === playerId ? null : id));
+    squad.playedSubs.delete(playerId);
     const player = squadPlayer(playerId);
     if (squad.active?.area === "start") squad.slots[squad.active.index].playerId = playerId;
     else if (squad.active?.area === "bench") squad.subs[squad.active.index] = playerId;
@@ -846,6 +873,7 @@
   /* Clicking an assigned slot frees it — and leaves the slot active so the
      next roster click fills that exact position. */
   function clearSlot(index) {
+    if (squadBusy()) return;
     const slot = squad.slots[index];
     if (!slot?.playerId) return;
     const name = squadPlayer(slot.playerId).display_name;
@@ -857,8 +885,10 @@
   }
 
   function clearBenchSlot(index) {
+    if (squadBusy()) return;
     if (!squad.subs[index]) return;
     const name = squadPlayer(squad.subs[index]).display_name;
+    squad.playedSubs.delete(squad.subs[index]);
     squad.subs[index] = null;
     squad.active = { area: "bench", index };
     squad.dirty = true;
@@ -876,7 +906,7 @@
       rows.push(`<div class="pk-row">${rowSlots.map((slot) => {
         const player = slot.playerId ? squadPlayer(slot.playerId) : null;
         const activeClass = squad.active?.area === "start" && squad.active.index === slot.id ? " active" : "";
-        return `<button class="pk-slot ${player ? "assigned" : ""}${activeClass}" type="button" data-slot="${slot.id}">
+        return `<button class="pk-slot ${player ? "assigned" : ""}${activeClass}" type="button" data-slot="${slot.id}" ${squadBusy() ? "disabled" : ""}>
           ${player ? `<span class="pk-num">${player.shirt_number || ""}</span><span class="pk-name">${esc(player.display_name)}</span>` : `<span class="pk-role">${slot.role}</span>`}
         </button>`;
       }).join("")}</div>`);
@@ -890,9 +920,11 @@
     $("squad-bench").innerHTML = Array.from({ length: MAX_SUBS }, (_, index) => {
       const player = squad.subs[index] ? squadPlayer(squad.subs[index]) : null;
       const activeClass = squad.active?.area === "bench" && squad.active.index === index ? " active" : "";
-      return `<button class="pk-bench-slot ${player ? "assigned" : ""}${activeClass}" type="button" data-bench-slot="${index}">
+      const played = player && squadReady() && isFinal(state.match)
+        ? `<label class="pk-played"><input type="checkbox" data-played-sub="${esc(player.id)}" aria-label="${esc(t("squadPlayedAria", { name: player.display_name }))}" ${squad.playedSubs.has(player.id) ? "checked" : ""} ${squadBusy() ? "disabled" : ""} /><span>${esc(t("squadPlayed"))}</span></label>` : "";
+      return `<div class="pk-bench-item"><button class="pk-bench-slot ${player ? "assigned" : ""}${activeClass}" type="button" data-bench-slot="${index}" ${squadBusy() ? "disabled" : ""}>
         <span class="pk-bench-index">${index + 1}</span><span class="pk-bench-name">${player ? esc(player.display_name) : esc(t("pickerOpen"))}</span>
-      </button>`;
+      </button>${played}</div>`;
     }).join("");
     $("squad-bench-count").textContent = squad.subs.filter(Boolean).length;
   }
@@ -918,7 +950,7 @@
         <div class="pk-list">${members.map((player) => {
           const pickedState = starting.has(player.id) ? "xi" : bench.has(player.id) ? "sub" : "";
           const label = starting.has(player.id) ? "XI" : bench.has(player.id) ? t("pickerSubsOutput") : player.primary_position || group;
-          return `<button class="pk-card ${pickedState}" type="button" data-squad-add="${esc(player.id)}" ${suspendedPlayer(player.id) ? "disabled" : ""}>
+          return `<button class="pk-card ${pickedState}" type="button" data-squad-add="${esc(player.id)}" ${squadBusy() || (!isFinal(state.match) && suspendedPlayer(player.id)) ? "disabled" : ""}>
             ${photoCell(player)}
             <span class="pk-card-num">${player.shirt_number || "–"}</span>
             <span class="pk-card-name">${esc(player.display_name)}</span>
@@ -939,35 +971,93 @@
       : t("pickerOutput");
   }
 
-  async function saveMatchSquad() {
+  function squadErrorKey(error, fallback) {
+    const detail = `${error?.body || ""} ${error?.message || ""}`;
+    if (/squad_stale/.test(detail)) { squad.stale = true; return "squadStale"; }
+    if (/squad_locked/.test(detail)) { squad.stale = true; return "squadLocked"; }
+    if (/squad_contributor_missing/.test(detail)) return "squadContributorMissing";
+    if (/result_required/.test(detail)) return "squadBeforeResult";
+    if (/squad_invalid/.test(detail)) return "squadNeedFullXI";
+    return fallback;
+  }
+
+  async function saveMatchSquad({ forConfirmation = false } = {}) {
+    if (squadLocked() || squad.saving || squad.stale || (squad.confirming && !forConfirmation)) return null;
     const starters = squad.slots.map((slot) => slot.playerId).filter(Boolean);
     const subs = squad.subs.filter(Boolean);
-    if (!starters.length) { setSquadStatus("pickerStatusNeedXI"); return; }
-    if ([...starters, ...subs].some(suspendedPlayer)) { setSquadStatus("disciplineSquadBlocked"); return; }
-    const button = $("squad-save");
+    if (!starters.length) { setSquadStatus("pickerStatusNeedXI"); return null; }
+    if (!isFinal(state.match) && [...starters, ...subs].some(suspendedPlayer)) { setSquadStatus("disciplineSquadBlocked"); return null; }
     squad.saving = true;
-    button.disabled = true;
     setSquadStatus("matchSquadSaving");
-    const savedSquadId = `sq-${Date.now().toString(36)}`;
-    const row = (playerId, selectionType, order) => ({
-      saved_squad_id: savedSquadId, match_id: state.match.id, formation: squad.formation,
-      player_id: playerId, selection_type: selectionType, slot_order: order, saved_by: email(),
-    });
+    renderSquad();
+    const savedSquadId = `sq-${window.crypto?.randomUUID ? window.crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`}`;
+    const players = [
+      ...squad.slots.flatMap((slot, order) => slot.playerId ? [{ player_id: slot.playerId, selection_type: "starter", slot_order: order, played: null }] : []),
+      ...squad.subs.flatMap((playerId, order) => playerId ? [{ player_id: playerId, selection_type: "sub", slot_order: order, played: isFinal(state.match) ? squad.playedSubs.has(playerId) : null }] : []),
+    ];
     try {
-      // saved_squads is coach-write-only (RLS): retire this fixture's previous save, then insert the new one.
-      await YCACData.update("saved_squads", { active: false }, `match_id=eq.${state.match.id}&active=eq.true`);
-      state.savedSquad = await YCACData.insert("saved_squads", [
-        ...starters.map((playerId, order) => row(playerId, "starter", order)),
-        ...subs.map((playerId, order) => row(playerId, "sub", order)),
-      ]);
+      if (squadReady()) {
+        const saved = await YCACData.rpc("save_match_squad_draft", {
+          p_match_id: state.match.id, p_expected_group: squad.groupId, p_new_group: savedSquadId,
+          p_formation: squad.formation, p_players: players, p_saved_by: email(),
+        });
+        if (saved !== savedSquadId) throw new Error("unexpected squad save response");
+        state.savedSquad = players.map((player) => ({ ...player, match_id: state.match.id, saved_squad_id: savedSquadId, formation: squad.formation, active: true }));
+      } else {
+        // Backward-compatible draft saving until the database migration is applied.
+        await YCACData.update("saved_squads", { active: false }, `match_id=eq.${state.match.id}&active=eq.true`);
+        state.savedSquad = await YCACData.insert("saved_squads", players.map(({ played, ...player }) => ({
+          ...player, saved_squad_id: savedSquadId, match_id: state.match.id, formation: squad.formation, saved_by: email(),
+        })));
+      }
+      squad.groupId = savedSquadId;
       squad.dirty = false;
-      setSquadStatus("matchSquadSaved");
+      if (!forConfirmation) setSquadStatus("matchSquadSaved");
+      return savedSquadId;
     } catch (error) {
-      console.error(error);
-      setSquadStatus("matchSquadSaveFail");
+      if (!error?.status || error.status >= 500) { squad.stale = true; setSquadStatus("squadRefreshUnknown"); }
+      else setSquadStatus(squadErrorKey(error, "matchSquadSaveFail"));
+      return null;
     } finally {
       squad.saving = false;
-      button.disabled = !squad.dirty;
+      renderSquad();
+    }
+  }
+
+  async function confirmMatchSquad() {
+    if (!squadReady() || squadBusy() || !isFinal(state.match)) return;
+    const starters = squad.slots.map((slot) => slot.playerId).filter(Boolean);
+    const subs = squad.subs.filter((id) => id && squad.playedSubs.has(id));
+    if (starters.length !== 11) { setSquadStatus("squadNeedFullXI"); return; }
+    const played = new Set([...starters, ...subs]);
+    if (state.goals.some((goal) => [goal.scorer_id, goal.assist_id].some((id) => id && !played.has(id)))) {
+      setSquadStatus("squadContributorMissing"); return;
+    }
+    if (!window.confirm(t("squadConfirmPrompt", { n: subs.length }))) return;
+    squad.confirming = true;
+    setSquadStatus("squadConfirming");
+    renderSquad();
+    const group = await saveMatchSquad({ forConfirmation: true });
+    if (!group) { squad.confirming = false; renderSquad(); return; }
+    try {
+      const confirmedAt = await YCACData.rpc("confirm_match_squad", { p_match_id: state.match.id, p_saved_squad_id: group });
+      if (!confirmedAt) throw new Error("missing confirmation time");
+      state.match.squad_confirmed_at = confirmedAt;
+      // Reflect the transaction immediately, retaining existing positions/minutes.
+      const old = new Map(state.apps.map((app) => [app.player_id, app]));
+      state.apps = [...starters.map((id) => [id, "starter"]), ...subs.map((id) => [id, "sub"])].map(([id, role]) => ({
+        ...old.get(id), match_id: state.match.id, player_id: id, role, players: state.playersById.get(id) || null,
+      }));
+      state.allAppearances = state.allAppearances.filter((app) => app.match_id !== state.match.id).concat(state.apps);
+      state.seasonIndex = new Map(YCACStats.computeSeason({ players: [...state.playersById.values()], matches: state.allMatches, appearances: state.allAppearances, goals: state.allGoals }).players.map((entry) => [entry.id, entry]));
+      setSquadStatus("squadLocked");
+      renderLineup();
+    } catch (error) {
+      if (!error?.status || error.status >= 500) { squad.stale = true; setSquadStatus("squadRefreshUnknown"); }
+      else setSquadStatus(squadErrorKey(error, "squadConfirmFail"));
+    } finally {
+      squad.confirming = false;
+      renderSquad();
     }
   }
 
@@ -1056,11 +1146,23 @@
 
   function renderSquad() {
     const panel = $("squad-panel");
-    const visible = state.mode === "ok" && !isFinal(state.match);
+    const visible = state.mode === "ok" && (!isFinal(state.match) || squadReady());
     panel.hidden = !visible;
     if (!visible) return;
+    const locked = squadLocked();
+    const busy = squadBusy();
+    panel.classList.toggle("is-squad-locked", locked);
     $("squad-formation").value = squad.formation;
-    $("squad-save").disabled = squad.saving || !squad.dirty;
+    $("squad-formation").disabled = busy;
+    ["squad-suggest", "squad-refresh-bench"].forEach((id) => { $(id).disabled = busy || isFinal(state.match); });
+    $("squad-clear").disabled = busy;
+    $("squad-save").disabled = busy || !squad.dirty;
+    $("squad-confirm").hidden = !squadReady() || locked;
+    $("squad-confirm").disabled = busy || !isFinal(state.match) || squad.slots.filter((slot) => slot.playerId).length !== 11;
+    $("squad-panel").querySelector(".pk-roster-panel").hidden = locked;
+    const hint = $("squad-confirm-hint");
+    hint.classList.toggle("is-locked", locked);
+    hint.textContent = t(!squadReady() ? "squadBackendUnavailable" : locked ? "squadLocked" : isFinal(state.match) ? "squadAfterResult" : "squadBeforeResult");
     renderPitch();
     renderBench();
     renderRoster();
@@ -1112,11 +1214,13 @@
   $("social-copy").addEventListener("click", copySocial);
 
   $("squad-formation").addEventListener("change", (event) => {
+    if (squadBusy()) return;
     squad.formation = event.target.value;
     squad.dirty = true;
     resetFormation();
   });
   $("squad-panel").addEventListener("click", (event) => {
+    if (squadBusy()) return;
     const slot = event.target.closest && event.target.closest("[data-slot]");
     if (slot) {
       const index = Number(slot.dataset.slot);
@@ -1134,13 +1238,22 @@
     const add = event.target.closest && event.target.closest("[data-squad-add]");
     if (add) assignPlayer(add.dataset.squadAdd);
   });
+  $("squad-panel").addEventListener("change", (event) => {
+    const checkbox = event.target.closest && event.target.closest("[data-played-sub]");
+    if (!checkbox || squadBusy() || !squad.subs.includes(checkbox.dataset.playedSub)) return;
+    if (checkbox.checked) squad.playedSubs.add(checkbox.dataset.playedSub);
+    else squad.playedSubs.delete(checkbox.dataset.playedSub);
+    squad.dirty = true;
+    renderSquad();
+  });
   $("squad-search").addEventListener("input", (event) => { squad.search = event.target.value.trim().toLocaleLowerCase(); renderRoster(); });
   $("squad-availability").addEventListener("change", (event) => { squad.availability = event.target.value; renderRoster(); });
-  $("squad-suggest").addEventListener("click", suggestSquad);
-  $("squad-refresh-bench").addEventListener("click", () => { refreshBench(); squad.dirty = true; setSquadStatus("pickerStatusBenchRefreshed"); renderSquad(); });
-  $("squad-clear").addEventListener("click", () => { resetFormation(); squad.dirty = true; setSquadStatus("pickerStatusCleared"); });
+  $("squad-suggest").addEventListener("click", () => { if (!squadBusy() && !isFinal(state.match)) suggestSquad(); });
+  $("squad-refresh-bench").addEventListener("click", () => { if (squadBusy() || isFinal(state.match)) return; refreshBench(); squad.dirty = true; setSquadStatus("pickerStatusBenchRefreshed"); renderSquad(); });
+  $("squad-clear").addEventListener("click", () => { if (squadBusy()) return; resetFormation(); squad.dirty = true; setSquadStatus("pickerStatusCleared"); });
   $("squad-copy").addEventListener("click", copyLineup);
   $("squad-save").addEventListener("click", saveMatchSquad);
+  $("squad-confirm").addEventListener("click", confirmMatchSquad);
   $("squad-image").addEventListener("click", saveSquadImage);
 
   // ---- signups events (coach, upcoming fixtures) ----------------------------

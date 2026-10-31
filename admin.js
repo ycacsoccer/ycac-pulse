@@ -332,7 +332,7 @@
       <span class="badge ${played(match) ? "a-active" : "a-inactive"}">${esc(played(match) ? t("results") : t("upcoming"))}</span>
       <div class="ar-actions">
         <button class="quiet-button small" type="button" data-action="edit-match" data-id="${esc(match.id)}">${esc(t("adminEdit"))}</button>
-        <button class="quiet-button small danger" type="button" data-action="delete-match" data-id="${esc(match.id)}">${esc(t("adminDelete"))}</button>
+        <button class="quiet-button small danger" type="button" data-action="delete-match" data-id="${esc(match.id)}" ${match.squad_confirmed_at ? `disabled title="${esc(t("squadAdminLocked"))}"` : ""}>${esc(t("adminDelete"))}</button>
       </div>
     </div>`;
   }
@@ -395,6 +395,7 @@
     syncMatchForm(); // keep typed values across language switches
     form.hidden = false;
     const m = d.row;
+    const lineupLocked = Boolean(m.squad_confirmed_at);
     const option = (value, label, current) => `<option value="${esc(value)}"${current === value ? " selected" : ""}>${esc(label)}</option>`;
     form.innerHTML = `
       <div class="form-head"><h3>${esc(t(d.mode === "create" ? "adminNewMatch" : "adminEditMatch"))}</h3></div>
@@ -423,9 +424,9 @@
       </div>
       <div class="form-section">
         <div class="form-section-head"><h4>${esc(t("adminLineup"))}</h4>
-          <button class="quiet-button small" type="button" data-action="clear-lineup">${esc(t("adminClear"))}</button></div>
-        <p class="admin-note">${esc(t("adminLineupHint"))}</p>
-        <input id="lineup-search" class="lineup-search" type="search" data-i18n-placeholder="searchPlayer" placeholder="${esc(t("searchPlayer"))}" />
+          <button class="quiet-button small" type="button" data-action="clear-lineup" ${lineupLocked ? "disabled" : ""}>${esc(t("adminClear"))}</button></div>
+        <p class="admin-note">${esc(t(lineupLocked ? "squadAdminLocked" : "adminLineupHint"))}</p>
+        <input id="lineup-search" class="lineup-search" type="search" data-i18n-placeholder="searchPlayer" placeholder="${esc(t("searchPlayer"))}" ${lineupLocked ? "disabled" : ""} />
         <div id="lineup-list" class="lineup-list"></div>
         <div id="lineup-available" class="lineup-available"></div>
       </div>
@@ -437,7 +438,7 @@
       <div class="form-actions">
         <button class="primary-button" type="button" data-action="save-match">${esc(t("adminSave"))}</button>
         <button class="quiet-button" type="button" data-action="cancel-match">${esc(t("adminCancel"))}</button>
-        ${d.mode === "edit" ? `<button class="quiet-button danger" type="button" data-action="delete-match">${esc(t("adminDelete"))}</button>` : ""}
+        ${d.mode === "edit" ? `<button class="quiet-button danger" type="button" data-action="delete-match" ${lineupLocked ? "disabled" : ""}>${esc(t("adminDelete"))}</button>` : ""}
       </div>`;
     renderLineup();
     renderGoals();
@@ -446,14 +447,15 @@
   function renderLineup() {
     const d = state.editingMatch;
     if (!d) return;
+    const locked = Boolean(d.row.squad_confirmed_at);
     const nameById = new Map(state.players.map((player) => [player.id, player.display_name]));
     $("lineup-list").innerHTML = d.lineup.length
       ? d.lineup.map((row, index) => `
         <div class="lineup-row">
           <span class="lr-name">${esc(nameById.get(row.player_id) || row.player_id)}</span>
-          <button class="role-toggle r-${row.role}" type="button" data-action="toggle-role" data-index="${index}">${row.role === "starter" ? "🟢" : "🔵"} ${esc(t(row.role === "starter" ? "starter" : "substitute"))}</button>
-          <input class="lr-pos" data-index="${index}" value="${esc(row.position)}" placeholder="${esc(t("position"))}" aria-label="${esc(t("position"))}" />
-          <button class="lr-x" type="button" data-action="remove-lineup" data-index="${index}" aria-label="✕">✕</button>
+          <button class="role-toggle r-${row.role}" type="button" data-action="toggle-role" data-index="${index}" ${locked ? "disabled" : ""}>${row.role === "starter" ? "🟢" : "🔵"} ${esc(t(row.role === "starter" ? "starter" : "substitute"))}</button>
+          <input class="lr-pos" data-index="${index}" value="${esc(row.position)}" placeholder="${esc(t("position"))}" aria-label="${esc(t("position"))}" ${locked ? "disabled" : ""} />
+          <button class="lr-x" type="button" data-action="remove-lineup" data-index="${index}" aria-label="✕" ${locked ? "disabled" : ""}>✕</button>
         </div>`).join("")
       : `<p class="empty">${esc(t("pickerOutput"))}</p>`;
     renderAvailable();
@@ -462,6 +464,7 @@
   function renderAvailable() {
     const d = state.editingMatch;
     if (!d) return;
+    if (d.row.squad_confirmed_at) { $("lineup-available").innerHTML = ""; return; }
     const inSquad = new Set(d.lineup.map((row) => row.player_id));
     const search = d.search || "";
     const rows = state.players.filter((player) => !inSquad.has(player.id)
@@ -501,6 +504,7 @@
     if (d.mode === "create" && state.matches.some((match) => match.id === m.id)) { setStatus(t("adminIdTaken"), "fail"); return; }
     if (!m.date || !m.opponent) { setStatus(t("adminSaveFail"), "fail"); return; }
     if (d.goalsRows.some((row) => !row.scorer_id)) { setStatus(t("adminSaveFail"), "fail"); return; }
+    if (m.squad_confirmed_at && lineupSignature(d.lineup) !== lineupSignature(d.originalLineup)) { setStatus(t("squadAdminLocked"), "fail"); return; }
     // a result needs both numbers — one blank means "not played yet"
     const hasScore = m.ycac_goals != null && m.opponent_goals != null;
     const row = { ...m, ycac_goals: hasScore ? m.ycac_goals : null, opponent_goals: hasScore ? m.opponent_goals : null };
@@ -836,6 +840,7 @@
     const d = state.editingMatch;
     const action = button.dataset.action;
     const index = Number(button.dataset.index);
+    if (d?.row.squad_confirmed_at && ["delete-match", "clear-lineup", "add-lineup", "remove-lineup", "toggle-role"].includes(action)) return;
     if (action === "save-match") saveMatch();
     if (action === "cancel-match") { state.editingMatch = null; renderMatches(); }
     if (action === "delete-match") deleteMatch(d?.row.id);
