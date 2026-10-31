@@ -1,10 +1,10 @@
 /* Verifies stats.js against the data in Supabase — the engine's regression
    snapshot (Phase 12 rewired this off gviz; the whole suite now reads one
-   source of truth). The EXPECTED block is the snapshot updated on
-   27 Oct 2026 (Ryuichi Shiba added — 42 players, not yet used in a
-   match, so every existing per-player count and tier is unchanged); if the database
-   has moved on (new results entered, roster edits), mismatches are reported
-   rather than silently accepted — bump the snapshot deliberately when that happens.
+   source of truth). The EXPECTED block is the 31 Oct 2026 snapshot after the
+   2–2 Kilimanjaro result. Its lineup is not yet recorded, so appearance-based
+   figures are provisional. If the database moves on (new results entered,
+   roster edits), mismatches are reported rather than silently accepted — bump
+   the snapshot deliberately when that happens.
    Usage: node verify-stats.cjs */
 
 const fs = require("fs");
@@ -26,22 +26,22 @@ async function grab(table) {
 }
 
 const EXPECTED = {
-  rows: { players: 42, matches: 15, appearances: 182, goals: 44 },
-  counts: { all: 12, tml: 5, friendly: 7, players: 42, used: 36 },
+  rows: { players: 42, matches: 15, appearances: 182, goals: 46 },
+  counts: { all: 13, tml: 6, friendly: 7, players: 42, used: 36 },
   players: {
-    rick: { tml: "5/5", friendly: "7/7", all: "12/12", tier: "core", reliability: 100 },
-    urabe: { tml: "5/5", friendly: "7/7", all: "12/12", tier: "core" },
-    hitoshi: { tml: "4/5", friendly: "6/7", all: "10/12", tier: "core" },
+    rick: { tml: "5/6", friendly: "7/7", all: "12/13", tier: "core", reliability: 90 },
+    urabe: { tml: "5/6", friendly: "7/7", all: "12/13", tier: "core" },
+    hitoshi: { tml: "4/6", friendly: "6/7", all: "10/13", tier: "core" },
     // Core is TML-only (>= 67% of TML matches): friendly attendance never demotes.
-    sun: { tml: "4/5", friendly: "2/7", all: "6/12", tier: "core" },
+    sun: { tml: "4/6", friendly: "2/7", all: "6/13", tier: "core" },
     // 17 Oct: kouhei missed m006 → 3/5 TML (60%) drops him out of core.
-    kouhei: { tml: "3/5", friendly: "2/7", all: "5/12", tier: "rotation" },
-    yuto: { tml: "0/5", friendly: "7/7", all: "7/12", tier: "rotation" },
-    masashi: { tml: "5/5", friendly: "1/7", all: "6/12", tier: "core" },
-    liu_hantang: { tml: "1/5", friendly: "0/7", all: "1/12", tier: "depth" }, // added 06 Oct (first TML appearance)
+    kouhei: { tml: "3/6", friendly: "2/7", all: "5/13", tier: "rotation" },
+    yuto: { tml: "0/6", friendly: "7/7", all: "7/13", tier: "rotation" },
+    masashi: { tml: "5/6", friendly: "1/7", all: "6/13", tier: "core" },
+    liu_hantang: { tml: "1/6", friendly: "0/7", all: "1/13", tier: "depth" }, // added 06 Oct (first TML appearance)
     ryuji: { tier: "inactive" },
     micah: { tier: "inactive" },
-    ryuichi_shiba: { tml: "0/5", friendly: "0/7", all: "0/12", tier: "inactive" },
+    ryuichi_shiba: { tml: "0/6", friendly: "0/7", all: "0/13", tier: "inactive" },
   },
 };
 
@@ -68,6 +68,9 @@ async function main() {
   check("Friendly matches", season.counts.matches.friendly, EXPECTED.counts.friendly);
   check("Players in squad", season.counts.players, EXPECTED.counts.players);
   check("Players used", season.counts.used, EXPECTED.counts.used);
+  const kilimanjaro = matches.find((match) => match.id === "m007");
+  check("31 Oct result", kilimanjaro ? `${kilimanjaro.ycac_goals}–${kilimanjaro.opponent_goals}` : "MISSING", "2–2");
+  check("31 Oct scorers", goals.filter((goal) => goal.match_id === "m007").map((goal) => goal.scorer_id).sort().join(","), "masashi,ryu");
 
   for (const [id, expected] of Object.entries(EXPECTED.players)) {
     const entry = byId.get(id);
@@ -118,7 +121,7 @@ async function main() {
   console.log(`  ${missingPhotos} players with no photo yet (coach uploads from the profile page)`);
   console.log(`  ${appearances.filter((app) => !app.minutes).length}/${appearances.length} appearances missing minutes`);
 
-  console.log(`\n${failed ? `${failed} CHECK(S) FAILED — data may have changed since the 27 Oct 2026 snapshot (bump EXPECTED deliberately)` : "All checks passed."}`);
+  console.log(`\n${failed ? `${failed} CHECK(S) FAILED — data may have changed since the 31 Oct 2026 snapshot (bump EXPECTED deliberately)` : "All checks passed."}`);
   process.exit(failed ? 1 : 0);
 }
 
