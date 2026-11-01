@@ -272,23 +272,30 @@
     if (panel.hidden) { state.discipline = []; return; }
     state.discipline = YCACDiscipline.ledger(feed, {
       date: state.match.date, upcoming: !isFinal(state.match), matches: state.allMatches, today: todayISO(),
+      players: [...state.playersById.values()], reports: window.YCACTeamBookings || [],
     });
+    const source = (card) => t(card.source === "team" ? "disciplineTeamReport" : "disciplineLeagueReport");
+    const matchCards = !isFinal(state.match) ? [] : state.discipline.flatMap((row) => row.history
+      .filter((card) => card.matchId === state.match.id).map((card) => ({ ...card, name: row.name })));
+    const matchSummary = matchCards.length ? `<div class="discipline-match-cards"><h3>${esc(t("disciplineMatchCards"))}</h3>${matchCards.map((card) => `<div class="discipline-match-card"><strong>${esc(card.name)}</strong><span>${esc(source(card))}</span></div>`).join("")}</div>` : "";
     const rows = state.discipline.map((row) => {
-      const status = row.suspended ? "disciplineSuspended" : row.pending ? "disciplinePending" : row.cycle === 2 ? "disciplineRisk" : "disciplineCycle";
-      const history = row.history.map((card) => `<li>${esc(formatDate(card.date))} · ${esc(card.opponent)}</li>`).join("");
-      const bans = row.suspensions.map((ban) => `<li>${esc(t(ban.served ? "disciplineServed" : "disciplineBan"))}: ${ban.date ? `${esc(formatDate(ban.date))} · ${esc(ban.opponent)}` : esc(t("disciplinePending"))}</li>`).join("");
-      return `<article class="discipline-player ${row.suspended ? "is-suspended" : row.cycle === 2 ? "is-at-risk" : ""}">
-        <div class="discipline-heading"><strong>${esc(row.name)}</strong><span>${esc(t("disciplineTotal", { n: row.total }))}</span><span class="discipline-status">${esc(t(status, { n: row.cycle }))}</span></div>
+      const status = row.suspended ? "disciplineSuspended" : row.pending ? "disciplinePending"
+        : row.provisionalSuspended ? "disciplinePossibleSuspended" : row.provisionalPending ? "disciplinePossiblePending"
+          : row.reportedTotal ? (row.cycle === 2 ? "disciplinePossibleRisk" : "disciplinePossibleCycle")
+            : row.cycle === 2 ? "disciplineRisk" : "disciplineCycle";
+      const history = row.history.map((card) => `<li>${esc(formatDate(card.date))} · ${esc(card.opponent)} · ${esc(source(card))}</li>`).join("");
+      const bans = row.suspensions.map((ban) => `<li>${esc(t(ban.provisional ? (ban.served ? "disciplinePossiblePlayed" : "disciplinePossibleBan") : ban.served ? "disciplineServed" : "disciplineBan"))}: ${ban.date ? `${esc(formatDate(ban.date))} · ${esc(ban.opponent)}` : esc(t("disciplineNextGame"))}</li>`).join("");
+      return `<article class="discipline-player ${row.suspended ? "is-suspended" : row.provisionalSuspended || row.provisionalPending || row.cycle === 2 ? "is-at-risk" : ""}">
+        <div class="discipline-heading"><strong>${esc(row.name)}</strong><span>${esc(t(row.total === 1 ? "disciplineTotalOne" : "disciplineTotal", { n: row.total }))}</span>${row.reportedTotal ? `<small class="discipline-source">${esc(t("disciplineIncludesTeam"))}</small>` : ""}<span class="discipline-status">${esc(t(status, { n: row.cycle }))}</span></div>
         <details><summary>${esc(t("disciplineHistory"))}</summary><ul>${history}</ul>${bans ? `<ul>${bans}</ul>` : ""}</details>
       </article>`;
     }).join("");
-    target.innerHTML = `<p class="fc-intro">${esc(t("disciplineRule"))}</p><p class="admin-note">${esc(t("disciplineSource", { date: formatDate(feed.updated) }))}</p>${rows || empty("disciplineEmpty")}`;
+    target.innerHTML = `<p class="fc-intro">${esc(t("disciplineRule"))}</p><p class="admin-note">${esc(t("disciplineSource", { date: formatDate(feed.updated) }))}</p>${matchSummary}${rows || empty("disciplineEmpty")}`;
   }
 
   const suspendedPlayer = (id) => {
     if (!window.YCACDiscipline) return false;
-    const player = state.playersById.get(id);
-    return Boolean(player && state.discipline.some((row) => row.suspended && [player.display_name, player.display_name_full].filter(Boolean).some((name) => YCACDiscipline.norm(name) === YCACDiscipline.norm(row.name))));
+    return state.discipline.some((row) => row.suspended && row.playerId === id);
   };
 
   /* Wave 35 — a played result in its season: the form that entered it, the

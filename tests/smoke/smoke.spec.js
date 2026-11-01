@@ -91,8 +91,15 @@ test("the played Kilimanjaro match exposes the squad confirmation flow", async (
   await expect(page.locator("#match-hero")).toContainText("Kilimanjaro FC");
   await expect(page.locator("#squad-panel")).toBeVisible();
   await expect(page.locator("#squad-pitch .pk-slot")).toHaveCount(11);
-  await expect(page.locator("#squad-confirm-hint")).toContainText(/mark the substitutes|confirmed and locked/i);
+  await expect(page.locator("#squad-pitch .pk-slot.assigned")).toHaveCount(11);
+  await expect(page.locator("#squad-pitch")).toContainText("Muro");
+  await expect(page.locator("#squad-bench [data-played-sub]:checked")).toHaveCount(3);
+  await expect(page.locator("#squad-confirm-hint")).toContainText("confirmed and locked");
   await expect(page.locator("#squad-confirm-hint")).not.toContainText("unavailable");
+  const muro = page.locator("#discipline-panel .discipline-match-card", { hasText: "Muro" });
+  await expect(muro).toHaveCount(1);
+  await expect(muro).toContainText(/Team report|League publication/);
+  await expect(page.locator("#discipline-panel .discipline-player", { hasText: "Muro" })).toContainText(/yellow card/);
   expect(errors).toEqual([]);
 });
 

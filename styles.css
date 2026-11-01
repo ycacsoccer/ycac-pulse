@@ -890,6 +890,10 @@ svg.timing-svg, svg.trajectory-svg { display: block; width: 100%; height: auto; 
   .profile-competition-head > small { align-self: center; }
 }
 .discipline-player { border-top: 1px solid var(--line, #ddd); padding: 1rem 0; }
+.discipline-match-cards { margin: 1rem 0; padding: .8rem 1rem; background: #f7f4e8; }
+.discipline-match-cards h3 { margin: 0 0 .45rem; font-size: .9rem; }
+.discipline-match-card { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .75rem; font-size: .85rem; }
+.discipline-match-card span, .discipline-source { color: var(--muted); font-size: .75rem; }
 .discipline-heading { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; }
 .discipline-status { font-size: .8rem; font-weight: 700; }
 .discipline-player.is-suspended .discipline-status { color: #b42318; }

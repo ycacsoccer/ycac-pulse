@@ -197,14 +197,23 @@ Both accept `-- --dry-run` (no file/database writes) and `-- --no-sync` (generat
 files without touching Supabase). Commit the generated files to publish; review the console's
 warnings and update the live verifier row counts if database records were added.
 
-`match.html` shows each booked player's season total, dates/opponents, one-card-away warnings and
-suspension history. Every third league yellow earns a one-game league suspension; friendlies do
-not serve bans. Seasons reset in August. Past reviews stop at the match date. Future suspensions
-are projected onto the next scheduled league match and move with reschedules; only completed
-league results count as served. Suspended players (exact display/full-name match) are flagged in
-the roster, excluded from suggestions/bench refresh, and cannot be added or saved in the squad.
-Counts cover **published bookings only**, not unreported cards; confirm projected bans with the
-league. The goals panel falls back to published scorer names when no local goal rows exist.
+`match.html` shows bookings for the match and each player's known season total, dates/opponents,
+one-card-away warnings and suspension history. Team-reported yellow cards live in the separate
+`team-bookings.js`, keyed by match ID and player ID; they do not change the locked squad, appearance
+records, or generated `fixtures.js`. Add an entry with its own stable ID only when the team has
+reported a booking; do not invent a minute or official name. An updated league feed replaces at most
+one report when its player name uniquely matches a roster display/full name and its date/opponent
+uniquely match the local fixture. Unknown names and ambiguous matches are not guessed, so a report
+and an unmatched published entry may refer to the same booking and need manual review.
+
+Every third league yellow earns a one-game league suspension; friendlies do not serve bans. Seasons
+reset in August, past reviews stop at the match date, and future bans are projected onto the next
+scheduled league fixture. Squad restrictions apply only when three **published** bookings independently
+support a ban for an unambiguously matched player. Calculations that depend on a team report are
+clearly provisional and never block selection by themselves. A completed game alone does not confirm
+that a provisional ban was actually served. All totals and projections can be incomplete if bookings
+are missing or names do not match, and must be confirmed with the league. The goals panel falls back
+to published scorer names when no local goal rows exist.
 
 Upcoming `match.html` pages also include **BAND sign-up drafts**: separate editable, copy-ready
 STANDARD and YC&AC Priority + Starting GK descriptions using the supplied Japanese/English
