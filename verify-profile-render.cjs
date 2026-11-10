@@ -117,8 +117,19 @@ const get = async (path) => {
   "every card splits TML + Friendly", `${splits} rows across ${cardCount} cards`);
   check(grid.includes("Appearance rate") && /\d+%/.test(grid) && grid.includes(" G · ") && grid.includes(" A</span>"),
     "card rows carry apps, appearance rate, goals and assists");
-  check((grid.match(/class="age-badge /g) || []).length === cardCount,
-    "every active player card has a colour-coded age badge", `${cardCount} badges`);
+  const cardMarkup = new Map([...grid.matchAll(/<a class="player-card" href="player\.html\?id=([^"]+)">([\s\S]*?)<\/a>/g)]
+    .map((match) => [decodeURIComponent(match[1]), match[2]]));
+  const activePlayers = players.filter((player) => player.active !== false);
+  const incorrectAgeCards = activePlayers.filter((player) => {
+    const card = cardMarkup.get(player.id);
+    if (!card) return true;
+    if (!player.age_band) return card.includes('class="age-badge ');
+    return !card.includes(`class="age-badge ${YCACAgeBands.className(player.age_band)}"`)
+      || !card.includes(`>${YCACAgeBands.label(player.age_band)}</span>`);
+  });
+  check(cardCount === activePlayers.length && !incorrectAgeCards.length,
+    "player cards show the correct age badge only when an age band is set",
+    incorrectAgeCards.map((player) => player.id).join(", ") || `${activePlayers.length} cards checked`);
 
   // --- 3b. wave 18: grouped into position sections, selection wording --------
   const sections = (grid.match(/position-section-head/g) || []).length;

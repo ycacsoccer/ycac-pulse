@@ -40,6 +40,20 @@ test("wave 28: age groups are colour-coded on every active player card", async (
   await expect(page.locator('.player-card:has-text("Chris Ito") .age-badge')).toHaveClass(/age-30s/);
 });
 
+test("an unknown age remains unset on the player card and profile", async ({ page }) => {
+  api = await mockSupabase(page, { squadFeature: true });
+  api.store.players.find((player) => player.id === "p-evn").age_band = null;
+  await page.reload();
+  const card = page.locator('.player-card:has-text("Evan Cole")');
+  await expect(card).toBeVisible();
+  await expect(card.locator(".age-badge")).toHaveCount(0);
+  await expect(page.locator('.player-card:has-text("Chris Ito") .age-badge')).toHaveClass(/age-30s/);
+  await card.click();
+  await expect(page.locator("#profile-hero")).toContainText("Evan Cole");
+  await expect(page.locator("#profile-hero .age-fact")).toHaveCount(0);
+  await expect(page.locator("#age-band-select")).toHaveValue("");
+});
+
 test("selection-group filter chips use appearance-frequency wording", async ({ page }) => {
   await expect(page.locator("#tier-filters")).toContainText("Plays often");
   await expect(page.locator("#tier-filters")).toContainText("Not yet played");

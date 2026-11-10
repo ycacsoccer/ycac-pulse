@@ -1,7 +1,7 @@
 /* Verifies stats.js against the data in Supabase — the engine's regression
    snapshot (Phase 12 rewired this off gviz; the whole suite now reads one
-   source of truth). The EXPECTED block is the 31 Oct 2026 snapshot after the
-   2–2 Kilimanjaro result, before its lineup was recorded. Once that squad is
+   source of truth). The EXPECTED block is the 31 Oct 2026 match baseline after
+   the 2–2 Kilimanjaro result, with subsequent roster additions. Once that squad is
    confirmed, verify its appearances against the locked squad separately and
    keep comparing historical totals to the same baseline. Other live data
    changes still require a deliberate snapshot update.
@@ -26,8 +26,8 @@ async function grab(table, query = "select=*") {
 }
 
 const EXPECTED = {
-  rows: { players: 42, matches: 15, appearances: 182, goals: 46 },
-  counts: { all: 13, tml: 6, friendly: 7, players: 42, used: 36 },
+  rows: { players: 43, matches: 15, appearances: 182, goals: 46 },
+  counts: { all: 13, tml: 6, friendly: 7, players: 43, used: 36 },
   players: {
     rick: { tml: "5/6", friendly: "7/7", all: "12/13", tier: "core", reliability: 90 },
     urabe: { tml: "5/6", friendly: "7/7", all: "12/13", tier: "core" },
@@ -42,6 +42,7 @@ const EXPECTED = {
     ryuji: { tier: "inactive" },
     micah: { tier: "inactive" },
     ryuichi_shiba: { tml: "0/6", friendly: "0/7", all: "0/13", tier: "inactive" },
+    ito_taiyo: { tml: "0/6", friendly: "0/7", all: "0/13", tier: "inactive" },
   },
 };
 

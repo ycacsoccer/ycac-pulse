@@ -91,8 +91,8 @@ async function main() {
     const matches = await call(`${BASE}/matches?select=*&order=date`, { headers: anonHeaders });
     check(players.length >= 30 && matches.length >= 10, "public queries (players + matches)", `${players.length} players, ${matches.length} matches`);
     const activePlayers = players.filter((row) => row.active !== false);
-    check(activePlayers.every((row) => ["17-20", "20s", "30s", "40s", "50s"].includes(row.age_band)),
-      "every active player has a valid public age band", `${activePlayers.filter((row) => row.age_band).length}/${activePlayers.length}`);
+    check(activePlayers.every((row) => row.age_band == null || ["17-20", "20s", "30s", "40s", "50s"].includes(row.age_band)),
+      "specified public age bands are valid (unknown ages may be unset)", `${activePlayers.filter((row) => row.age_band).length}/${activePlayers.length} set`);
 
     const allGoals = await call(`${BASE}/goals?select=*`, { headers: anonHeaders });
     const scorerCounts = new Map();
