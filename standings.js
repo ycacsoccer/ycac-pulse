@@ -9,24 +9,24 @@
 (() => {
   const standings = {
     competition: "TML Division 3",
-    updated: "2026-10-26",
+    updated: "2026-11-13",
     rows: [
       { team: "BFC Tokyo", p: 6, w: 5, d: 1, l: 0, gf: 25, ga: 9, pts: 16 },
-      { team: "Corinthians Harbour FC", p: 6, w: 4, d: 1, l: 1, gf: 25, ga: 14, pts: 13 },
+      { team: "Corinthians Harbour FC", p: 7, w: 4, d: 2, l: 1, gf: 29, ga: 18, pts: 14 },
       { team: "F. Lions FC", p: 6, w: 3, d: 1, l: 2, gf: 25, ga: 16, pts: 10 },
-      { team: "Kilimanjaro FC", p: 5, w: 3, d: 0, l: 2, gf: 15, ga: 17, pts: 9 },
-      { team: "YCAC Pulse", p: 5, w: 2, d: 1, l: 2, gf: 16, ga: 11, pts: 7, us: true },
-      { team: "Jetro FC", p: 5, w: 2, d: 1, l: 2, gf: 8, ga: 9, pts: 7 },
-      { team: "Votty SC", p: 4, w: 1, d: 2, l: 1, gf: 5, ga: 7, pts: 5 },
-      { team: "Inter Tokyo FC", p: 6, w: 1, d: 2, l: 3, gf: 14, ga: 18, pts: 5 },
+      { team: "Kilimanjaro FC", p: 6, w: 3, d: 1, l: 2, gf: 17, ga: 19, pts: 10 },
+      { team: "YCAC Pulse", p: 6, w: 2, d: 2, l: 2, gf: 18, ga: 13, pts: 8, us: true },
+      { team: "Votty SC", p: 5, w: 2, d: 2, l: 1, gf: 7, ga: 8, pts: 8 },
+      { team: "Jetro FC", p: 6, w: 2, d: 1, l: 3, gf: 9, ga: 11, pts: 7 },
+      { team: "Inter Tokyo FC", p: 7, w: 1, d: 3, l: 3, gf: 18, ga: 22, pts: 6 },
       { team: "Saitama JETS FC", p: 4, w: 0, d: 1, l: 3, gf: 11, ga: 14, pts: 1 },
       { team: "Albion Old Boys FC", p: 5, w: 0, d: 0, l: 5, gf: 5, ga: 34, pts: 0 },
     ],
     topScorers: [
+      { name: "Kalifa Diabate", club: "Kilimanjaro FC", goals: 7 },
       { name: "Michal Aurstad", club: "BFC Tokyo", goals: 5 },
       { name: "Ke Sun", club: "YCAC Pulse", goals: 5 },
       { name: "Devin Martin", club: "F. Lions FC", goals: 4 },
-      { name: "Kalifa Diabate", club: "Kilimanjaro FC", goals: 4 },
     ],
   };
   if (typeof module !== "undefined" && module.exports) module.exports = standings;

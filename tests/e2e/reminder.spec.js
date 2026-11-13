@@ -1,15 +1,27 @@
 const { test, expect } = require("@playwright/test");
 const { mockSupabase, watchErrors, fitsViewport } = require("./mocks");
 const fixtures = require("../fixtures/public-data");
-const standings = require("../../standings.js");
 const forecast = require("../../forecast.js");
 const { generateReminder } = require("../../band.js");
 
 const match = { id: "x1", date: "2026-10-31", opponent: "Kilimanjaro FC", venue: "YC&AC", kickoff: "18:00", competition: "TML Division 3", ycac_goals: null, opponent_goals: null };
+// Historical snapshot for this match, independent of the changing league feed.
+const standings = {
+  competition: "TML Division 3", updated: "2026-10-26",
+  rows: [
+    { team: "BFC Tokyo", p: 6, w: 5, d: 1, l: 0, gf: 25, ga: 9, pts: 16 },
+    { team: "Corinthians Harbour FC", p: 6, w: 4, d: 1, l: 1, gf: 25, ga: 14, pts: 13 },
+    { team: "F. Lions FC", p: 6, w: 3, d: 1, l: 2, gf: 25, ga: 16, pts: 10 },
+    { team: "Kilimanjaro FC", p: 5, w: 3, d: 0, l: 2, gf: 15, ga: 17, pts: 9 },
+    { team: "YCAC Pulse", p: 5, w: 2, d: 1, l: 2, gf: 16, ga: 11, pts: 7, us: true },
+  ],
+  topScorers: [],
+};
 
-async function setup(page, fixture = match) {
+async function setup(page, fixture = match, leagueTable = standings) {
   const api = await mockSupabase(page);
   await page.route("**/rest/v1/matches?**", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify(fixtures.matches.map((row) => row.id === "x1" ? fixture : row)) }));
+  await page.route("**/standings.js*", (route) => route.fulfill({ contentType: "text/javascript", body: `window.YCACStandings = ${JSON.stringify(leagueTable)};` }));
   return api;
 }
 
@@ -61,6 +73,17 @@ test("upcoming reminder follows the sign-up drafts, uses the forecast and copies
     expect(await fitsViewport(page)).toBe(true);
   }
   expect(api.denied).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test("a reminder for an earlier match does not use future standings", async ({ page }) => {
+  await setup(page, match, { ...standings, updated: "2026-11-13" });
+  const errors = watchErrors(page);
+  await page.clock.install({ time: new Date("2026-10-30T03:00:00Z") });
+  await page.goto("/match.html?id=x1");
+  const draft = page.locator("#reminder-draft");
+  await expect(draft).toHaveValue(/our last 4 games/);
+  await expect(draft).not.toHaveValue(/in the league with/);
   expect(errors).toEqual([]);
 });
 

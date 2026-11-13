@@ -10,14 +10,14 @@
 (() => {
   const fixtures = {
     competition: "TML Division 3",
-    updated: "2026-10-26",
-    clubs: ["Albion Old Boys FC", "BFC Tokyo", "Corinthians Harbour FC", "F. Lions FC", "Inter Tokyo FC", "Jetro FC", "Kilimanjaro FC", "Saitama JETS FC", "VJ Bridge FC", "Votty SC", "YCAC Pulse", "Zion FC"],
+    updated: "2026-11-13",
+    clubs: ["Albion Old Boys FC", "BFC Tokyo", "Corinthians Harbour FC", "F. Lions FC", "Inter Tokyo FC", "Jetro FC", "Kilimanjaro FC", "Saitama JETS FC", "Votty SC", "YCAC Pulse"],
     results: [
       { date: "2026-08-23", home: "Jetro FC", away: "Kilimanjaro FC", hg: 4, ag: 1, venue: "BST Nagasawa Sports Ground", scorers: {"home":["Raito Yamamoto","Daichi Katsuno","Christopher Ray","Kenyu Konishi"],"away":[]}, yellowCards: {"home":["Kenyu Konishi","Jun Kamiya"],"away":[]} },
       { date: "2026-08-29", home: "YCAC Pulse", away: "Albion Old Boys FC", hg: 8, ag: 2, venue: "YC&AC", scorers: {"home":["Ryu Sato","Ke Sun","Ke Sun","Ke Sun","Ryoga Ishikawa","Kosei Watanabe","Kosei Watanabe","Rick Li"],"away":["Yoshinobu Nakanishi","Rashmir Casanova"]}, yellowCards: {"home":["Rick Li"],"away":["Danila Leyko"]} },
       { date: "2026-08-30", home: "BFC Tokyo", away: "Votty SC", hg: 4, ag: 1, venue: "BST Nagasawa Sports Ground", scorers: {"home":["Ilhan Kaya","Tijan Njai","Reito Sakamoto","Piotr Kucharczyk"],"away":["Ryota Koyama"]}, yellowCards: {"home":["Yuki Sasaki"],"away":["Shoma Kado"]} },
       { date: "2026-08-30", home: "Corinthians Harbour FC", away: "Jetro FC", hg: 3, ag: 0, venue: "BST Nagasawa Sports Ground", scorers: {"home":["Tomohiro Kajiyama","Kei Mizouchi","Akira Udagawa"],"away":[]}, yellowCards: {"home":[],"away":["Kunitoshi Haraguchi"]} },
-      { date: "2026-08-30", home: "Kilimanjaro FC", away: "Inter Tokyo FC", hg: 3, ag: 1, venue: "BST Nagasawa Sports Ground", scorers: {"home":[],"away":[]}, yellowCards: {"home":[],"away":[]} },
+      { date: "2026-08-30", home: "Kilimanjaro FC", away: "Inter Tokyo FC", hg: 3, ag: 1, venue: "BST Nagasawa Sports Ground", scorers: {"home":["Kalifa Diabate","Kalifa Diabate","Kalifa Diabate"],"away":["Mark Tetteh-Tsifoanya"]}, yellowCards: {"home":["Saimon Kikoti","Kalifa Diabate"],"away":[]} },
       { date: "2026-08-30", home: "Saitama JETS FC", away: "F. Lions FC", hg: 4, ag: 4, venue: "Horisaki Koen", scorers: {"home":["Masaru Kanai","Shingo Arai","Kouki Ebina","Lucas Ponce"],"away":["Devin Martin","Devin Martin","Makoto Naojima","Hayato Oya"]}, yellowCards: {"home":["Josh Gomez"],"away":["Masashi Ogasawara"]} },
       { date: "2026-09-05", home: "Albion Old Boys FC", away: "Corinthians Harbour FC", hg: 1, ag: 4, venue: "BST Nagasawa Sports Ground", scorers: {"home":[],"away":[]}, yellowCards: {"home":[],"away":[]} },
       { date: "2026-09-05", home: "Votty SC", away: "Inter Tokyo FC", hg: 1, ag: 1, venue: "Oomiya Kenpo", scorers: {"home":[],"away":[]}, yellowCards: {"home":[],"away":[]} },
@@ -31,7 +31,7 @@
       { date: "2026-09-27", home: "Kilimanjaro FC", away: "Corinthians Harbour FC", hg: 1, ag: 10, venue: "Horisaki Koen", scorers: {"home":[],"away":[]}, yellowCards: {"home":[],"away":[]} },
       { date: "2026-09-27", home: "Saitama JETS FC", away: "Inter Tokyo FC", hg: 1, ag: 2, venue: "Redsland", scorers: {"home":[],"away":[]}, yellowCards: {"home":[],"away":[]} },
       { date: "2026-10-04", home: "Kilimanjaro FC", away: "F. Lions FC", hg: 3, ag: 2, venue: "Ageo Hiratsuka Soccer Field", scorers: {"home":[],"away":[]}, yellowCards: {"home":[],"away":[]} },
-      { date: "2026-10-04", home: "YCAC Pulse", away: "BFC Tokyo", hg: 0, ag: 4, venue: "YC&AC", scorers: {"home":[],"away":["Michal Aurstad","Reito Sakamoto","Naoyuki Shimomura","Davi Azevedo"]}, yellowCards: {"home":["Umit Ay"],"away":["Rin Ooi","Michael Aurstad","Takaaki Mukai"]} },
+      { date: "2026-10-04", home: "YCAC Pulse", away: "BFC Tokyo", hg: 0, ag: 4, venue: "YC&AC", scorers: {"home":[],"away":["Michal Aurstad","Reito Sakamoto","Naoyuki Shimomura","Davi Azevedo"]}, yellowCards: {"home":["Umit Ay"],"away":["Rin Ooi","Michael Aurstad - Yellow Card","Takaaki Mukai"]} },
       { date: "2026-10-11", home: "Corinthians Harbour FC", away: "Saitama JETS FC", hg: 5, ag: 4, venue: "Redsland", scorers: {"home":[],"away":["Masaru Kanai","Masaru Kanai","Kouki Ebina"]}, yellowCards: {"home":[],"away":[]} },
       { date: "2026-10-12", home: "BFC Tokyo", away: "Inter Tokyo FC", hg: 5, ag: 5, venue: "BST Nagasawa Sports Ground", scorers: {"home":["Michal Aurstad","Michal Aurstad","Koki Tanaka","Koki Tanaka","Kai Watanabe"],"away":["Amir Hazem","Amir Hazem","Kikka Maeda","Toui Kamikage","Jeffrey Abdul Kadir"]}, yellowCards: {"home":["Kai Watanabe","Tijan Njai","Ilhan Kaya"],"away":[]} },
       { date: "2026-10-12", home: "Votty SC", away: "Jetro FC", hg: 0, ag: 0, venue: "BST Nagasawa Sports Ground", scorers: {"home":[],"away":[]}, yellowCards: {"home":["Kenta Shimano","Hisashi Yamada"],"away":["Kyosuke Kamei"]} },
@@ -39,12 +39,11 @@
       { date: "2026-10-17", home: "YCAC Pulse", away: "Corinthians Harbour FC", hg: 2, ag: 2, venue: "YC&AC", scorers: {"home":["Ryu Sato","Shinnosuke Kitagawa"],"away":["Masaki Sato","Kosuke Hirano"]}, yellowCards: {"home":["Umit Ay","Qingguo Meng"],"away":["Sora Matsuura","Naoya Takahashi"]} },
       { date: "2026-10-18", home: "Albion Old Boys FC", away: "Kilimanjaro FC", hg: 0, ag: 7, venue: "BST Nagasawa Sports Ground", scorers: {"home":[],"away":["Kalifa Diabate","Kalifa Diabate","Kalifa Diabate","Kalifa Diabate","Aboubakar Diabi"]}, yellowCards: {"home":[],"away":[]} },
       { date: "2026-10-24", home: "BFC Tokyo", away: "Albion Old Boys FC", hg: 3, ag: 0, venue: "Koshikiya Ground", scorers: {"home":["Michal Aurstad","Ebai Enow Tanjong","Ryota Hirai"],"away":[]}, yellowCards: {"home":[],"away":[]} },
+      { date: "2026-10-31", home: "YCAC Pulse", away: "Kilimanjaro FC", hg: 2, ag: 2, venue: "YC&AC", scorers: {"home":["Masashi Nakaya","Ryu Sato"],"away":["Felix William","Christopher Kokelea"]}, yellowCards: {"home":["Murat Dogan"],"away":["Kalifa Diabate"]} },
+      { date: "2026-11-03", home: "Corinthians Harbour FC", away: "Inter Tokyo FC", hg: 4, ag: 4, venue: "YC&AC", scorers: {"home":["Tomohiro Kajiyama","Ian Dupong","Kosuke Hirano","Kai Shinto"],"away":["Amir Andrea Haze","Ghaith Chebbi","Ghaith Chebbi","Jeffrey Abdul Kadir"]}, yellowCards: {"home":["Masaki Sato","Shunsuke Ito"],"away":["Toui Kamikage"]} },
+      { date: "2026-11-03", home: "Jetro FC", away: "Votty SC", hg: 1, ag: 2, venue: "BST Nagasawa Sports Ground", scorers: {"home":["Christian Rey Jimenez"],"away":["Shota Sakuma","Ryota Koyama"]}, yellowCards: {"home":["Joaquin Garcia","Kyohei Yoshida"],"away":["Shota Sakuma","Yosuke Shimono"]} },
     ],
     fixtures: [
-      { date: "2026-10-31", home: "YCAC Pulse", away: "Kilimanjaro FC", time: "18:00", venue: "YC&AC" },
-      { date: "2026-11-01", home: "VJ Bridge FC", away: "Zion FC", time: "19:15", venue: "Horisaki Koen" },
-      { date: "2026-11-03", home: "Corinthians Harbour FC", away: "Inter Tokyo FC", time: "16:15", venue: "YC&AC" },
-      { date: "2026-11-03", home: "Jetro FC", away: "Votty SC", time: "12:15", venue: "BST Nagasawa Sports Ground" },
       { date: "2026-11-08", home: "Albion Old Boys FC", away: "Jetro FC", time: "16:40", venue: "BST Nagasawa Sports Ground" },
       { date: "2026-11-14", home: "Albion Old Boys FC", away: "Votty SC", time: "12:05", venue: "Koshikiya Ground" },
       { date: "2026-11-14", home: "Corinthians Harbour FC", away: "BFC Tokyo", time: "16:30", venue: "Koshikiya Ground" },
@@ -54,6 +53,8 @@
       { date: "2026-11-22", home: "F. Lions FC", away: "BFC Tokyo", time: "17:15", venue: "Fukuda Denshi Field" },
       { date: "2026-11-22", home: "Saitama JETS FC", away: "Kilimanjaro FC", time: "09:20", venue: "Redsland" },
       { date: "2026-11-23", home: "Corinthians Harbour FC", away: "Votty SC", time: "15:20", venue: "BST Nagasawa Sports Ground" },
+      { date: "2026-11-28", home: "Inter Tokyo FC", away: "Votty SC", time: "17:20", venue: "Fukuda Denshi Field" },
+      { date: "2026-11-29", home: "Saitama JETS FC", away: "F. Lions FC", time: "16:20", venue: "Redsland" },
     ],
   };
   if (typeof module !== "undefined" && module.exports) module.exports = fixtures;
