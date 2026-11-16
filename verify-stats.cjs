@@ -26,7 +26,7 @@ async function grab(table, query = "select=*") {
 }
 
 const EXPECTED = {
-  rows: { players: 43, matches: 15, appearances: 182, goals: 47 },
+  rows: { players: 43, matches: 16, appearances: 182, goals: 47 },
   counts: { all: 14, tml: 7, friendly: 7, players: 43, used: 36 },
   players: {
     rick: { tml: "5/7", friendly: "7/7", all: "12/14", tier: "core", reliability: 83 },
@@ -52,6 +52,7 @@ async function main() {
     ["players", "matches", "appearances", "goals"].map((table) => grab(table)));
   const kilimanjaro = matches.find((match) => match.id === "m007");
   const jetro = matches.find((match) => match.id === "m008");
+  const bfcFixture = matches.find((match) => match.id === "m010");
   const confirmed = Boolean(kilimanjaro?.squad_confirmed_at);
   const matchApps = appearances.filter((row) => row.match_id === "m007");
   const baselineApps = confirmed ? appearances.filter((row) => row.match_id !== "m007") : appearances;
@@ -79,6 +80,9 @@ async function main() {
   check("31 Oct scorers", goals.filter((goal) => goal.match_id === "m007").map((goal) => goal.scorer_id).sort().join(","), "masashi,ryu");
   check("15 Nov result", jetro ? `${jetro.ycac_goals}–${jetro.opponent_goals}` : "MISSING", "1–2");
   check("15 Nov scorer", goals.filter((goal) => goal.match_id === "m008").map((goal) => goal.scorer_id).sort().join(","), "ryoga");
+  // The league listed this under "YC&AC" by mistake; the user confirmed Pulse.
+  check("6 Dec fixture", bfcFixture ? `${bfcFixture.date}|${bfcFixture.opponent}|${bfcFixture.competition}|${bfcFixture.home_away}|${bfcFixture.kickoff}` : "MISSING",
+    "2026-12-06|BFC Tokyo|TML Division 3|home|11:00");
   if (confirmed) {
     const groups = new Set(savedSquads.map((row) => row.saved_squad_id));
     const picked = savedSquads.filter((row) => row.selection_type === "starter" || (row.selection_type === "sub" && row.played === true));
