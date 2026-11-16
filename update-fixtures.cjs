@@ -2,6 +2,7 @@
      npm run update:fixtures                 fetch → parse → write fixtures.js + sync
      npm run update:fixtures -- --dry-run    preview everything, write nothing
      npm run update:fixtures -- --no-sync    skip the Supabase fixture/scoring sync
+     npm run update:fixtures -- --confirm-scorer "m008:Published Name=player_id"
 
    Scrapes every page of footyjapancompetitions.com/fixtures-results and keeps
    the <h3>Division 3</h3> sections only: every club's fixtures (date, kickoff,
@@ -13,7 +14,8 @@
    YC&AC fixtures with the matches table: a fixture the site doesn't have yet
    is INSERTED (deduped by date + normalised opponent, ids continue the mNNN
    series). Missing scores and complete, unambiguous scorer lists are filled
-   in; existing scores/goals are never overwritten. Reschedules and conflicts
+   in; existing scores/goals are never overwritten. Unmatched scorers require
+   explicit confirmation before any database writes. Reschedules and conflicts
    are reported for a human. Both update commands refresh all league feeds. */
 const fs = require("fs");
 const path = require("path");
@@ -377,10 +379,32 @@ function loadLocalEnv() {
   }
 }
 
+const scorerKey = (matchId, name) => JSON.stringify([matchId, name]);
+
+// An explicit confirmation applies to one published name in one match only.
+function parseScorerConfirmations(args) {
+  const confirmations = new Map();
+  for (let index = 0; index < args.length; index++) {
+    const arg = args[index];
+    let value;
+    if (arg === "--confirm-scorer") value = args[++index];
+    else if (arg.startsWith("--confirm-scorer=")) value = arg.slice("--confirm-scorer=".length);
+    else continue;
+    const match = /^([^:=]+):(.+)=(.+)$/.exec(value || "");
+    if (!match || !match[1].trim() || !match[2].trim() || !match[3].trim()) {
+      throw new Error('invalid --confirm-scorer; use "match_id:Published Name=player_id"');
+    }
+    const key = scorerKey(match[1].trim(), match[2].trim());
+    if (confirmations.has(key)) throw new Error(`duplicate scorer confirmation: ${match[1].trim()} / ${match[2].trim()}`);
+    confirmations.set(key, match[3].trim());
+  }
+  return confirmations;
+}
+
 // Fill gaps only: no fuzzy player matching, no replacing coach-entered
 // assists/minutes, and no importing a partial scorer list as a complete one.
-function planScoring(feed, matches, players, goals) {
-  const updates = [], inserts = [], warnings = [];
+function planScoring(feed, matches, players, goals, confirmations = new Map()) {
+  const updates = [], inserts = [], warnings = [], unresolved = new Map();
   for (const result of feed.results.filter((row) => isUs(row.home) || isUs(row.away))) {
     const home = isUs(result.home);
     const opponent = home ? result.away : result.home;
@@ -392,12 +416,25 @@ function planScoring(feed, matches, players, goals) {
     if ((match.ycac_goals != null && Number(match.ycac_goals) !== ourGoals) || (match.opponent_goals != null && Number(match.opponent_goals) !== theirGoals)) continue;
     if (match.ycac_goals == null || match.opponent_goals == null) updates.push({ id: match.id, ycac_goals: ourGoals, opponent_goals: theirGoals });
     const names = result.scorers[home ? "home" : "away"];
+    const existing = goals.filter((row) => row.match_id === match.id);
     const mapped = names.map((name) => {
       const candidates = players.filter((player) => [player.display_name, player.display_name_full].filter(Boolean).some((value) => playerNorm(value) === playerNorm(name)));
-      if (candidates.length !== 1) warnings.push(`${match.id}: scorer "${name}" has ${candidates.length} exact roster matches — no goal rows imported`);
-      return candidates.length === 1 ? candidates[0].id : null;
+      if (candidates.length === 1) return candidates[0].id;
+      const key = scorerKey(match.id, name);
+      if (!existing.length && confirmations.has(key)) {
+        const confirmed = players.filter((player) => player.id === confirmations.get(key));
+        if (confirmed.length !== 1) throw new Error(`${match.id}: confirmed player ID "${confirmations.get(key)}" is not unique in the roster`);
+        return confirmed[0].id;
+      }
+      if (existing.length) {
+        warnings.push(`${match.id}: scorer "${name}" has ${candidates.length} exact roster matches — existing goal rows cannot be reconciled automatically`);
+      } else {
+        const pending = unresolved.get(key);
+        if (pending) pending.count += 1;
+        else unresolved.set(key, { matchId: match.id, date: match.date, opponent, name, count: 1 });
+      }
+      return null;
     });
-    const existing = goals.filter((row) => row.match_id === match.id);
     if (existing.length) {
       if (existing.length !== ourGoals) warnings.push(`${match.id}: ${existing.length}/${ourGoals} goal rows already entered — reconcile manually (assists/minutes preserved)`);
       else if (names.length === ourGoals && mapped.every(Boolean) && JSON.stringify([...mapped].sort()) !== JSON.stringify(existing.map((row) => row.scorer_id).sort())) {
@@ -408,10 +445,61 @@ function planScoring(feed, matches, players, goals) {
     if (names.length !== ourGoals) { warnings.push(`${match.id}: published scorers incomplete (${names.length}/${ourGoals}) — no goal rows imported`); continue; }
     if (mapped.every(Boolean)) inserts.push(...mapped.map((scorer_id) => ({ match_id: match.id, scorer_id, assist_id: null, minute: null })));
   }
-  return { updates, inserts, warnings };
+  return { updates, inserts, warnings, unresolved: [...unresolved.values()] };
 }
 
-async function sync(feed, { dryRun }) {
+async function collectScorerConfirmations(unresolved, players, ask) {
+  const confirmations = new Map();
+  for (const scorer of unresolved) {
+    const context = `${scorer.matchId} (${scorer.date} vs ${scorer.opponent}; ${scorer.count} goal${scorer.count === 1 ? "" : "s"})`;
+    const id = (await ask(`  ${context}: which roster ID is "${scorer.name}"? (blank to cancel) `)).trim();
+    const selected = players.filter((player) => player.id === id);
+    if (!id || selected.length !== 1) throw new Error(`${scorer.matchId}: scorer not confirmed; no database changes made`);
+    const player = selected[0];
+    const answer = (await ask(`  Confirm "${scorer.name}" is ${player.display_name} (${player.id})? [y/N] `)).trim().toLowerCase();
+    if (answer !== "y" && answer !== "yes") throw new Error(`${scorer.matchId}: scorer not confirmed; no database changes made`);
+    confirmations.set(scorerKey(scorer.matchId, scorer.name), player.id);
+  }
+  return confirmations;
+}
+
+async function promptScorerConfirmations(unresolved, players) {
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    const names = unresolved.map((row) => `${row.matchId}: "${row.name}"`).join(", ");
+    throw new Error(`scorer confirmation required for ${names}; no database changes made. Ask the user, then rerun with --confirm-scorer "match_id:Published Name=player_id"`);
+  }
+  const readline = require("node:readline/promises");
+  const prompt = readline.createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    console.log("  roster (choose an exact ID; no name is guessed):");
+    for (const player of players) console.log(`    ${player.id}: ${player.display_name}${player.display_name_full ? ` / ${player.display_name_full}` : ""}`);
+    return await collectScorerConfirmations(unresolved, players, (question) => prompt.question(question));
+  } finally {
+    prompt.close();
+  }
+}
+
+async function readSyncData(baseUrl, headers) {
+  const queries = [
+    ["matches?select=id,date,opponent,home_away,competition,venue,kickoff,ycac_goals,opponent_goals", "reading matches"],
+    ["players?select=id,display_name,display_name_full", "reading players"],
+    ["goals?select=match_id,scorer_id", "reading goals"],
+  ];
+  const [matches, players, goals] = await Promise.all(queries.map(async ([query, label]) => {
+    const response = await fetch(`${baseUrl}/rest/v1/${query}`, { headers });
+    if (!response.ok) throw new Error(`${label} failed: HTTP ${response.status}`);
+    return response.json();
+  }));
+  return { matches, players, goals };
+}
+
+// Ordering from the API is not guaranteed. Compare the selected field values,
+// including duplicates, so an edit while the user is answering stops the sync.
+function syncDataSignature(rows) {
+  return JSON.stringify(rows.map((row) => JSON.stringify(Object.keys(row).sort().map((key) => [key, row[key]]))).sort());
+}
+
+async function sync(feed, { dryRun, confirmations = new Map(), prompt = promptScorerConfirmations }) {
   loadLocalEnv();
   const baseUrl = process.env.SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -419,27 +507,36 @@ async function sync(feed, { dryRun }) {
     console.log("  sync: skipped — no SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY (fill in .env to auto-add fixtures)");
     return;
   }
-  const res = await fetch(`${baseUrl}/rest/v1/matches?select=id,date,opponent,home_away,competition,venue,kickoff,ycac_goals,opponent_goals`, {
-    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
-  });
-  if (!res.ok) throw new Error(`reading matches failed: HTTP ${res.status}`);
-  const matches = await res.json();
   const headers = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" };
-  const [players, goals] = await Promise.all(["players?select=id,display_name,display_name_full", "goals?select=match_id,scorer_id"].map(async (query) => {
-    const response = await fetch(`${baseUrl}/rest/v1/${query}`, { headers });
-    if (!response.ok) throw new Error(`reading scoring data failed: HTTP ${response.status}`);
-    return response.json();
-  }));
-  const scoring = planScoring(feed, matches, players, goals);
+  const { matches, players, goals } = await readSyncData(baseUrl, headers);
+  const initialScoring = planScoring(feed, matches, players, goals);
+  const pendingKeys = new Set(initialScoring.unresolved.map((row) => scorerKey(row.matchId, row.name)));
+  for (const [key, id] of confirmations) {
+    if (!pendingKeys.has(key)) throw new Error(`scorer confirmation ${key} does not match an unresolved scorer; no database changes made`);
+    if (players.filter((player) => player.id === id).length !== 1) throw new Error(`confirmed player ID "${id}" is not unique in the roster; no database changes made`);
+  }
+  const approved = new Map(confirmations);
+  let scoring = planScoring(feed, matches, players, goals, approved);
   const plan = planSync(feed, matches, todayISO());
   console.log(`  sync: the feed lists ${plan.feedFixtures} upcoming + ${plan.feedResults} played YC&AC fixtures`);
   if (!plan.inserts.length && !plan.warnings.length) console.log("  sync: site and feed agree — nothing to add");
   for (const insert of plan.inserts) {
-    console.log(`  sync: ${dryRun ? "would insert" : "inserting"} ${insert.date} ${insert.home_away === "home" ? "vs" : "at"} ${insert.opponent}${insert.kickoff ? ` ${insert.kickoff}` : ""}`);
+    console.log(`  sync: ${dryRun ? "would insert" : "planned"} ${insert.date} ${insert.home_away === "home" ? "vs" : "at"} ${insert.opponent}${insert.kickoff ? ` ${insert.kickoff}` : ""}`);
   }
   if (plan.warnings.length) {
     console.log("  sync warnings (look at these by hand):");
     for (const line of plan.warnings) console.log(`    ! ${line}`);
+  }
+  for (const row of scoring.unresolved) console.log(`    ? ${row.matchId}: confirm scorer "${row.name}" (${row.date} vs ${row.opponent}; ${row.count} goal${row.count === 1 ? "" : "s"}) before any database changes`);
+  if (!dryRun && scoring.unresolved.length) {
+    const answers = await prompt(scoring.unresolved, players);
+    for (const [key, id] of answers) approved.set(key, id);
+    scoring = planScoring(feed, matches, players, goals, approved);
+    if (scoring.unresolved.length) throw new Error("not all scorers were confirmed; no database changes made");
+    const latest = await readSyncData(baseUrl, headers);
+    if ([["matches", matches], ["players", players], ["goals", goals]].some(([key, rows]) => syncDataSignature(rows) !== syncDataSignature(latest[key]))) {
+      throw new Error("database changed during scorer confirmation; no database changes made; rerun to review");
+    }
   }
   for (const line of scoring.warnings) console.log(`    ! ${line}`);
   console.log(`  scoring: ${scoring.updates.length} missing scores + ${scoring.inserts.length} goal rows ${dryRun ? "would be imported" : "to import"}`);
@@ -498,6 +595,8 @@ async function build({ fetchImpl = fetch } = {}) {
 async function main({ refreshStandings = true } = {}) {
   const dryRun = process.argv.includes("--dry-run");
   const noSync = process.argv.includes("--no-sync");
+  const confirmations = parseScorerConfirmations(process.argv.slice(2));
+  if (noSync && confirmations.size) throw new Error("--confirm-scorer cannot be used with --no-sync");
   let previous = null;
   try { previous = require(TARGET); } catch (error) { /* first run: no shipped file yet */ }
 
@@ -521,14 +620,15 @@ async function main({ refreshStandings = true } = {}) {
   if (changes.length) { console.log("  changes:"); for (const line of changes) console.log(line); }
   else console.log("  changes: none since the last update");
 
+  if (noSync) console.log("  sync: skipped (--no-sync)");
+  else await sync(feed, { dryRun, confirmations });
+
   if (dryRun) console.log("dry run — fixtures.js not written");
   else {
     fs.writeFileSync(TARGET, renderFile({ updated, clubs: feed.clubs, results: feed.results, fixtures: feed.fixtures }));
     console.log(`fixtures.js rewritten (${feed.results.length} results, ${feed.fixtures.length} fixtures) — commit it to publish`);
   }
 
-  if (noSync) console.log("  sync: skipped (--no-sync)");
-  else await sync(feed, { dryRun });
   if (refreshStandings) await require("./update-standings.cjs").main({ refreshFixtures: false });
 }
 
@@ -540,5 +640,6 @@ if (require.main === module) {
 }
 
 module.exports = {
-  parseDate, parsePage, canonicalise, renderFile, diff, planSync, planScoring, nextMatchId, clubReport, todayISO, norm, build, sync, main,
+  parseDate, parsePage, canonicalise, renderFile, diff, planSync, planScoring, scorerKey, parseScorerConfirmations,
+  collectScorerConfirmations, nextMatchId, clubReport, todayISO, norm, build, sync, main,
 };

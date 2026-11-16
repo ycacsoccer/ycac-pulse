@@ -9,7 +9,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const {
-  parseDate, parsePage, canonicalise, renderFile, diff, planSync, planScoring, nextMatchId, clubReport, todayISO,
+  parseDate, parsePage, canonicalise, renderFile, diff, planSync, planScoring, scorerKey,
+  parseScorerConfirmations, collectScorerConfirmations, nextMatchId, clubReport, todayISO,
 } = require("../../update-fixtures.cjs");
 const fixture = fs.readFileSync(path.join(__dirname, "../fixtures/footy-fixtures-d3.html"), "utf8");
 
@@ -246,7 +247,7 @@ test("scoring fills missing scores and a complete scorer list; repeats are idemp
   assert.equal(plan.inserts.length, 2, "two goals by the same scorer are retained");
   assert.ok(plan.inserts.every((row) => row.scorer_id === "rick"));
   const again = planScoring(scoringFeed, [{ ...scoringMatch, ycac_goals: 2, opponent_goals: 0 }], roster, plan.inserts);
-  assert.deepEqual(again, { updates: [], inserts: [], warnings: [] });
+  assert.deepEqual(again, { updates: [], inserts: [], warnings: [], unresolved: [] });
 });
 
 test("scoring preserves existing scores, assists and minutes; ambiguous or incomplete goals are not guessed", () => {
@@ -259,7 +260,7 @@ test("scoring preserves existing scores, assists and minutes; ambiguous or incom
   for (const players of [[], [...roster, { id: "duplicate", display_name: "Rick Li" }]]) {
     const plan = planScoring(scoringFeed, [scoringMatch], players, []);
     assert.equal(plan.inserts.length, 0);
-    assert.ok(plan.warnings.length);
+    assert.equal(plan.unresolved.length, 1);
   }
   const incomplete = structuredClone(scoringFeed);
   incomplete.results[0].scorers.home.pop();
@@ -268,6 +269,46 @@ test("scoring preserves existing scores, assists and minutes; ambiguous or incom
   const wrongScorers = planScoring(scoringFeed, [scoringMatch], roster, [{ match_id: "m001", scorer_id: "other" }, { match_id: "m001", scorer_id: "other" }]);
   assert.equal(wrongScorers.inserts.length, 0);
   assert.ok(wrongScorers.warnings.some((line) => line.includes("scorer names differ")));
+});
+
+test("unmatched scorers require a match-specific roster confirmation", () => {
+  const players = [{ id: "ryoga", display_name: "Ryoga" }];
+  const feed = { results: [{ ...scoringFeed.results[0], scorers: { home: ["Ryoga Ishikawa", "Ryoga Ishikawa"], away: [] } }] };
+  const pending = planScoring(feed, [scoringMatch], players, []);
+  assert.deepEqual(pending.unresolved, [{ matchId: "m001", date: "2026-10-17", opponent: "Opponent", name: "Ryoga Ishikawa", count: 2 }]);
+  assert.equal(pending.inserts.length, 0);
+  const approved = new Map([[scorerKey("m001", "Ryoga Ishikawa"), "ryoga"]]);
+  const resolved = planScoring(feed, [scoringMatch], players, [], approved);
+  assert.deepEqual(resolved.unresolved, []);
+  assert.deepEqual(resolved.inserts.map((row) => row.scorer_id), ["ryoga", "ryoga"]);
+  assert.equal(planScoring(feed, [{ ...scoringMatch, id: "m002" }], players, [], approved).unresolved.length, 1, "a confirmation cannot spill into another match");
+  assert.throws(() => planScoring(feed, [scoringMatch], players, [], new Map([[scorerKey("m001", "Ryoga Ishikawa"), "unknown"]])), /not unique in the roster/);
+  const existing = planScoring(feed, [scoringMatch], players, [{ match_id: "m001", scorer_id: "ryoga" }, { match_id: "m001", scorer_id: "ryoga" }]);
+  assert.deepEqual(existing.unresolved, [], "existing goal rows are never changed or used to guess an identity");
+  assert.ok(existing.warnings.some((line) => line.includes("cannot be reconciled automatically")));
+});
+
+test("scorer confirmation arguments are explicit, scoped and validated", () => {
+  const confirmations = parseScorerConfirmations(["--confirm-scorer", "m001:Ryoga Ishikawa=ryoga", "--confirm-scorer=m002:Another Name=other"]);
+  assert.equal(confirmations.get(scorerKey("m001", "Ryoga Ishikawa")), "ryoga");
+  assert.equal(confirmations.get(scorerKey("m002", "Another Name")), "other");
+  assert.throws(() => parseScorerConfirmations(["--confirm-scorer"]), /invalid --confirm-scorer/);
+  assert.throws(() => parseScorerConfirmations(["--confirm-scorer=Ryoga=ryoga"]), /invalid --confirm-scorer/);
+  assert.throws(() => parseScorerConfirmations(["--confirm-scorer=m001:Ryoga=one", "--confirm-scorer=m001:Ryoga=two"]), /duplicate scorer confirmation/);
+});
+
+test("interactive scorer selection requires an existing roster ID and explicit consent", async () => {
+  const unresolved = [{ matchId: "m001", date: "2026-10-17", opponent: "Opponent", name: "Ryoga Ishikawa", count: 1 }];
+  const players = [{ id: "ryoga", display_name: "Ryoga" }];
+  const questions = [];
+  const answers = ["ryoga", "yes"];
+  const confirmed = await collectScorerConfirmations(unresolved, players, async (question) => { questions.push(question); return answers.shift(); });
+  assert.equal(confirmed.get(scorerKey("m001", "Ryoga Ishikawa")), "ryoga");
+  assert.match(questions[0], /m001.*2026-10-17.*Ryoga Ishikawa/);
+  assert.match(questions[1], /Ryoga.*ryoga/);
+  await assert.rejects(collectScorerConfirmations(unresolved, players, async () => ""), /no database changes made/);
+  const rejected = ["ryoga", "no"];
+  await assert.rejects(collectScorerConfirmations(unresolved, players, async () => rejected.shift()), /no database changes made/);
 });
 
 test("clubReport points out table/feed disagreements without failing", () => {

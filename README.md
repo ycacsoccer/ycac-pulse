@@ -187,15 +187,21 @@ opponent. The same run
 compares the feed's upcoming YC&AC fixtures with `matches` and **inserts any fixture the site doesn't
 have yet** (deduped by date + opponent; ids continue the mNNN series — bump `verify-stats.cjs` in the
 same commit when rows land). Missing scores on uniquely matched league games are filled in;
-goal rows are imported only when the full published scorer list matches unique roster names and
-the match has no existing goals. Existing scores, assists and minutes are never overwritten.
-Reschedules, score conflicts, incomplete scorer lists and ambiguous player names are reported for
-manual review. Historical matches absent from the database are still report-only.
+goal rows are imported only when the full published scorer list maps to roster players and
+the match has no existing goals. If a published scorer has no unique exact roster match, the
+updater asks for the player's roster ID and explicit confirmation **before any database changes**.
+Existing scores, assists and minutes are never overwritten. Reschedules, score conflicts and
+incomplete scorer lists are reported for manual review. Historical matches absent from the
+database are still report-only.
 
 **Either update command now refreshes both feeds**, including top scorers and yellow cards.
-Both accept `-- --dry-run` (no file/database writes) and `-- --no-sync` (generate the published
-files without touching Supabase). Commit the generated files to publish; review the console's
-warnings and update the live verifier row counts if database records were added.
+Both accept `-- --dry-run` (no file/database writes or prompts) and `-- --no-sync` (generate the
+published files without touching Supabase). If there is no interactive terminal, an unresolved
+scorer stops the sync without database changes: ask the user, then pass their confirmed identity,
+for example `npm run update:fixtures -- --confirm-scorer "m008:Ryoga Ishikawa=ryoga"`. The
+confirmation applies only to that scorer in that match; repeat the option for other names.
+Existing goal rows are never changed to match a confirmation. Commit the generated files to publish;
+review the console's warnings and update the live verifier row counts if database records were added.
 
 `match.html` shows bookings for the match and each player's known season total, dates/opponents,
 one-card-away warnings and suspension history. Team-reported yellow cards live in the separate

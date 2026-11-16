@@ -29,6 +29,34 @@ for (const entry of ["update-fixtures.cjs", "update-standings.cjs"]) {
     assert.match(child.stdout, /dry run — fixtures.js not written/);
     assert.deepEqual(["fixtures.js", "standings.js"].map((name) => fs.readFileSync(path.join(root, name), "utf8")), before);
   });
+
+  test(`${entry} stops before writing files or the database when scorer confirmation is missing`, () => {
+    const source = `
+      process.env.SUPABASE_URL = 'https://league-sync.test';
+      process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-only';
+      const fs = require('fs');
+      const calls = [];
+      fs.writeFileSync = () => { calls.push('FILE WRITE'); throw Error('unexpected file write'); };
+      global.fetch = async (url, options = {}) => {
+        if (url.startsWith('https://www.footyjapancompetitions.com/')) {
+          const file = url.includes('/standings') ? 'footy-standings-d3.html' : 'footy-fixtures-d3.html';
+          return { ok: true, text: async () => fs.readFileSync('tests/fixtures/' + file, 'utf8') };
+        }
+        if (!url.startsWith('https://league-sync.test/rest/v1/')) throw Error('Unexpected host');
+        const method = options.method || 'GET';
+        calls.push(method);
+        let rows = [];
+        if (url.includes('/matches?')) rows = [{ id: 'm006', date: '2026-10-17', competition: 'TML Division 3', opponent: 'Corinthians Harbour FC', home_away: 'home', ycac_goals: null, opponent_goals: null }];
+        return { ok: true, json: async () => rows };
+      };
+      require('./${entry}').main().catch((error) => console.log('ERROR=' + error.message))
+        .finally(() => console.log('CALLS=' + JSON.stringify(calls)));
+    `;
+    const child = spawnSync(process.execPath, ["-e", source], { cwd: root, encoding: "utf8" });
+    assert.equal(child.status, 0, child.stderr);
+    assert.match(child.stdout, /ERROR=scorer confirmation required.*no database changes made/);
+    assert.deepEqual(JSON.parse(child.stdout.match(/CALLS=(.*)/)[1]), ["GET", "GET", "GET"]);
+  });
 }
 
 test("pagination beyond the safety cap refuses to silently truncate booking history", async () => {
@@ -65,6 +93,65 @@ for (const mode of ["dry-run", "write", "concurrent-edit"]) {
       assert.deepEqual(writes[0].body, { ycac_goals: 2, opponent_goals: 0 });
       if (mode === "concurrent-edit") assert.equal(writes.length, 1, "no goals after a failed compare-and-set");
       else { assert.equal(writes.length, 2); assert.equal(writes[1].body.length, 2); }
+    }
+  });
+}
+
+for (const mode of ["preview", "unattended", "declined", "incomplete", "prompted", "changed-during-prompt", "explicit", "bad-id", "wrong-match"]) {
+  test(`unmatched scorers gate every database write (${mode})`, () => {
+    const source = `
+      process.env.SUPABASE_URL = 'https://league-sync.test';
+      process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-only';
+      const { sync, scorerKey, parseScorerConfirmations } = require('./update-fixtures.cjs');
+      const mode = ${JSON.stringify(mode)};
+      const calls = [];
+      let asked = false;
+      const match = { id: 'm001', date: '2026-10-17', competition: 'TML Division 3', opponent: 'Opponent', home_away: 'home', ycac_goals: null, opponent_goals: null };
+      global.fetch = async (url, options = {}) => {
+        if (!url.startsWith('https://league-sync.test/rest/v1/')) throw Error('Unexpected host');
+        const method = options.method || 'GET';
+        calls.push({ url, method, body: options.body ? JSON.parse(options.body) : null });
+        let rows = [];
+        if (method === 'GET' && url.includes('/matches?')) rows = [asked && mode === 'changed-during-prompt' ? { ...match, ycac_goals: 1 } : match];
+        if (method === 'GET' && url.includes('/players?')) rows = [{ id: 'ryoga', display_name: 'Ryoga' }];
+        if (method === 'PATCH') rows = [{ ...match, ycac_goals: 1, opponent_goals: 0 }];
+        return { ok: true, json: async () => rows };
+      };
+      const feed = {
+        fixtures: [{ date: '2099-01-01', home: 'YCAC Pulse', away: 'New FC', time: '12:00', venue: 'YC&AC' }],
+        results: [{ date: match.date, home: 'YCAC Pulse', away: 'Opponent', hg: 1, ag: 0, scorers: { home: ['Ryoga Ishikawa'], away: [] } }],
+      };
+      const key = scorerKey('m001', 'Ryoga Ishikawa');
+      const options = { dryRun: mode === 'preview' };
+      if (mode === 'explicit') options.confirmations = parseScorerConfirmations(['--confirm-scorer=m001:Ryoga Ishikawa=ryoga']);
+      if (mode === 'bad-id') options.confirmations = new Map([[key, 'unknown']]);
+      if (mode === 'wrong-match') options.confirmations = new Map([[scorerKey('m002', 'Ryoga Ishikawa'), 'ryoga']]);
+      if (['preview', 'declined', 'incomplete', 'prompted', 'changed-during-prompt'].includes(mode)) options.prompt = async (pending) => {
+        if (calls.some((call) => call.method !== 'GET')) throw Error('write occurred before prompt');
+        asked = true;
+        console.log('PROMPT=' + JSON.stringify(pending));
+        if (mode === 'preview') throw Error('preview unexpectedly prompted');
+        if (mode === 'declined') throw Error('not confirmed; no database changes made');
+        return mode === 'incomplete' ? new Map() : new Map([[key, 'ryoga']]);
+      };
+      sync(feed, options).catch((error) => console.log('ERROR=' + error.message))
+        .finally(() => console.log('REQUESTS=' + JSON.stringify(calls)));
+    `;
+    const child = spawnSync(process.execPath, ["-e", source], { cwd: root, encoding: "utf8" });
+    assert.equal(child.status, 0, child.stderr);
+    const calls = JSON.parse(child.stdout.match(/REQUESTS=(.*)/)[1]);
+    const writes = calls.filter((call) => call.method !== "GET");
+    if (["prompted", "explicit"].includes(mode)) {
+      assert.doesNotMatch(child.stdout, /ERROR=/);
+      assert.equal(writes.length, 3, "confirmed score, goal and fixture are imported");
+      assert.equal(writes[0].method, "PATCH");
+      assert.deepEqual(writes[1].body, [{ match_id: "m001", scorer_id: "ryoga", assist_id: null, minute: null }]);
+    } else {
+      assert.equal(writes.length, 0, "preview or missing confirmation must never write, even for unrelated fixtures");
+      if (mode === "preview") {
+        assert.doesNotMatch(child.stdout, /PROMPT=|ERROR=/);
+        assert.match(child.stdout, /confirm scorer "Ryoga Ishikawa"/);
+      } else assert.match(child.stdout, /ERROR=.*(confirmation required|not confirmed|not all scorers|not unique|does not match|database changed during scorer confirmation)/);
     }
   });
 }

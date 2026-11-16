@@ -3,8 +3,8 @@
    source of truth). The EXPECTED block includes the 15 Nov 2026 Jetro result,
    but excludes the confirmed 31 Oct squad's appearances from baseline player
    totals so those appearances can be verified against the locked squad
-   separately. The Jetro scorer and appearances have not yet been entered.
-   Other live data changes still require a deliberate snapshot update.
+   separately. The Jetro scorer is entered, but its appearances are not yet
+   confirmed. Other live data changes still require a deliberate snapshot update.
    Usage: node verify-stats.cjs */
 
 const fs = require("fs");
@@ -26,7 +26,7 @@ async function grab(table, query = "select=*") {
 }
 
 const EXPECTED = {
-  rows: { players: 43, matches: 15, appearances: 182, goals: 46 },
+  rows: { players: 43, matches: 15, appearances: 182, goals: 47 },
   counts: { all: 14, tml: 7, friendly: 7, players: 43, used: 36 },
   players: {
     rick: { tml: "5/7", friendly: "7/7", all: "12/14", tier: "core", reliability: 83 },
@@ -78,6 +78,7 @@ async function main() {
   check("31 Oct result", kilimanjaro ? `${kilimanjaro.ycac_goals}–${kilimanjaro.opponent_goals}` : "MISSING", "2–2");
   check("31 Oct scorers", goals.filter((goal) => goal.match_id === "m007").map((goal) => goal.scorer_id).sort().join(","), "masashi,ryu");
   check("15 Nov result", jetro ? `${jetro.ycac_goals}–${jetro.opponent_goals}` : "MISSING", "1–2");
+  check("15 Nov scorer", goals.filter((goal) => goal.match_id === "m008").map((goal) => goal.scorer_id).sort().join(","), "ryoga");
   if (confirmed) {
     const groups = new Set(savedSquads.map((row) => row.saved_squad_id));
     const picked = savedSquads.filter((row) => row.selection_type === "starter" || (row.selection_type === "sub" && row.played === true));
