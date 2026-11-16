@@ -1,10 +1,10 @@
 /* Verifies stats.js against the data in Supabase — the engine's regression
    snapshot (Phase 12 rewired this off gviz; the whole suite now reads one
-   source of truth). The EXPECTED block is the 31 Oct 2026 match baseline after
-   the 2–2 Kilimanjaro result, with subsequent roster additions. Once that squad is
-   confirmed, verify its appearances against the locked squad separately and
-   keep comparing historical totals to the same baseline. Other live data
-   changes still require a deliberate snapshot update.
+   source of truth). The EXPECTED block includes the 15 Nov 2026 Jetro result,
+   but excludes the confirmed 31 Oct squad's appearances from baseline player
+   totals so those appearances can be verified against the locked squad
+   separately. The Jetro scorer and appearances have not yet been entered.
+   Other live data changes still require a deliberate snapshot update.
    Usage: node verify-stats.cjs */
 
 const fs = require("fs");
@@ -27,22 +27,21 @@ async function grab(table, query = "select=*") {
 
 const EXPECTED = {
   rows: { players: 43, matches: 15, appearances: 182, goals: 46 },
-  counts: { all: 13, tml: 6, friendly: 7, players: 43, used: 36 },
+  counts: { all: 14, tml: 7, friendly: 7, players: 43, used: 36 },
   players: {
-    rick: { tml: "5/6", friendly: "7/7", all: "12/13", tier: "core", reliability: 90 },
-    urabe: { tml: "5/6", friendly: "7/7", all: "12/13", tier: "core" },
-    hitoshi: { tml: "4/6", friendly: "6/7", all: "10/13", tier: "core" },
+    rick: { tml: "5/7", friendly: "7/7", all: "12/14", tier: "core", reliability: 83 },
+    urabe: { tml: "5/7", friendly: "7/7", all: "12/14", tier: "core" },
+    hitoshi: { tml: "4/7", friendly: "6/7", all: "10/14", tier: "rotation" },
     // Core is TML-only (>= 67% of TML matches): friendly attendance never demotes.
-    sun: { tml: "4/6", friendly: "2/7", all: "6/13", tier: "core" },
-    // 17 Oct: kouhei missed m006 → 3/5 TML (60%) drops him out of core.
-    kouhei: { tml: "3/6", friendly: "2/7", all: "5/13", tier: "rotation" },
-    yuto: { tml: "0/6", friendly: "7/7", all: "7/13", tier: "rotation" },
-    masashi: { tml: "5/6", friendly: "1/7", all: "6/13", tier: "core" },
-    liu_hantang: { tml: "1/6", friendly: "0/7", all: "1/13", tier: "depth" }, // added 06 Oct (first TML appearance)
+    sun: { tml: "4/7", friendly: "2/7", all: "6/14", tier: "rotation" },
+    kouhei: { tml: "3/7", friendly: "2/7", all: "5/14", tier: "rotation" },
+    yuto: { tml: "0/7", friendly: "7/7", all: "7/14", tier: "rotation" },
+    masashi: { tml: "5/7", friendly: "1/7", all: "6/14", tier: "core" },
+    liu_hantang: { tml: "1/7", friendly: "0/7", all: "1/14", tier: "depth" }, // added 06 Oct (first TML appearance)
     ryuji: { tier: "inactive" },
     micah: { tier: "inactive" },
-    ryuichi_shiba: { tml: "0/6", friendly: "0/7", all: "0/13", tier: "inactive" },
-    ito_taiyo: { tml: "0/6", friendly: "0/7", all: "0/13", tier: "inactive" },
+    ryuichi_shiba: { tml: "0/7", friendly: "0/7", all: "0/14", tier: "inactive" },
+    ito_taiyo: { tml: "0/7", friendly: "0/7", all: "0/14", tier: "inactive" },
   },
 };
 
@@ -52,6 +51,7 @@ async function main() {
   const [players, matches, appearances, goals] = await Promise.all(
     ["players", "matches", "appearances", "goals"].map((table) => grab(table)));
   const kilimanjaro = matches.find((match) => match.id === "m007");
+  const jetro = matches.find((match) => match.id === "m008");
   const confirmed = Boolean(kilimanjaro?.squad_confirmed_at);
   const matchApps = appearances.filter((row) => row.match_id === "m007");
   const baselineApps = confirmed ? appearances.filter((row) => row.match_id !== "m007") : appearances;
@@ -77,6 +77,7 @@ async function main() {
   check("Baseline players used", baseline.counts.used, EXPECTED.counts.used);
   check("31 Oct result", kilimanjaro ? `${kilimanjaro.ycac_goals}–${kilimanjaro.opponent_goals}` : "MISSING", "2–2");
   check("31 Oct scorers", goals.filter((goal) => goal.match_id === "m007").map((goal) => goal.scorer_id).sort().join(","), "masashi,ryu");
+  check("15 Nov result", jetro ? `${jetro.ycac_goals}–${jetro.opponent_goals}` : "MISSING", "1–2");
   if (confirmed) {
     const groups = new Set(savedSquads.map((row) => row.saved_squad_id));
     const picked = savedSquads.filter((row) => row.selection_type === "starter" || (row.selection_type === "sub" && row.played === true));
@@ -141,7 +142,7 @@ async function main() {
   console.log(`  ${missingPhotos} players with no photo yet (coach uploads from the profile page)`);
   console.log(`  ${appearances.filter((app) => !app.minutes).length}/${appearances.length} appearances missing minutes`);
 
-  console.log(`\n${failed ? `${failed} CHECK(S) FAILED — data may have changed since the 31 Oct 2026 snapshot (bump EXPECTED deliberately)` : "All checks passed."}`);
+  console.log(`\n${failed ? `${failed} CHECK(S) FAILED — data may have changed since the 15 Nov 2026 snapshot (bump EXPECTED deliberately)` : "All checks passed."}`);
   process.exit(failed ? 1 : 0);
 }
 

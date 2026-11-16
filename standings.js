@@ -9,18 +9,18 @@
 (() => {
   const standings = {
     competition: "TML Division 3",
-    updated: "2026-11-13",
+    updated: "2026-11-16",
     rows: [
-      { team: "BFC Tokyo", p: 6, w: 5, d: 1, l: 0, gf: 25, ga: 9, pts: 16 },
-      { team: "Corinthians Harbour FC", p: 7, w: 4, d: 2, l: 1, gf: 29, ga: 18, pts: 14 },
+      { team: "BFC Tokyo", p: 7, w: 6, d: 1, l: 0, gf: 29, ga: 10, pts: 19 },
+      { team: "Corinthians Harbour FC", p: 8, w: 4, d: 2, l: 2, gf: 30, ga: 22, pts: 14 },
+      { team: "Votty SC", p: 6, w: 3, d: 2, l: 1, gf: 10, ga: 8, pts: 11 },
       { team: "F. Lions FC", p: 6, w: 3, d: 1, l: 2, gf: 25, ga: 16, pts: 10 },
       { team: "Kilimanjaro FC", p: 6, w: 3, d: 1, l: 2, gf: 17, ga: 19, pts: 10 },
-      { team: "YCAC Pulse", p: 6, w: 2, d: 2, l: 2, gf: 18, ga: 13, pts: 8, us: true },
-      { team: "Votty SC", p: 5, w: 2, d: 2, l: 1, gf: 7, ga: 8, pts: 8 },
-      { team: "Jetro FC", p: 6, w: 2, d: 1, l: 3, gf: 9, ga: 11, pts: 7 },
+      { team: "Jetro FC", p: 8, w: 3, d: 1, l: 4, gf: 12, ga: 15, pts: 10 },
+      { team: "YCAC Pulse", p: 7, w: 2, d: 2, l: 3, gf: 19, ga: 15, pts: 8, us: true },
       { team: "Inter Tokyo FC", p: 7, w: 1, d: 3, l: 3, gf: 18, ga: 22, pts: 6 },
+      { team: "Albion Old Boys FC", p: 7, w: 1, d: 0, l: 6, gf: 8, ga: 38, pts: 3 },
       { team: "Saitama JETS FC", p: 4, w: 0, d: 1, l: 3, gf: 11, ga: 14, pts: 1 },
-      { team: "Albion Old Boys FC", p: 5, w: 0, d: 0, l: 5, gf: 5, ga: 34, pts: 0 },
     ],
     topScorers: [
       { name: "Kalifa Diabate", club: "Kilimanjaro FC", goals: 7 },
