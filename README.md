@@ -159,9 +159,14 @@ One-time setup:
 3. Nothing else: every push to `main` is verified, built and deployed automatically.
 
 What gets published is the whitelist in `scripts/build-site.js` — pages, stylesheets, runtime
-scripts and `favicon.svg` (29 files) plus `build-info.json`, which the smoke test uses to confirm
+scripts, the crest, `favicon.svg` and tactical media, plus `build-info.json`, which the smoke test uses to confirm
 the deployed commit. Verifier scripts, tests, `supabase/`, `PLAN.md`/`README.md` and — by
 construction — `.env` are never copied into `_site/`.
+
+The club crest is stored locally as `media/ycac-crest.png`, copied from YC&AC's public
+[`cropped-ycac-logo4google.png`](https://ycac.jp/wp-content/uploads/2023/12/cropped-ycac-logo4google.png).
+The former October 2025 crest URL returns 404; the local copy keeps the masthead, favicon and
+social previews independent of that broken link.
 
 Preview a build locally: `npm run build:site` then `npm run serve` (http://127.0.0.1:4319).
 
@@ -171,6 +176,12 @@ The site reads **Supabase** (Postgres, through `data.js`) — nothing on the pub
 Google Sheets any more. The two original workbooks are a read-only archive: keep both Sheets set to
 **Anyone with the link: Viewer**. `migrate-from-sheets.cjs` (the one-time Phase 1 import) is the
 only script that still knows their gviz URL.
+
+Each player's profile has an **Injury status** panel to record an injury, edit its details and
+expected return, or mark the player recovered. Injury details are public and publicly editable
+under the existing access policy. Recovery removes the current record; no injury history is
+kept. The editor detects a concurrent change and asks the user to reload rather than overwrite it.
+The Admin injuries list links to the same editor.
 
 League-wide data comes from the competition: cross-fixtures aren't in our database, so
 **`npm run update:standings`** pulls the published Division 3 standings + top scorers from

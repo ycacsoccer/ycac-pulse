@@ -3,7 +3,7 @@
    Public page: TML/Friendly hero summaries (apps, appearance rate, goals,
    assists), info, detailed TML/Friendly/All stats, positions, and a
    PERFORMANCE TIMELINE of every
-   final match — absences labelled — and goals. Photo upload, age band and the
+   final match — absences labelled — and goals. Injury status, photo upload, age band and the
    pitch-tap position editor (tap a slot to set the BEST position or toggle
    CAN-PLAY ones) are open to everyone — storage/table RLS allows it since
    migration 0004_public_access.sql. */
@@ -20,6 +20,7 @@
   // means (set BEST vs toggle CAN-PLAY); posStatus is an i18n key or "".
   const AGE_BANDS = window.YCACAgeBands ? YCACAgeBands.ORDER : ["17-20", "20s", "30s", "40s", "50s"];
   const state = { player: null, players: [], matches: [], appearances: [], goals: [], entry: null, injury: null,
+    injuryLoad: "loading", injuryEdit: false, injuryDraft: null, injuryStatus: "", injuryBusy: false, injuryBlocked: false,
     ageStatus: "", posEdit: false, posMode: "best", posBest: "", posCapable: [], posStatus: "" };
 
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
@@ -31,6 +32,14 @@
   const ageLabel = (value) => window.YCACAgeBands ? YCACAgeBands.label(value) : value === "17-20" ? "17–20" : value || "";
   const ageClass = (value) => window.YCACAgeBands ? YCACAgeBands.className(value) : `age-${value}`;
   const ageStatusText = () => state.ageStatus === "saving" ? t("ageSaving") : state.ageStatus === "saved" ? t("ageSaved") : state.ageStatus === "fail" ? t("ageSaveFail") : "";
+
+  async function readInjury() {
+    const rows = await YCACData.select("injuries", `select=*&player_id=eq.${encodeURIComponent(id)}`);
+    if (!Array.isArray(rows) || rows.length > 1 || (rows[0] && (rows[0].player_id !== id || !rows[0].updated_at))) {
+      throw new Error("injury status could not be verified");
+    }
+    return rows[0] || null;
+  }
 
   async function load() {
     const [players, matches, appearances, goals] = await Promise.all([
@@ -50,9 +59,9 @@
     state.appearances = appearances;
     state.goals = goals;
     try { // current injury badge — supplementary, never blocks the profile
-      const injury = await YCACData.select("injuries", `select=*&player_id=eq.${id}`);
-      state.injury = injury[0] || null;
-    } catch (error) { state.injury = null; }
+      state.injury = await readInjury();
+      state.injuryLoad = "ready";
+    } catch (error) { state.injury = null; state.injuryLoad = "error"; }
     // Profiles render for inactive/retired players too — force-include this row.
     state.entry = YCACStats.computeSeason({ players: [{ ...player, active: true }], matches, appearances, goals }).players[0];
     return true;
@@ -129,6 +138,165 @@
     if (player.bio) $("profile-bio-text").textContent = player.bio;
 
     document.title = `${player.display_name} | YC&AC Pulse`;
+  }
+
+  function todayInJapan() {
+    const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit",
+    }).formatToParts(new Date()).map((part) => [part.type, part.value]));
+    return `${parts.year}-${parts.month}-${parts.day}`;
+  }
+
+  function validInjuryDate(value) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return false;
+    const date = new Date(`${value}T00:00:00Z`);
+    return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  }
+
+  function renderInjury() {
+    const target = $("profile-injury-editor");
+    const note = `<p class="injury-profile-note">${esc(t("injuryPublicNote"))}</p>`;
+    const status = state.injuryStatus
+      ? `<p class="injury-profile-status${["injuryLoadFail", "injurySaveFail", "injuryInvalid"].includes(state.injuryStatus) ? " is-error" : ""}" role="status" aria-live="polite">${esc(t(state.injuryStatus))}</p>` : "";
+    const disabled = state.injuryBusy ? " disabled" : "";
+    const button = (action, label, cls = "quiet-button small") => `<button class="${cls}" type="button" data-injury-action="${action}"${disabled}>${esc(t(label))}</button>`;
+    if (state.injuryLoad !== "ready") {
+      target.innerHTML = `${note}<p class="injury-profile-status is-error" role="alert">${esc(t("injuryLoadFail"))}</p>${button("reload", "injuryReload")}`;
+      return;
+    }
+    if (state.injuryEdit) {
+      const draft = state.injuryDraft;
+      target.innerHTML = `${note}<form id="profile-injury-form" class="injury-profile-form">
+        <label class="field"><span>${esc(t("injuryDetail"))}</span><input id="profile-injury-detail" name="detail" type="text" required value="${esc(draft.detail)}" placeholder="${esc(t("injuryDetailPh"))}"${disabled} /></label>
+        <label class="field"><span>${esc(t("injurySince"))}</span><input id="profile-injury-since" name="since_date" type="date" required value="${esc(draft.since_date)}"${disabled} /></label>
+        <label class="field"><span>${esc(t("injuryReturnOptional"))}</span><input id="profile-injury-return" name="expected_return" type="text" value="${esc(draft.expected_return)}" placeholder="${esc(t("injuryReturnPh"))}"${disabled} /></label>
+        <div class="injury-profile-actions">
+          <button class="primary-button small" type="submit"${state.injuryBusy || state.injuryBlocked ? " disabled" : ""}>${esc(t("adminSave"))}</button>
+          ${button("cancel", "adminCancel")}
+          ${state.injuryBlocked ? button("reload", "injuryDiscardReload") : ""}
+        </div>
+      </form>${status}`;
+      return;
+    }
+    const injury = state.injury;
+    const summary = injury
+      ? `<p class="injury-profile-summary"><span class="injured-badge">${esc(t("injuredBadge"))}</span> <strong>${esc(injury.detail)}</strong><small>${esc(t("injurySince"))} ${esc(formatDate(injury.since_date))}${injury.expected_return ? ` · ${esc(t("injuryReturn"))} ${esc(injury.expected_return)}` : ""}</small></p>`
+      : `<p class="injury-profile-empty">${esc(t("injuryNoRecord"))}</p>`;
+    const actions = state.injuryBlocked ? button("reload", "injuryReload")
+      : `${button("edit", injury ? "injuryEdit" : "injuryAdd")}${injury ? button("recover", "injuryRecover") : ""}`;
+    target.innerHTML = `${note}${summary}<div class="injury-profile-actions">${actions}</div>${status}`;
+  }
+
+  function beginInjuryEdit() {
+    if (state.injuryLoad !== "ready" || state.injuryBusy || state.injuryBlocked) return;
+    state.injuryDraft = {
+      detail: state.injury?.detail || "",
+      since_date: state.injury?.since_date || todayInJapan(),
+      expected_return: state.injury?.expected_return || "",
+    };
+    state.injuryEdit = true;
+    state.injuryStatus = "";
+    renderInjury();
+    $("profile-injury-detail").focus();
+  }
+
+  // Guard edits and recovery against another tab changing the same record.
+  function injuryQuery() {
+    if (!state.injury?.updated_at) throw new Error("injury version missing");
+    return `player_id=eq.${encodeURIComponent(id)}&updated_at=eq.${encodeURIComponent(state.injury.updated_at)}`;
+  }
+
+  async function saveInjury(event) {
+    event.preventDefault();
+    if (!state.injuryEdit || state.injuryBusy || state.injuryBlocked) return;
+    const draft = state.injuryDraft;
+    const detail = draft.detail.trim(), since = draft.since_date, expected = draft.expected_return.trim();
+    if (!detail || !validInjuryDate(since)) { state.injuryStatus = "injuryInvalid"; renderInjury(); return; }
+    const previous = state.injury?.updated_at ? Date.parse(state.injury.updated_at) : 0;
+    const updatedAt = new Date(Math.max(Date.now(), Number.isFinite(previous) ? previous + 1 : 0)).toISOString();
+    const fields = { detail, since_date: since, expected_return: expected || null,
+      updated_at: updatedAt, updated_by: window.YCACAuth?.session?.user?.email || "public" };
+    state.injuryBusy = true;
+    state.injuryStatus = "injurySaving";
+    renderInjury();
+    try {
+      const rows = state.injury
+        ? await YCACData.update("injuries", fields, injuryQuery())
+        : await YCACData.insert("injuries", { player_id: id, ...fields });
+      if (!Array.isArray(rows) || rows.length !== 1 || rows[0].player_id !== id || !rows[0].updated_at) throw new Error("injury save did not return one verified row");
+      state.injury = rows[0];
+      state.injuryEdit = false;
+      state.injuryDraft = null;
+      state.injuryStatus = "injurySaved";
+      renderHero();
+    } catch (error) {
+      state.injuryBlocked = true;
+      state.injuryStatus = "injurySaveFail";
+    } finally {
+      state.injuryBusy = false;
+      renderInjury();
+    }
+  }
+
+  async function recoverInjury() {
+    if (!state.injury || state.injuryBusy || state.injuryBlocked) return;
+    if (!window.confirm(t("injuryRecoverConfirm"))) return;
+    state.injuryBusy = true;
+    state.injuryStatus = "injurySaving";
+    renderInjury();
+    try {
+      const rows = await YCACData.remove("injuries", injuryQuery());
+      if (!Array.isArray(rows) || rows.length !== 1 || rows[0].player_id !== id) throw new Error("injury removal did not return one verified row");
+      state.injury = null;
+      state.injuryStatus = "injuryCleared";
+      renderHero();
+    } catch (error) {
+      state.injuryBlocked = true;
+      state.injuryStatus = "injurySaveFail";
+    } finally {
+      state.injuryBusy = false;
+      renderInjury();
+    }
+  }
+
+  async function reloadInjury() {
+    if (state.injuryBusy) return;
+    state.injuryBusy = true;
+    renderInjury();
+    try {
+      state.injury = await readInjury();
+      state.injuryLoad = "ready";
+      state.injuryEdit = false;
+      state.injuryDraft = null;
+      state.injuryBlocked = false;
+      state.injuryStatus = "";
+      renderHero();
+    } catch (error) {
+      // A failed reload must not hide an unsaved draft after an uncertain write.
+      if (!state.injuryEdit) state.injuryLoad = "error";
+      state.injuryStatus = "injuryLoadFail";
+    } finally {
+      state.injuryBusy = false;
+      renderInjury();
+    }
+  }
+
+  function onInjuryClick(event) {
+    const button = event.target.closest("[data-injury-action]");
+    if (!button || state.injuryBusy) return;
+    const action = button.dataset.injuryAction;
+    if (action === "edit") beginInjuryEdit();
+    else if (action === "recover") recoverInjury();
+    else if (action === "reload") reloadInjury();
+    else if (action === "cancel") {
+      if (state.injuryBlocked) reloadInjury();
+      else { state.injuryEdit = false; state.injuryDraft = null; state.injuryStatus = ""; renderInjury(); }
+    }
+  }
+
+  function onInjuryInput(event) {
+    const name = event.target.name;
+    if (state.injuryEdit && state.injuryDraft && ["detail", "since_date", "expected_return"].includes(name)) state.injuryDraft[name] = event.target.value;
   }
 
   function renderStats() {
@@ -360,6 +528,7 @@
   function renderAll() {
     if (!state.player) return;
     renderHero();
+    renderInjury();
     renderPositions();
     renderStats();
     renderTimeline();
@@ -412,6 +581,9 @@
 
   (async () => {
     $("photo-input").addEventListener("change", uploadPhoto);
+    $("profile-injury-editor").addEventListener("click", onInjuryClick);
+    $("profile-injury-editor").addEventListener("input", onInjuryInput);
+    $("profile-injury-editor").addEventListener("submit", saveInjury);
     $("profile-positions").addEventListener("click", onPositionsClick);
     $("profile-positions").addEventListener("keydown", onPositionsKeydown);
     if (window.YCACI18n) YCACI18n.onChange(() => renderAll());

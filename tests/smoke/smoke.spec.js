@@ -48,6 +48,18 @@ test("index renders live data with charts, KPIs and no attendance surface", asyn
   expect(errors).toEqual([]);
 });
 
+test("the club crest is served by the published site", async ({ page, request }) => {
+  await page.goto("./", { waitUntil: "domcontentloaded" });
+  const crest = page.locator(".club-mark img");
+  await expect(crest).toBeVisible();
+  await expect.poll(() => crest.evaluate((image) => image.naturalWidth)).toBeGreaterThan(0);
+  const src = await crest.getAttribute("src");
+  expect(new URL(src, page.url()).origin).toBe(new URL(page.url()).origin);
+  const response = await request.get(src);
+  expect(response.ok()).toBe(true);
+  expect(response.headers()["content-type"]).toContain("image/png");
+});
+
 test("players grid and a real profile render from live data", async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto("./players.html");
@@ -61,6 +73,9 @@ test("players grid and a real profile render from live data", async ({ page }) =
   await expect(page.locator("#profile-hero .profile-competition")).toHaveCount(2); // wave 26: TML + Friendly summaries
   await expect(page.locator("#profile-timeline .timeline-entry").first()).toBeVisible();
   await expect(page.locator("#profile-positions svg")).toHaveCount(1);
+  const injury = page.locator("#injury-status");
+  await expect(injury).toContainText("Injury details are public and can be edited by anyone.");
+  await expect(injury.getByRole("button", { name: /^(Record|Edit) injury$/ })).toBeVisible();
   expect(errors).toEqual([]);
 });
 

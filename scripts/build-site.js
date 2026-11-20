@@ -4,8 +4,8 @@
 // (verifier scripts, plan docs, tests …); this keeps the public site to:
 // pages, stylesheets, runtime scripts, favicon and the tactical clips.
 //
-// HTML gets cache-busting: local <script src>/<link href> and tactical media
-// gain ?v=<short sha>,
+// HTML gets cache-busting: local <script src>/<link href>, the crest and tactical
+// media gain ?v=<short sha>,
 // so every deploy changes the asset URLs. GitHub Pages serves subresources with
 // max-age=600 — without this, a reload within those 10 minutes pairs the fresh
 // HTML with yesterday's JS (a half-updated page: new markup, old renderer).
@@ -24,6 +24,7 @@ const INCLUDE = [
   /\.(js|cjs)$/,              // runtime scripts + the verify-*.cjs? no: see ALLOW below
   /\.svg$/,
   /\.ico$/,
+  /^\/?media\/ycac-crest\.png$/,
   /^\/?media\/tactical-foundation\/(?:defensive-shape|attacking-buildup|defensive-warmup|attacking-warmup)\.(?:mp4|jpg)$/,
   /^\/?build-info\.json$/,
 ];
@@ -64,6 +65,7 @@ const walk = (dir, prefix = "") => {
     if (/\.html$/.test(entry.name)) {
       const busted = fs.readFileSync(source, "utf8")
         .replace(/(src|href)="([^"?]+\.(?:js|css))"/g, `$1="$2?v=${sha.slice(0, 7)}"`)
+        .replace(/(src|href)="(media\/ycac-crest\.png)"/g, `$1="$2?v=${sha.slice(0, 7)}"`)
         .replace(/(src|href|poster)="(media\/tactical-foundation\/[^"?]+\.(?:mp4|jpg))"/g, `$1="$2?v=${sha.slice(0, 7)}"`);
       fs.writeFileSync(target, busted);
     } else {

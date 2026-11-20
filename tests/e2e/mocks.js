@@ -44,7 +44,9 @@ async function mockSupabase(page, options = {}) {
     signups: clone(signupsFixture), savedSquads: clone(options.savedSquads || []),
     matches: clone(options.matches || fixtures.matches), players: clone(options.players || fixtures.players),
     appearances: clone(options.appearances || fixtures.appearances), goals: clone(options.goals || fixtures.goals),
+    injuries: clone(options.injuries || fixtures.injuries),
   };
+  if (!store.injuries) store.injuries = clone(fixtures.injuries);
   log.store = store;
 
   await page.route("**/rest/v1/**", async (route) => {
@@ -90,6 +92,34 @@ async function mockSupabase(page, options = {}) {
       return route.fulfill({ status: 401, contentType: "application/json", body: DENY_BODY });
     }
     log.requestedTables.push(table);
+
+    if (table === "injuries") {
+      const method = route.request().method();
+      const json = (status, body) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
+      const slice = () => store.injuries.filter((row) => ["player_id", "updated_at"].every((field) => {
+        const filter = url.searchParams.get(field);
+        return !filter || !filter.startsWith("eq.") || String(row[field]) === filter.slice(3);
+      }));
+      if (method === "POST") {
+        const body = route.request().postDataJSON() || [];
+        const rows = Array.isArray(body) ? body : [body];
+        if (rows.some((row) => store.injuries.some((existing) => existing.player_id === row.player_id))) return json(409, { message: "duplicate injury" });
+        store.injuries.push(...clone(rows));
+        return json(201, rows);
+      }
+      if (method === "PATCH") {
+        const patch = route.request().postDataJSON() || {};
+        const targets = slice();
+        targets.forEach((row) => Object.assign(row, patch));
+        return json(200, targets);
+      }
+      if (method === "DELETE") {
+        const targets = slice();
+        store.injuries = store.injuries.filter((row) => !targets.includes(row));
+        return json(200, targets);
+      }
+      return json(200, slice());
+    }
 
     if (table === "signups") { // mutable — the match page's signup editor
       const method = route.request().method();

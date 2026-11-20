@@ -6,13 +6,13 @@
     <meta name="description" content="YC&AC Pulse admin: manage players, fixtures, signups, match notes and team pages." />
     <meta name="robots" content="noindex, nofollow" />
     <meta name="theme-color" content="#112950" />
-    <link rel="icon" href="https://ycac.jp/wp-content/uploads/2025/10/YCAC-Logo-Icon.png" type="image/png" />
+    <link rel="icon" href="media/ycac-crest.png" type="image/png" />
     <title>YC&AC Pulse | Admin</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="masthead">
-      <a class="club-mark" href="./" aria-label="YC&AC Pulse home"><img src="https://ycac.jp/wp-content/uploads/2025/10/YCAC-Logo-Icon.png" alt="YC&AC" /></a>
+      <a class="club-mark" href="./" aria-label="YC&AC Pulse home"><img src="media/ycac-crest.png" alt="YC&AC" /></a>
       <div class="brand"><span>YC&amp;AC</span> Pulse<small data-i18n="officialWebsite">Official Soccer Top Team · Est. 1868</small></div>
       <a class="back-link" href="./" data-i18n="loginHome">Back to season</a>
       <a class="back-link" href="coach.html" data-i18n="coachHeading">Coach Dashboard</a>
@@ -110,6 +110,7 @@
           <div><p class="eyebrow" data-i18n="adminInjuries">Injuries</p><h2 data-i18n="injuriesTitle">Current injuries</h2></div>
         </div>
         <p class="admin-note" data-i18n="adminInjuriesNote">Shown on the public index and player profiles. Removing a row clears the injury — history is not kept.</p>
+        <p class="admin-note" data-i18n="injuryPublicNote">Injury details are public and can be edited by anyone.</p>
         <form id="injury-form" class="injury-form">
           <label class="field"><span data-i18n="player">Player</span><select id="injury-player" required></select></label>
           <label class="field"><span data-i18n="injuryDetail">Injury</span><input id="injury-detail" type="text" required data-i18n-placeholder="injuryDetailPh" placeholder="e.g. Minor knee injury" /></label>
@@ -117,6 +118,7 @@
           <label class="field"><span data-i18n="injuryReturn">Expected return</span><input id="injury-return" type="text" data-i18n-placeholder="injuryReturnPh" placeholder="e.g. ~early Nov" /></label>
           <div class="form-actions"><button class="primary-button" type="submit" data-i18n="injuryAdd">Record injury</button></div>
         </form>
+        <p id="admin-injury-status" class="injury-profile-status is-error" role="status" aria-live="polite"></p>
         <div id="admin-injuries" class="injury-list"></div>
       </section>
 

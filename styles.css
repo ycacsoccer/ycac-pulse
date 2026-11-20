@@ -624,10 +624,24 @@ svg.trend-svg { display: block; width: 100%; height: auto; }
 .injured-badge { display: inline-block; padding: .18rem .5rem; color: #8f2f2c; background: #fbe6e5; border: 1px solid #eec9c7; border-radius: 999px; font-size: .6rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
 .profile-injury { display: flex; align-items: center; flex-wrap: wrap; gap: .45rem; margin: .9rem 0 0; padding: .65rem .85rem; background: #fbe6e5; border-left: 3px solid #b0413e; color: var(--ink); font-size: .82rem; font-weight: 600; }
 .profile-injury small { color: var(--muted); font-size: .7rem; font-weight: 600; }
+#injury-status { scroll-margin-top: 100px; }
+.injury-profile-note { margin: 0 0 .85rem; color: var(--muted); font-size: .75rem; line-height: 1.5; }
+.injury-profile-empty { margin: 0 0 .85rem; color: var(--ink); font-size: .84rem; }
+.injury-profile-summary { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; margin: 0 0 .85rem; font-size: .84rem; }
+.injury-profile-summary small { color: var(--muted); font-size: .72rem; }
+.injury-profile-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: .8rem; align-items: end; }
+.injury-profile-form input { width: 100%; min-width: 0; min-height: 42px; padding: .55rem .65rem; color: var(--ink); background: var(--mist); border: 1px solid var(--line); border-radius: 0; font: inherit; font-size: .82rem; }
+.injury-profile-form input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+.injury-profile-actions { display: flex; flex-wrap: wrap; gap: .5rem; grid-column: 1 / -1; }
+.injury-profile-actions button[disabled] { opacity: .6; cursor: default; }
+.injury-profile-status { margin: .75rem 0 0; color: #1f7a3d; font-size: .76rem; font-weight: 700; }
+.injury-profile-status:empty { display: none; }
+.injury-profile-status.is-error { color: #9d1c1c; }
 .injury-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .9rem; align-items: end; margin-bottom: 1.4rem; padding: 1rem; background: var(--mist); border: 1px solid var(--line); }
 .injury-form .form-actions { grid-column: 1 / -1; margin-top: 0; }
 .injury-row .ar-meta { color: var(--muted); font-size: .74rem; font-weight: 700; white-space: nowrap; }
 .injury-row .ar-actions { margin-left: auto; }
+.injury-row .ar-actions a { display: inline-flex; align-items: center; text-decoration: none; }
 
 /* ── Wave 17: performance KPI rate strip (goals per game, win rate …) ── */
 .perf-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; margin: .45rem 0 .15rem; }

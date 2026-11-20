@@ -60,7 +60,7 @@ const goals = [
 ];
 
 const injuries = [
-  { id: "i1", player_id: "p-evn", detail: "Hamstring strain", since_date: "2026-04-20", expected_return: "2026-06-15" },
+  { id: "i1", player_id: "p-evn", detail: "Hamstring strain", since_date: "2026-04-20", expected_return: "2026-06-15", updated_at: "2026-04-20T00:00:00.000Z" },
 ];
 
 // Team-table fixture, served ONLY to coach-mode pages by tests/e2e/mocks.js.

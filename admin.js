@@ -29,7 +29,7 @@
     editingPlayer: null, // { mode: "create"|"edit", row }
     editingMatch: null,  // { mode, row, lineup, goalsRows, originalLineup, originalGoals, search }
     signupMatchId: "", signupsDraft: {},
-    noteMatchId: "",
+    noteMatchId: "", injuryRemovalBusy: false, injuryRemovalBlocked: false,
   };
 
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
@@ -751,8 +751,11 @@
   function renderInjuries() {
     const injuredIds = new Set(state.injuries.map((row) => row.player_id));
     const choices = state.players.filter((player) => player.active !== false && !injuredIds.has(player.id));
-    $("injury-player").innerHTML = choices.map((player) => `<option value="${esc(player.id)}">${esc(player.display_name)}</option>`).join("");
+    const playerSelect = $("injury-player"), selected = playerSelect.value;
+    playerSelect.innerHTML = choices.map((player) => `<option value="${esc(player.id)}">${esc(player.display_name)}</option>`).join("");
+    if (choices.some((player) => player.id === selected)) playerSelect.value = selected;
     if (!$("injury-since").value) $("injury-since").value = now().slice(0, 10);
+    $("admin-injury-status").textContent = state.injuryRemovalBlocked ? t("injuryAdminRemoveFail") : "";
     $("admin-injuries").innerHTML = state.injuries.map((row) => {
       const player = state.players.find((entry) => entry.id === row.player_id);
       const meta = [`${t("injurySince")} ${esc(formatDate(row.since_date))}`, row.expected_return ? `${t("injuryReturn")} ${esc(row.expected_return)}` : ""]
@@ -762,7 +765,8 @@
         <div class="ar-id"><a href="player.html?id=${encodeURIComponent(row.player_id)}">${esc(player?.display_name || row.player_id)}</a><small>${esc(row.detail)}</small></div>
         <span class="ar-meta">${meta}</span>
         <div class="ar-actions">
-          <button class="quiet-button small" type="button" data-action="remove-injury" data-id="${esc(row.player_id)}">${esc(t("injuryRemove"))}</button>
+          <a class="quiet-button small" href="player.html?id=${encodeURIComponent(row.player_id)}#injury-status">${esc(t("injuryEdit"))}</a>
+          <button class="quiet-button small" type="button" data-action="remove-injury" data-id="${esc(row.player_id)}"${state.injuryRemovalBusy || state.injuryRemovalBlocked ? " disabled" : ""}>${esc(t("injuryRemove"))}</button>
         </div>
       </div>`;
     }).join("") || `<p class="empty">${esc(t("injuriesEmpty"))}</p>`;
@@ -793,14 +797,25 @@
   }
 
   async function removeInjury(id) {
+    if (state.injuryRemovalBusy || state.injuryRemovalBlocked) return;
+    const injury = state.injuries.find((row) => row.player_id === id);
+    if (!injury || !window.confirm(t("injuryRecoverConfirm"))) return;
+    state.injuryRemovalBusy = true;
+    renderInjuries();
     try {
-      await YCACData.remove("injuries", `player_id=eq.${encodeURIComponent(id)}`);
+      if (!injury.updated_at) throw new Error("injury version missing");
+      const query = `player_id=eq.${encodeURIComponent(id)}&updated_at=eq.${encodeURIComponent(injury.updated_at)}`;
+      const rows = await YCACData.remove("injuries", query);
+      if (!Array.isArray(rows) || rows.length !== 1 || rows[0].player_id !== id) throw new Error("injury removal did not return one verified row");
       state.injuries = state.injuries.filter((row) => row.player_id !== id);
-      renderInjuries();
       setStatus(t("adminSaved"), "ok");
     } catch (error) {
       console.error(error);
-      setStatus(t("adminSaveFail"), "fail");
+      state.injuryRemovalBlocked = true;
+      setStatus(t("injuryAdminRemoveFail"), "fail");
+    } finally {
+      state.injuryRemovalBusy = false;
+      renderInjuries();
     }
   }
 
