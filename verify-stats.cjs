@@ -26,7 +26,7 @@ async function grab(table, query = "select=*") {
 }
 
 const EXPECTED = {
-  rows: { players: 43, matches: 16, appearances: 182, goals: 47 },
+  rows: { players: 43, matches: 17, appearances: 182, goals: 47 },
   counts: { all: 14, tml: 7, friendly: 7, players: 43, used: 36 },
   players: {
     rick: { tml: "5/7", friendly: "7/7", all: "12/14", tier: "core", reliability: 83 },
@@ -53,6 +53,7 @@ async function main() {
   const kilimanjaro = matches.find((match) => match.id === "m007");
   const jetro = matches.find((match) => match.id === "m008");
   const bfcFixture = matches.find((match) => match.id === "m010");
+  const vottyFixture = matches.find((match) => match.id === "m011");
   const confirmed = Boolean(kilimanjaro?.squad_confirmed_at);
   const matchApps = appearances.filter((row) => row.match_id === "m007");
   const baselineApps = confirmed ? appearances.filter((row) => row.match_id !== "m007") : appearances;
@@ -83,6 +84,8 @@ async function main() {
   // The league listed this under "YC&AC" by mistake; the user confirmed Pulse.
   check("6 Dec fixture", bfcFixture ? `${bfcFixture.date}|${bfcFixture.opponent}|${bfcFixture.competition}|${bfcFixture.home_away}|${bfcFixture.kickoff}` : "MISSING",
     "2026-12-06|BFC Tokyo|TML Division 3|home|11:00");
+  check("13 Dec fixture", vottyFixture ? `${vottyFixture.date}|${vottyFixture.opponent}|${vottyFixture.competition}|${vottyFixture.home_away}|${vottyFixture.kickoff}` : "MISSING",
+    "2026-12-13|Votty SC|TML Division 3|home|11:00");
   if (confirmed) {
     const groups = new Set(savedSquads.map((row) => row.saved_squad_id));
     const picked = savedSquads.filter((row) => row.selection_type === "starter" || (row.selection_type === "sub" && row.played === true));

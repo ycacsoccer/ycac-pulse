@@ -76,9 +76,10 @@ test("missing kickoff stays TBC and clipboard denial selects the draft for manua
 
 test("played and missing matches do not offer BAND sign-up drafts", async ({ page }) => {
   await setup(page);
-  await page.goto("/match.html?id=m1");
+  await page.goto("/match.html?id=m1", { waitUntil: "domcontentloaded" });
   await expect(page.locator("#match-hero")).toContainText("Rovers AFC");
   await expect(page.locator("#band-panel")).toBeHidden();
-  await page.goto("/match.html?id=missing");
+  await page.goto("/match.html?id=missing", { waitUntil: "domcontentloaded" });
+  await expect(page.locator("#match-hero")).toContainText("not found");
   await expect(page.locator("#band-panel")).toBeHidden();
 });

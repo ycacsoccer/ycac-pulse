@@ -10,7 +10,7 @@
 (() => {
   const fixtures = {
     competition: "TML Division 3",
-    updated: "2026-11-16",
+    updated: "2026-11-20",
     clubs: ["Albion Old Boys FC", "BFC Tokyo", "Corinthians Harbour FC", "F. Lions FC", "Inter Tokyo FC", "Jetro FC", "Kilimanjaro FC", "Saitama JETS FC", "Votty SC", "YC&AC", "YCAC Pulse"],
     results: [
       { date: "2026-08-23", home: "Jetro FC", away: "Kilimanjaro FC", hg: 4, ag: 1, venue: "BST Nagasawa Sports Ground", scorers: {"home":["Raito Yamamoto","Daichi Katsuno","Christopher Ray","Kenyu Konishi"],"away":[]}, yellowCards: {"home":["Kenyu Konishi","Jun Kamiya"],"away":[]} },
@@ -39,7 +39,7 @@
       { date: "2026-10-17", home: "YCAC Pulse", away: "Corinthians Harbour FC", hg: 2, ag: 2, venue: "YC&AC", scorers: {"home":["Ryu Sato","Shinnosuke Kitagawa"],"away":["Masaki Sato","Kosuke Hirano"]}, yellowCards: {"home":["Umit Ay","Qingguo Meng"],"away":["Sora Matsuura","Naoya Takahashi"]} },
       { date: "2026-10-18", home: "Albion Old Boys FC", away: "Kilimanjaro FC", hg: 0, ag: 7, venue: "BST Nagasawa Sports Ground", scorers: {"home":[],"away":["Kalifa Diabate","Kalifa Diabate","Kalifa Diabate","Kalifa Diabate","Aboubakar Diabi"]}, yellowCards: {"home":[],"away":[]} },
       { date: "2026-10-24", home: "BFC Tokyo", away: "Albion Old Boys FC", hg: 3, ag: 0, venue: "Koshikiya Ground", scorers: {"home":["Michal Aurstad","Ebai Enow Tanjong","Ryota Hirai"],"away":[]}, yellowCards: {"home":[],"away":[]} },
-      { date: "2026-10-31", home: "YCAC Pulse", away: "Kilimanjaro FC", hg: 2, ag: 2, venue: "YC&AC", scorers: {"home":["Masashi Nakaya","Ryu Sato"],"away":["Felix William","Christopher Kokelea"]}, yellowCards: {"home":["Murat Dogan"],"away":["Kalifa Diabate"]} },
+      { date: "2026-10-31", home: "YCAC Pulse", away: "Kilimanjaro FC", hg: 2, ag: 2, venue: "YC&AC", scorers: {"home":["Masashi Nakaya","Ryu Sato"],"away":["Kalifa Diabate","Christopher Kokelea"]}, yellowCards: {"home":["Murat Dogan"],"away":["Felix William"]} },
       { date: "2026-11-03", home: "Corinthians Harbour FC", away: "Inter Tokyo FC", hg: 4, ag: 4, venue: "YC&AC", scorers: {"home":["Tomohiro Kajiyama","Ian Dupong","Kosuke Hirano","Kai Shinto"],"away":["Amir Andrea Haze","Ghaith Chebbi","Ghaith Chebbi","Jeffrey Abdul Kadir"]}, yellowCards: {"home":["Masaki Sato","Shunsuke Ito"],"away":["Toui Kamikage"]} },
       { date: "2026-11-03", home: "Jetro FC", away: "Votty SC", hg: 1, ag: 2, venue: "BST Nagasawa Sports Ground", scorers: {"home":["Christian Rey Jimenez"],"away":["Shota Sakuma","Ryota Koyama"]}, yellowCards: {"home":["Joaquin Garcia","Kyohei Yoshida"],"away":["Shota Sakuma","Yosuke Shimono"]} },
       { date: "2026-11-08", home: "Albion Old Boys FC", away: "Jetro FC", hg: 3, ag: 1, venue: "BST Nagasawa Sports Ground", scorers: {"home":["Gen Katashiba","Yoshinobu Nakanishi","Omi Nagisa"],"away":[]}, yellowCards: {"home":[],"away":[]} },
@@ -58,6 +58,9 @@
       { date: "2026-12-05", home: "Albion Old Boys FC", away: "Inter Tokyo FC", time: "18:50", venue: "BST Nagasawa Sports Ground" },
       { date: "2026-12-06", home: "F. Lions FC", away: "Corinthians Harbour FC", time: "19:15", venue: "Fukuda Denshi Field" },
       { date: "2026-12-06", home: "YC&AC", away: "BFC Tokyo", time: "11:00", venue: "YC&AC" },
+      { date: "2026-12-12", home: "Albion Old Boys FC", away: "F. Lions FC", time: "14:10", venue: "St. Mary's" },
+      { date: "2026-12-13", home: "Saitama JETS FC", away: "Jetro FC", time: "12:15", venue: "Redsland" },
+      { date: "2026-12-13", home: "YCAC Pulse", away: "Votty SC", time: "11:00", venue: "YC&AC" },
     ],
   };
   if (typeof module !== "undefined" && module.exports) module.exports = fixtures;

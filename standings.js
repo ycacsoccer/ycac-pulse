@@ -9,7 +9,7 @@
 (() => {
   const standings = {
     competition: "TML Division 3",
-    updated: "2026-11-16",
+    updated: "2026-11-20",
     rows: [
       { team: "BFC Tokyo", p: 7, w: 6, d: 1, l: 0, gf: 29, ga: 10, pts: 19 },
       { team: "Corinthians Harbour FC", p: 8, w: 4, d: 2, l: 2, gf: 30, ga: 22, pts: 14 },
@@ -23,7 +23,7 @@
       { team: "Saitama JETS FC", p: 4, w: 0, d: 1, l: 3, gf: 11, ga: 14, pts: 1 },
     ],
     topScorers: [
-      { name: "Kalifa Diabate", club: "Kilimanjaro FC", goals: 7 },
+      { name: "Kalifa Diabate", club: "Kilimanjaro FC", goals: 8 },
       { name: "Michal Aurstad", club: "BFC Tokyo", goals: 5 },
       { name: "Ke Sun", club: "YCAC Pulse", goals: 5 },
       { name: "Devin Martin", club: "F. Lions FC", goals: 4 },
