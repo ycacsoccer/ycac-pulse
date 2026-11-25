@@ -3,7 +3,7 @@
    Public page: TML/Friendly hero summaries (apps, appearance rate, goals,
    assists), info, detailed TML/Friendly/All stats, positions, and a
    PERFORMANCE TIMELINE of every
-   final match — absences labelled — and goals. Injury status, photo upload, age band and the
+   final match — absences labelled — and goals. Club membership, injury status, photo upload, age band and the
    pitch-tap position editor (tap a slot to set the BEST position or toggle
    CAN-PLAY ones) are open to everyone — storage/table RLS allows it since
    migration 0004_public_access.sql. */
@@ -20,6 +20,7 @@
   // means (set BEST vs toggle CAN-PLAY); posStatus is an i18n key or "".
   const AGE_BANDS = window.YCACAgeBands ? YCACAgeBands.ORDER : ["17-20", "20s", "30s", "40s", "50s"];
   const state = { player: null, players: [], matches: [], appearances: [], goals: [], entry: null, injury: null,
+    membershipAvailable: false, membershipDraft: "", membershipStatus: "", membershipBusy: false, membershipBlocked: false,
     injuryLoad: "loading", injuryEdit: false, injuryDraft: null, injuryStatus: "", injuryBusy: false, injuryBlocked: false,
     ageStatus: "", posEdit: false, posMode: "best", posBest: "", posCapable: [], posStatus: "" };
 
@@ -32,6 +33,9 @@
   const ageLabel = (value) => window.YCACAgeBands ? YCACAgeBands.label(value) : value === "17-20" ? "17–20" : value || "";
   const ageClass = (value) => window.YCACAgeBands ? YCACAgeBands.className(value) : `age-${value}`;
   const ageStatusText = () => state.ageStatus === "saving" ? t("ageSaving") : state.ageStatus === "saved" ? t("ageSaved") : state.ageStatus === "fail" ? t("ageSaveFail") : "";
+  const validMembership = (row) => row && Object.prototype.hasOwnProperty.call(row, "is_ycac_member")
+    && [null, true, false].includes(row.is_ycac_member);
+  const membershipValue = (value) => value == null ? "" : String(value);
 
   async function readInjury() {
     const rows = await YCACData.select("injuries", `select=*&player_id=eq.${encodeURIComponent(id)}`);
@@ -54,6 +58,8 @@
     if (!player) return false;
 
     state.player = player;
+    state.membershipAvailable = Boolean(validMembership(player));
+    state.membershipDraft = membershipValue(player.is_ycac_member);
     state.players = players;
     state.matches = matches;
     state.appearances = appearances;
@@ -145,6 +151,87 @@
       timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit",
     }).formatToParts(new Date()).map((part) => [part.type, part.value]));
     return `${parts.year}-${parts.month}-${parts.day}`;
+  }
+
+  function renderMembership() {
+    const target = $("profile-membership-editor");
+    const note = `<p class="membership-note">${esc(t("membershipPublicNote"))}</p>`;
+    const statusKey = state.membershipStatus || (!state.membershipAvailable ? "membershipUnavailable" : "");
+    const isError = ["membershipUnavailable", "membershipLoadFail", "membershipSaveFail"].includes(statusKey);
+    const status = statusKey ? `<p class="membership-status${isError ? " is-error" : ""}" role="status" aria-live="polite">${esc(t(statusKey))}</p>` : "";
+    const disabled = state.membershipBusy ? " disabled" : "";
+    const reload = `<button class="quiet-button small" type="button" data-membership-action="reload"${disabled}>${esc(t(state.membershipAvailable ? "membershipDiscardReload" : "membershipReload"))}</button>`;
+    if (!state.membershipAvailable) {
+      target.innerHTML = `${note}${status}<div class="membership-actions">${reload}</div>`;
+      return;
+    }
+    const option = (value, label) => `<option value="${value}"${state.membershipDraft === value ? " selected" : ""}>${esc(t(label))}</option>`;
+    target.innerHTML = `${note}<form id="membership-form" class="membership-form">
+      <label class="field"><span>${esc(t("membershipLabel"))}</span><select id="membership-select" name="membership"${disabled}>
+        ${option("", "membershipUnknown")}${option("true", "membershipYes")}${option("false", "membershipNo")}
+      </select></label>
+      <div class="membership-actions">
+        <button class="primary-button small" type="submit"${state.membershipBusy || state.membershipBlocked ? " disabled" : ""}>${esc(t("adminSave"))}</button>
+        ${state.membershipBlocked ? reload : ""}
+      </div>
+    </form>${status}`;
+  }
+
+  async function saveMembership(event) {
+    event.preventDefault();
+    if (!state.player || !state.membershipAvailable || state.membershipBusy || state.membershipBlocked) return;
+    const draft = state.membershipDraft;
+    if (!["", "true", "false"].includes(draft)) return;
+    const value = draft === "" ? null : draft === "true";
+    const previous = state.player.is_ycac_member;
+    const filter = previous === null ? "is.null" : `eq.${previous}`;
+    state.membershipBusy = true;
+    state.membershipStatus = "membershipSaving";
+    renderMembership();
+    try {
+      const rows = await YCACData.update("players", { is_ycac_member: value },
+        `id=eq.${encodeURIComponent(id)}&is_ycac_member=${filter}`);
+      if (!Array.isArray(rows) || rows.length !== 1 || rows[0].id !== id
+          || !validMembership(rows[0]) || rows[0].is_ycac_member !== value) throw new Error("membership save could not be verified");
+      state.player.is_ycac_member = rows[0].is_ycac_member;
+      state.membershipStatus = "membershipSaved";
+    } catch (error) {
+      state.membershipBlocked = true;
+      state.membershipStatus = "membershipSaveFail";
+    } finally {
+      state.membershipBusy = false;
+      renderMembership();
+    }
+  }
+
+  async function reloadMembership() {
+    if (state.membershipBusy) return;
+    state.membershipBusy = true;
+    renderMembership();
+    try {
+      const rows = await YCACData.select("players", `select=id,is_ycac_member&id=eq.${encodeURIComponent(id)}`);
+      if (!Array.isArray(rows) || rows.length !== 1 || rows[0].id !== id || !validMembership(rows[0])) throw new Error("membership read could not be verified");
+      state.player.is_ycac_member = rows[0].is_ycac_member;
+      state.membershipDraft = membershipValue(rows[0].is_ycac_member);
+      state.membershipAvailable = true;
+      state.membershipBlocked = false;
+      state.membershipStatus = "";
+    } catch (error) {
+      state.membershipStatus = "membershipLoadFail";
+    } finally {
+      state.membershipBusy = false;
+      renderMembership();
+    }
+  }
+
+  function onMembershipChange(event) {
+    if (event.target.name === "membership" && ["", "true", "false"].includes(event.target.value)) {
+      state.membershipDraft = event.target.value;
+    }
+  }
+
+  function onMembershipClick(event) {
+    if (event.target.closest('[data-membership-action="reload"]')) reloadMembership();
   }
 
   function validInjuryDate(value) {
@@ -528,6 +615,7 @@
   function renderAll() {
     if (!state.player) return;
     renderHero();
+    renderMembership();
     renderInjury();
     renderPositions();
     renderStats();
@@ -581,6 +669,9 @@
 
   (async () => {
     $("photo-input").addEventListener("change", uploadPhoto);
+    $("profile-membership-editor").addEventListener("change", onMembershipChange);
+    $("profile-membership-editor").addEventListener("click", onMembershipClick);
+    $("profile-membership-editor").addEventListener("submit", saveMembership);
     $("profile-injury-editor").addEventListener("click", onInjuryClick);
     $("profile-injury-editor").addEventListener("input", onInjuryInput);
     $("profile-injury-editor").addEventListener("submit", saveInjury);

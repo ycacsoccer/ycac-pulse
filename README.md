@@ -52,12 +52,15 @@ The plan (10 requirements mapped to screens) and the reasoning behind it live in
 
 1. Create a free account at [supabase.com](https://supabase.com) and a new project (any name/region).
 2. In the dashboard open **SQL Editor** → paste the contents of each file in `supabase/migrations/`
-   in filename order — `0001_init.sql` (fresh projects only), then `0002_injuries.sql`, then
-   `0003_player_age_band.sql`, then `0004_public_access.sql` — → **Run**.
+   in filename order — `0001_init.sql` (fresh projects only), then `0002_injuries.sql`,
+   `0003_player_age_band.sql`, `0004_public_access.sql`, `0005_confirmed_squads.sql` and
+   `0006_player_membership.sql` — → **Run**.
    (`0002` is idempotent — safe to re-run — and ends with a `select` that reports `injuries ready / 4`.)
    (`0003` is also idempotent and must be applied before age groups can be saved from a player page.)
    (`0004` is idempotent too — it opens every site table to public view + write and leaves only
    `coach_roster` locked.)
+   (`0006` adds nullable YC&AC membership status without classifying any existing player;
+   apply it before saving membership from a profile.)
    (Or install the Supabase CLI and run `supabase db push` from this folder.)
 3. **Authentication → Users → Add user** (tick *Auto confirm*), optionally once:
    - your **coach account** — your own email. Since the access flip every page and write works
@@ -182,6 +185,10 @@ expected return, or mark the player recovered. Injury details are public and pub
 under the existing access policy. Recovery removes the current record; no injury history is
 kept. The editor detects a concurrent change and asks the user to reload rather than overwrite it.
 The Admin injuries list links to the same editor.
+
+Each profile also has a **YC&AC membership** selector: unknown, member or non-member.
+Existing players start as unknown. Membership status is public and publicly editable under
+the existing players access policy.
 
 League-wide data comes from the competition: cross-fixtures aren't in our database, so
 **`npm run update:standings`** pulls the published Division 3 standings + top scorers from

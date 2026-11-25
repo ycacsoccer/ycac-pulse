@@ -73,6 +73,9 @@ test("players grid and a real profile render from live data", async ({ page }) =
   await expect(page.locator("#profile-hero .profile-competition")).toHaveCount(2); // wave 26: TML + Friendly summaries
   await expect(page.locator("#profile-timeline .timeline-entry").first()).toBeVisible();
   await expect(page.locator("#profile-positions svg")).toHaveCount(1);
+  const membership = page.locator("#membership-status");
+  await expect(membership).toContainText("Membership status is public and can be edited by anyone.");
+  await expect(membership.locator("#membership-select")).toBeVisible();
   const injury = page.locator("#injury-status");
   await expect(injury).toContainText("Injury details are public and can be edited by anyone.");
   await expect(injury.getByRole("button", { name: /^(Record|Edit) injury$/ })).toBeVisible();

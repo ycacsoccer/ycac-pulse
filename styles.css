@@ -207,6 +207,15 @@ main { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem 4rem; }.hero { disp
 .age-editor .quiet-button { color: white; background: transparent; border-color: #9db4d4; }
 .age-editor .quiet-button:hover { color: var(--navy); background: var(--gold); border-color: var(--gold); }
 .age-editor button[disabled] { opacity: .6; cursor: default; }
+.membership-note { margin: 0 0 .85rem; color: var(--muted); font-size: .75rem; line-height: 1.5; }
+.membership-form { display: flex; flex-wrap: wrap; align-items: end; gap: .8rem; }
+.membership-form .field { min-width: min(100%, 220px); }
+.membership-form select { min-height: 42px; padding: .55rem .65rem; color: var(--ink); background: var(--mist); border: 1px solid var(--line); border-radius: 0; font: inherit; font-size: .82rem; }
+.membership-form select:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+.membership-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.membership-actions button[disabled] { opacity: .6; cursor: default; }
+.membership-status { margin: .75rem 0; color: #1f7a3d; font-size: .76rem; font-weight: 700; }
+.membership-status.is-error { color: #9d1c1c; }
 .profile-bio-text { max-width: 720px; margin: 0; color: var(--ink); font-size: .9rem; line-height: 1.7; white-space: pre-line; }
 /* wave 23 — data-table polish: numerals right-aligned + tabular, zebra rows,
    and a sticky header once the table outgrows its horizontal scroller. */

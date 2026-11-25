@@ -1,10 +1,9 @@
 /* Verifies stats.js against the data in Supabase — the engine's regression
    snapshot (Phase 12 rewired this off gviz; the whole suite now reads one
-   source of truth). The EXPECTED block includes the 15 Nov 2026 Jetro result,
-   but excludes the confirmed 31 Oct squad's appearances from baseline player
-   totals so those appearances can be verified against the locked squad
-   separately. The Jetro scorer is entered, but its appearances are not yet
-   confirmed. Other live data changes still require a deliberate snapshot update.
+   source of truth). The 25 Nov 2026 snapshot includes the confirmed 15 Nov
+   Jetro squad, but excludes the confirmed 31 Oct squad's appearances from
+   baseline player totals so those appearances can be checked separately.
+   Other live data changes still require a deliberate snapshot update.
    Usage: node verify-stats.cjs */
 
 const fs = require("fs");
@@ -26,22 +25,22 @@ async function grab(table, query = "select=*") {
 }
 
 const EXPECTED = {
-  rows: { players: 43, matches: 17, appearances: 182, goals: 47 },
-  counts: { all: 14, tml: 7, friendly: 7, players: 43, used: 36 },
+  rows: { players: 43, matches: 17, appearances: 197, goals: 47 },
+  counts: { all: 14, tml: 7, friendly: 7, players: 43, used: 37 },
   players: {
-    rick: { tml: "5/7", friendly: "7/7", all: "12/14", tier: "core", reliability: 83 },
-    urabe: { tml: "5/7", friendly: "7/7", all: "12/14", tier: "core" },
-    hitoshi: { tml: "4/7", friendly: "6/7", all: "10/14", tier: "rotation" },
+    rick: { tml: "6/7", friendly: "7/7", all: "13/14", tier: "core", reliability: 92 },
+    urabe: { tml: "6/7", friendly: "7/7", all: "13/14", tier: "core" },
+    hitoshi: { tml: "5/7", friendly: "6/7", all: "11/14", tier: "core" },
     // Core is TML-only (>= 67% of TML matches): friendly attendance never demotes.
     sun: { tml: "4/7", friendly: "2/7", all: "6/14", tier: "rotation" },
     kouhei: { tml: "3/7", friendly: "2/7", all: "5/14", tier: "rotation" },
     yuto: { tml: "0/7", friendly: "7/7", all: "7/14", tier: "rotation" },
-    masashi: { tml: "5/7", friendly: "1/7", all: "6/14", tier: "core" },
+    masashi: { tml: "6/7", friendly: "1/7", all: "7/14", tier: "core" },
     liu_hantang: { tml: "1/7", friendly: "0/7", all: "1/14", tier: "depth" }, // added 06 Oct (first TML appearance)
     ryuji: { tier: "inactive" },
     micah: { tier: "inactive" },
     ryuichi_shiba: { tml: "0/7", friendly: "0/7", all: "0/14", tier: "inactive" },
-    ito_taiyo: { tml: "0/7", friendly: "0/7", all: "0/14", tier: "inactive" },
+    ito_taiyo: { tml: "1/7", friendly: "0/7", all: "1/14", tier: "depth" },
   },
 };
 
@@ -58,6 +57,8 @@ async function main() {
   const matchApps = appearances.filter((row) => row.match_id === "m007");
   const baselineApps = confirmed ? appearances.filter((row) => row.match_id !== "m007") : appearances;
   const savedSquads = confirmed ? await grab("saved_squads", "select=*&match_id=eq.m007&active=eq.true") : [];
+  const jetroConfirmed = Boolean(jetro?.squad_confirmed_at);
+  const jetroSquad = jetroConfirmed ? await grab("saved_squads", "select=*&match_id=eq.m008&active=eq.true") : [];
 
   // signups is a team-only table; the tier engine doesn't need it (tiers come
   // from appearances alone), so the public snapshot passes none.
@@ -81,6 +82,15 @@ async function main() {
   check("31 Oct scorers", goals.filter((goal) => goal.match_id === "m007").map((goal) => goal.scorer_id).sort().join(","), "masashi,ryu");
   check("15 Nov result", jetro ? `${jetro.ycac_goals}–${jetro.opponent_goals}` : "MISSING", "1–2");
   check("15 Nov scorer", goals.filter((goal) => goal.match_id === "m008").map((goal) => goal.scorer_id).sort().join(","), "ryoga");
+  check("15 Nov squad confirmed", jetroConfirmed, true);
+  if (jetroConfirmed) {
+    const groups = new Set(jetroSquad.map((row) => row.saved_squad_id));
+    const picked = jetroSquad.filter((row) => row.selection_type === "starter" || (row.selection_type === "sub" && row.played === true));
+    const signature = (rows, roleKey) => rows.map((row) => `${row.player_id}:${row[roleKey]}`).sort().join(",");
+    check("15 Nov confirmed squad groups", groups.size, 1);
+    check("15 Nov confirmed starting XI", jetroSquad.filter((row) => row.selection_type === "starter").length, 11);
+    check("15 Nov confirmed appearances", signature(appearances.filter((row) => row.match_id === "m008"), "role"), signature(picked, "selection_type"));
+  }
   // The league listed this under "YC&AC" by mistake; the user confirmed Pulse.
   check("6 Dec fixture", bfcFixture ? `${bfcFixture.date}|${bfcFixture.opponent}|${bfcFixture.competition}|${bfcFixture.home_away}|${bfcFixture.kickoff}` : "MISSING",
     "2026-12-06|BFC Tokyo|TML Division 3|home|11:00");
@@ -150,7 +160,7 @@ async function main() {
   console.log(`  ${missingPhotos} players with no photo yet (coach uploads from the profile page)`);
   console.log(`  ${appearances.filter((app) => !app.minutes).length}/${appearances.length} appearances missing minutes`);
 
-  console.log(`\n${failed ? `${failed} CHECK(S) FAILED — data may have changed since the 15 Nov 2026 snapshot (bump EXPECTED deliberately)` : "All checks passed."}`);
+  console.log(`\n${failed ? `${failed} CHECK(S) FAILED — data may have changed since the 25 Nov 2026 snapshot (bump EXPECTED deliberately)` : "All checks passed."}`);
   process.exit(failed ? 1 : 0);
 }
 

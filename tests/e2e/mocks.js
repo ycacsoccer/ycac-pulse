@@ -93,6 +93,24 @@ async function mockSupabase(page, options = {}) {
     }
     log.requestedTables.push(table);
 
+    if (table === "players" && options.mutablePlayers) {
+      const method = route.request().method();
+      const json = (status, body) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
+      const filter = url.searchParams.get("id");
+      const membership = url.searchParams.get("is_ycac_member");
+      const rows = store.players.filter((row) => {
+        if (filter?.startsWith("eq.") && row.id !== filter.slice(3)) return false;
+        if (membership === "is.null" && row.is_ycac_member !== null) return false;
+        if (membership?.startsWith("eq.") && String(row.is_ycac_member) !== membership.slice(3)) return false;
+        return true;
+      });
+      if (method === "PATCH") {
+        const patch = route.request().postDataJSON() || {};
+        rows.forEach((row) => Object.assign(row, patch));
+      }
+      return json(200, rows);
+    }
+
     if (table === "injuries") {
       const method = route.request().method();
       const json = (status, body) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });

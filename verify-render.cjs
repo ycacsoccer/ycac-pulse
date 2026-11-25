@@ -90,9 +90,14 @@ const check = (ok, label, detail = "") => {
     "KPI strips render 3 rate tiles per panel", `TML goals/game ${firstKpiValue}`);
   check(!/attendance/i.test(tmlKpi + fndKpi), "no attendance tile in either KPI strip");
 
-  // squad status (revamp 15): visible only once the injuries table is live
+  // Current injuries change as players recover; compare the rendered cards with
+  // the live rows rather than the original four seeded in October.
+  const injuries = await YCACData.select("injuries", "select=*&order=since_date").catch(() => null);
   const injuryCards = (el("injury-list").innerHTML.match(/injury-card/g) || []).length;
-  check(!el("squad-status").hidden && injuryCards === 4, "squad status: current injuries rendered", `${injuryCards} cards`);
+  const injuryLinks = Array.isArray(injuries) && injuries.every((row) => el("injury-list").innerHTML.includes(`player.html?id=${encodeURIComponent(row.player_id)}`));
+  check(Array.isArray(injuries) && injuryCards === injuries.length && injuryLinks
+    && el("squad-status").hidden === (injuries.length === 0),
+  "squad status: current injuries rendered", `${injuryCards}/${injuries?.length ?? "?"} cards`);
 
   // wave 21 — attendance is no longer presented: the page ships no attendance
   // containers and render() never queries one (a stray reference would land in
